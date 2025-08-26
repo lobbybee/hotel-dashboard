@@ -1,165 +1,34 @@
 <template>
   <div class="p-6 bg-gray-50 min-h-screen">
     <div class="max-w-7xl mx-auto space-y-8">
-
       <!-- Header -->
-      <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-slide-down">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
-            <i class="pi pi-building text-primary-500"></i> Hotel Profile
-          </h1>
-          <p class="text-gray-500">Manage your hotel’s details, documents, and verification status.</p>
-        </div>
-      </header>
+      <transition name="fade-up">
+        <HotelProfileHeader />
+      </transition>
 
       <!-- Hotel Status Card -->
       <transition name="fade-up">
-        <Card v-if="hotel" class="shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-          <template #title>
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold flex items-center gap-2">
-                <i class="pi pi-info-circle text-blue-500"></i> Hotel Status
-              </h3>
-              <Badge :value="hotel.status" :severity="getStatusSeverity(hotel.status)" class="px-3 py-1 text-sm" />
-            </div>
-          </template>
-          <template #content>
-            <p class="text-gray-600 leading-relaxed">
-              Your hotel profile is currently <span class="font-semibold">{{ hotel.status }}</span>.
-              <span v-if="hotel.status === 'pending'"> Complete your profile and upload documents for verification.</span>
-              <span v-if="hotel.status === 'verified'"> Your hotel is verified and visible to customers.</span>
-              <span v-if="hotel.status === 'rejected'"> Verification was rejected. Please review and resubmit.</span>
-            </p>
-          </template>
-        </Card>
+        <HotelStatusCard v-if="hotel" :hotel="hotel" />
       </transition>
 
       <!-- Main Layout -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
         <!-- Left Column -->
         <div class="lg:col-span-2 space-y-8">
-
           <!-- Basic Information -->
           <transition name="fade-up" appear>
-            <Panel toggleable class="shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-              <template #header>
-                <div class="flex items-center gap-2 text-lg font-semibold w-full">
-                  <i class="pi pi-id-card text-primary-500"></i>
-                  <span>Basic Information</span>
-                </div>
-              </template>
-              <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-                  <div class="md:col-span-2">
-                    <FloatLabel>
-                      <InputText id="name" v-model="hotelForm.name" class="w-full" :class="{'p-invalid': errors.name}" />
-                      <label for="name">Hotel Name</label>
-                    </FloatLabel>
-                    <small v-if="errors.name" class="p-error">{{ errors.name }}</small>
-                  </div>
-                  <div class="md:col-span-2">
-                    <FloatLabel>
-                      <Textarea id="description" v-model="hotelForm.description" rows="4" class="w-full" autoResize :class="{'p-invalid': errors.description}" />
-                      <label for="description">Description</label>
-                    </FloatLabel>
-                     <small v-if="errors.description" class="p-error">{{ errors.description }}</small>
-                  </div>
-                  <div class="md:col-span-2">
-                    <FloatLabel>
-                      <InputText id="address" v-model="hotelForm.address" class="w-full" :class="{'p-invalid': errors.address}" />
-                      <label for="address">Address</label>
-                    </FloatLabel>
-                     <small v-if="errors.address" class="p-error">{{ errors.address }}</small>
-                  </div>
-                  <div class="col-span-1">
-                    <FloatLabel>
-                      <InputText id="city" v-model="hotelForm.city" class="w-full" :class="{'p-invalid': errors.city}" />
-                      <label for="city">City</label>
-                    </FloatLabel>
-                     <small v-if="errors.city" class="p-error">{{ errors.city }}</small>
-                  </div>
-                  <div class="col-span-1">
-                    <FloatLabel>
-                      <InputText id="state" v-model="hotelForm.state" class="w-full" :class="{'p-invalid': errors.state}" />
-                      <label for="state">State</label>
-                    </FloatLabel>
-                     <small v-if="errors.state" class="p-error">{{ errors.state }}</small>
-                  </div>
-                  <div class="col-span-1">
-                    <FloatLabel>
-                      <InputText id="pincode" v-model="hotelForm.pincode" class="w-full" :class="{'p-invalid': errors.pincode}" />
-                      <label for="pincode">Pincode</label>
-                    </FloatLabel>
-                     <small v-if="errors.pincode" class="p-error">{{ errors.pincode }}</small>
-                  </div>
-                  <div class="col-span-1">
-                    <FloatLabel>
-                      <InputText id="country" v-model="hotelForm.country" class="w-full" :class="{'p-invalid': errors.country}" />
-                      <label for="country">Country</label>
-                    </FloatLabel>
-                     <small v-if="errors.country" class="p-error">{{ errors.country }}</small>
-                  </div>
-                  <div class="col-span-1">
-                    <FloatLabel>
-                      <InputText id="phone" v-model="hotelForm.phone" class="w-full" :class="{'p-invalid': errors.phone}" />
-                      <label for="phone">Phone</label>
-                    </FloatLabel>
-                     <small v-if="errors.phone" class="p-error">{{ errors.phone }}</small>
-                  </div>
-                  <div class="col-span-1">
-                    <FloatLabel>
-                      <InputText id="email" v-model="hotelForm.email" type="email" class="w-full" :class="{'p-invalid': errors.email}" />
-                      <label for="email">Email</label>
-                    </FloatLabel>
-                     <small v-if="errors.email" class="p-error">{{ errors.email }}</small>
-                  </div>
-                </div>
-                <div class="flex justify-end mt-6">
-                  <Button label="Save Basic Info" icon="pi pi-check" :loading="isUpdateLoading" @click="saveHotelProfile" />
-                </div>
-              </div>
-            </Panel>
+            <HotelBasicInfo 
+              v-model:hotel-form="hotelForm" 
+              :errors="errors" 
+            />
           </transition>
 
           <!-- Operational Settings -->
           <transition name="fade-up" appear>
-            <Panel toggleable class="shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-              <template #header>
-                 <div class="flex items-center gap-2 text-lg font-semibold w-full">
-                  <i class="pi pi-cog text-primary-500"></i>
-                  <span>Operational Settings</span>
-                </div>
-              </template>
-              <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-                  <div class="col-span-1">
-                    <FloatLabel>
-                      <InputText id="check_in_time" v-model="hotelForm.check_in_time" class="w-full" :class="{'p-invalid': errors.check_in_time}" />
-                      <label for="check_in_time">Default Check-in Time</label>
-                    </FloatLabel>
-                    <small v-if="errors.check_in_time" class="p-error">{{ errors.check_in_time }}</small>
-                  </div>
-                  <div class="col-span-1">
-                    <FloatLabel>
-                      <InputText id="time_zone" v-model="hotelForm.time_zone" class="w-full" :class="{'p-invalid': errors.time_zone}" />
-                      <label for="time_zone">Time Zone</label>
-                    </FloatLabel>
-                    <small v-if="errors.time_zone" class="p-error">{{ errors.time_zone }}</small>
-                  </div>
-                  <div class="md:col-span-2">
-                    <FloatLabel>
-                      <InputText id="wifi_password" v-model="hotelForm.wifi_password" class="w-full" :class="{'p-invalid': errors.wifi_password}" />
-                      <label for="wifi_password">Guest Wi-Fi Password</label>
-                    </FloatLabel>
-                    <small v-if="errors.wifi_password" class="p-error">{{ errors.wifi_password }}</small>
-                  </div>
-                </div>
-                 <div class="flex justify-end mt-6">
-                  <Button label="Save Settings" icon="pi pi-check" :loading="isUpdateLoading" @click="saveHotelProfile" />
-                </div>
-              </div>
-            </Panel>
+            <HotelOperationalSettings 
+              v-model:hotel-form="hotelForm" 
+              :errors="errors" 
+            />
           </transition>
         </div>
 
@@ -167,58 +36,33 @@
         <div class="space-y-8">
           <!-- Documents -->
           <transition name="fade-up" appear>
-            <Panel toggleable class="shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-              <template #header>
-                <div class="flex items-center gap-2 text-lg font-semibold w-full">
-                  <i class="pi pi-file text-primary-500"></i>
-                  <span>Verification Documents</span>
-                </div>
-              </template>
-              <div class="p-6">
-                <div class="space-y-6">
-                  <div>
-                    <label class="font-semibold text-gray-700 block mb-2">Business License</label>
-                    <p class="text-sm text-gray-500 mb-2">Upload a valid business license document.</p>
-                    <FileUpload ref="businessLicenseUploader" name="business_license" @uploader="uploadDocument('business_license', $event, businessLicenseUploader)" :customUpload="true" :multiple="false" accept="image/*,application/pdf" :maxFileSize="2000000">
-                        <template #empty>
-                            <p class="p-4 text-center text-gray-500">Drag and drop file to upload.</p>
-                        </template>
-                    </FileUpload>
-                  </div>
-                  <div>
-                    <label class="font-semibold text-gray-700 block mb-2">Owner's ID</label>
-                    <p class="text-sm text-gray-500 mb-2">Upload a government-issued ID of the hotel owner.</p>
-                    <FileUpload ref="ownerIdUploader" name="owner_id" @uploader="uploadDocument('owner_id', $event, ownerIdUploader)" :customUpload="true" :multiple="false" accept="image/*,application/pdf" :maxFileSize="2000000">
-                        <template #empty>
-                            <p class="p-4 text-center text-gray-500">Drag and drop file to upload.</p>
-                        </template>
-                    </FileUpload>
-                  </div>
-                </div>
-              </div>
-            </Panel>
+            <HotelDocuments 
+              :hotel="hotel" 
+              @upload-document="uploadDocument"
+              @update-document="updateDocument"
+              @open-document="openDocument"
+            />
           </transition>
 
           <!-- QR Code -->
           <transition name="fade-up" appear>
-            <Card class="shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-              <template #title>
-                <h3 class="flex items-center gap-2 text-lg font-semibold">
-                  <i class="pi pi-qrcode text-primary-500"></i> QR Code
-                </h3>
-              </template>
-              <template #content>
-                <div v-if="hotel?.qr_code_url" class="text-center animate-pulse-slow">
-                  <img :src="hotel.qr_code_url" alt="Hotel QR Code" class="w-48 h-48 object-contain mx-auto rounded-xl shadow-md p-2 bg-white" />
-                  <p class="text-sm text-gray-600 mt-2">Scan for guest check-in</p>
-                  <Button label="Download" icon="pi pi-download" class="p-button-sm mt-3 hover:scale-105 transition-transform duration-200" @click="downloadQR" />
-                </div>
-                 <div v-else class="text-center text-gray-500 py-4">
-                  QR Code will be generated upon profile verification.
-                </div>
-              </template>
-            </Card>
+            <HotelQRCode 
+              :hotel="hotel" 
+              @downloadQR="downloadQR"
+              @verifyProfile="verifyProfile"
+            />
           </transition>
+          
+          <!-- Save Button -->
+          <div class="flex justify-end">
+            <Button 
+              label="Save Profile" 
+              icon="pi pi-check" 
+              :loading="isUpdateLoading" 
+              @click="saveHotelProfile" 
+              class="w-full"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -239,12 +83,20 @@ import FileUpload from 'primevue/fileupload';
 import Badge from 'primevue/badge';
 import FloatLabel from 'primevue/floatlabel';
 import Panel from 'primevue/panel';
+import HotelProfileHeader from '~/components/Hotel/HotelProfileHeader.vue';
+import HotelStatusCard from '~/components/Hotel/HotelStatusCard.vue';
+import HotelBasicInfo from '~/components/Hotel/HotelBasicInfo.vue';
+import HotelOperationalSettings from '~/components/Hotel/HotelOperationalSettings.vue';
+import HotelDocuments from '~/components/Hotel/HotelDocuments.vue';
+import HotelQRCode from '~/components/Hotel/HotelQRCode.vue';
 
 const authStore = useAuthStore();
 const { hotelId } = storeToRefs(authStore);
 
 const { data: hotel, isLoading: isHotelLoading, error: hotelError, refetch: refetchHotel  } = useFetchHotel(hotelId);
-const { updateHotelProfile, isUpdateLoading } = usePatchHotel();
+const { mutate: updateHotelProfile, isPending: isUpdateLoading } = usePatchHotel();
+const { mutate: uploadHotelDocument, isPending: isUploadLoading } = useUploadHotelDocument();
+const { mutate: updateHotelDocument, isPending: isUpdateDocumentLoading } = useUpdateHotelDocument();
 
 const hotelFormSchema = z.object({
   name: z.string().min(3, 'Hotel name must be at least 3 characters').max(200),
@@ -279,11 +131,19 @@ const hotelForm = ref({
 const errors = ref<Record<string, string>>({});
 
 // Refs for file uploaders
-const businessLicenseUploader = ref();
 const ownerIdUploader = ref();
 
 watch(hotel, (newHotelData) => {
   if (newHotelData) {
+    // Format check_in_time to HH:MM format if it's in HH:MM:SS format
+    let checkInTime = newHotelData.check_in_time || '14:00';
+    if (checkInTime && checkInTime.includes(':')) {
+      const timeParts = checkInTime.split(':');
+      if (timeParts.length >= 2) {
+        checkInTime = `${timeParts[0]}:${timeParts[1]}`;
+      }
+    }
+    
     hotelForm.value = {
       name: newHotelData.name || '',
       description: newHotelData.description || '',
@@ -294,7 +154,7 @@ watch(hotel, (newHotelData) => {
       pincode: newHotelData.pincode || '',
       phone: newHotelData.phone || '',
       email: newHotelData.email || '',
-      check_in_time: newHotelData.check_in_time || '14:00',
+      check_in_time: checkInTime,
       time_zone: newHotelData.time_zone || 'UTC',
       wifi_password: newHotelData.wifi_password || ''
     };
@@ -327,42 +187,55 @@ const saveHotelProfile = async () => {
   }
 };
 
-const uploadDocument = async (docType: string, event: { files: File[] }, uploaderRef: any) => {
-  const files = event.files;
-  // This is a placeholder for the actual upload logic.
-  // You would typically use another composable or service to upload the file to your server,
-  // get the URL back, and then update the hotel profile with the new document URL.
-  console.log(`Uploading ${docType} document(s):`, files);
-
-  // After handling upload, clear the file list
-  if (uploaderRef) {
-    uploaderRef.clear();
+const uploadDocument = async (payload: { document_type: string, document_file: File }) => {
+  try {
+    await uploadHotelDocument(payload);
+    
+    // Show success message
+    console.log(`${payload.document_type} uploaded successfully`);
+    
+    // Small delay to ensure server processing
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Refresh hotel data to show updated documents
+    await refetchHotel();
+  } catch (error) {
+    // Show error message
+    console.error(`Failed to upload ${payload.document_type}:`, error);
   }
 };
 
 const downloadQR = () => {
-  if (hotel.value && hotel.value.qr_code_url) {
-    const link = document.createElement('a');
-    link.href = hotel.value.qr_code_url;
-    link.setAttribute('download', `hotel-qr-code.png`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // This function is now handled by the HotelQRCode component
+  // The component will generate and download a high-quality QR code
+  console.log('Download QR requested - handled by HotelQRCode component');
+};
+
+const verifyProfile = () => {
+  // This function would typically trigger a verification process
+  console.log('Verify profile requested');
+  // For now, we'll just show an alert, but in a real app this would trigger the verification flow
+  alert('Profile verification would be initiated here. Please contact support to verify your hotel.');
+};
+
+const updateDocument = async (payload: { id: string, document_file: File }) => {
+  try {
+    await updateHotelDocument(payload);
+    
+    // Show success message
+    console.log(`Document updated successfully`);
+    
+    // Refresh hotel data to show updated documents
+    refetchHotel();
+  } catch (error) {
+    // Show error message
+    console.error(`Failed to update document:`, error);
   }
 };
 
-const getStatusSeverity = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return 'warning';
-    case 'verified':
-      return 'success';
-    case 'suspended':
-      return 'danger';
-    case 'rejected':
-      return 'danger';
-    default:
-      return 'info';
+const openDocument = (document: any) => {
+  if (document && document.document_file_url) {
+    window.open(document.document_file_url, '_blank');
   }
 };
 

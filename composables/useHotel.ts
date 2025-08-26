@@ -111,6 +111,26 @@ export const useUploadHotelDocument = () => {
     });
   };
 
+export const useUpdateHotelDocument = () => {
+    const { API } = useAPI();
+    return useMutation({
+      mutation: async (documentData: { id: string; document_type?: string; document_file?: File }) => {
+        const formData = new FormData();
+        if (documentData.document_type) {
+          formData.append('document_type', documentData.document_type);
+        }
+        if (documentData.document_file) {
+          formData.append('document_file', documentData.document_file);
+        }
+
+        return await API(`/hotel/documents/${documentData.id}/update/`, {
+          method: 'PATCH',
+          body: formData,
+        });
+      },
+    });
+  };
+
 
 // Room Categories
 
