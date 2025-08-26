@@ -213,7 +213,7 @@ const downloadHighQualityQR = async () => {
 
       // Outer border guidelines (along the image border)
       ctx.beginPath();
-      ctx.rect(0, 0, totalWidth, totalHeight);
+      ctx.rect(20, 20, totalWidth-40, totalHeight-40);
       ctx.stroke();
 
       // Inner border guidelines (around the QR code)
@@ -225,15 +225,15 @@ const downloadHighQualityQR = async () => {
       ctx.setLineDash([]);
 
       // Draw hotel name
-      ctx.font = "bold 36px Arial, sans-serif";
+      ctx.font = "bold 56px Arial, sans-serif";
       ctx.fillStyle = "#2B2B2B";
       ctx.textAlign = "center";
-      ctx.fillText(props.hotel.name, totalWidth / 2, totalHeight - 120);
+      ctx.fillText(props.hotel.name, totalWidth / 2, totalHeight - 180);
 
       // Draw powered by text
-      ctx.font = "24px Arial, sans-serif";
+      ctx.font = "32px Arial, sans-serif";
       ctx.fillStyle = "#999999";
-      ctx.fillText("POWERED BY LOBBYBEE.COM", totalWidth / 2, totalHeight - 70);
+      ctx.fillText("POWERED BY LOBBYBEE.COM", totalWidth / 2, totalHeight - 120);
 
       // Draw cutting instructions
       ctx.font = "16px Arial, sans-serif";
