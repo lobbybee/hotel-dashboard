@@ -183,6 +183,8 @@ const navigation = computed(() => {
   if (role === 'manager' || role === 'hotel_admin') {
     return [
       { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
+      { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
+      { name: 'Check-out', href: '/checkout', icon: 'prime:sign-out' },
       { name: 'Hotel Profile', href: '/hotel-profile', icon: 'prime:building' },
       { name: 'Staff Management', href: '/staff', icon: 'prime:users' },
       { name: 'Room Categories', href: '/rooms', icon: 'prime:home' },

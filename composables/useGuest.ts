@@ -362,3 +362,63 @@ export const useCheckOut = () => {
     },
   });
 };
+
+/**
+ * Initiates the check-in process for a specific stay.
+ * @param stayId - The ID of the stay.
+ */
+export const useInitiateCheckIn = (stayId: Ref<string>) => {
+  const { API } = useAPI();
+  return useMutation({
+    mutation: async () => {
+      if (!stayId.value) throw new Error('Stay ID is required to initiate check-in');
+      return await API(`/stays/${stayId.value}/initiate-checkin/`, {
+        method: 'POST',
+      });
+    },
+  });
+};
+
+// Bookings
+
+/**
+ * Fetches a list of bookings for the hotel.
+ */
+export const useFetchBookings = () => {
+  const { API } = useAPI();
+  return useQuery({
+    key: ['bookings'],
+    query: async () => await API('/bookings/'),
+  });
+};
+
+/**
+ * Creates a new booking.
+ */
+export const useCreateBooking = () => {
+  const { API } = useAPI();
+  return useMutation({
+    mutation: async (newBooking: any) => {
+      return await API('/bookings/', {
+        method: 'POST',
+        body: newBooking,
+      });
+    },
+  });
+};
+
+/**
+ * Fetches a specific booking by its ID.
+ * @param id - The ID of the booking.
+ */
+export const useFetchBooking = (id: Ref<string | null>) => {
+  const { API } = useAPI();
+  return useQuery({
+    key: computed(() => ['booking', id.value]),
+    query: async () => {
+      if (!id.value) return null;
+      return await API(`/bookings/${id.value}/`);
+    },
+    enabled: computed(() => !!id.value),
+  });
+};
