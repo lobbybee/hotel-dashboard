@@ -287,13 +287,16 @@ export const useDeleteRoom = () => {
     });
   };
 
-// Floors
-export const useFetchFloors = () => {
-    const { API } = useAPI();
-    return useQuery({
-        key: ['floors'],
-        query: async () => await API('/hotel/rooms/floors/'),
-    });
+
+export const useFetchHotelRoomFloors = () => {
+  const { API } = useAPI();
+  return useQuery({
+    key: ['hotel-room-floors'],
+    query: async () => {
+      const response = await API('/rooms/floors/');
+      return response;
+    },
+  });
 };
 
 

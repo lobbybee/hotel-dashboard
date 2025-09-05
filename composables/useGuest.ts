@@ -379,6 +379,21 @@ export const useInitiateCheckIn = (stayId: Ref<string>) => {
   });
 };
 
+/**
+ * Verifies a guest's identity documents and checks them into their room in a single action.
+ */
+export const useVerifyAndCheckIn = () => {
+  const { API } = useAPI();
+  return useMutation({
+    mutation: async (stayId: string) => {
+      if (!stayId) throw new Error('Stay ID is required to verify and check-in');
+      return await API(`/stays/${stayId}/verify-and-check-in/`, {
+        method: 'POST',
+      });
+    },
+  });
+};
+
 // Bookings
 
 /**
