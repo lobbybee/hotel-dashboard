@@ -14,11 +14,11 @@ export default defineNuxtConfig({
   ],
   css: ["@/assets/css/tailwind.css"],
   primevue: {
+    importTheme: { from: '@/themes/mytheme.ts' },
     options: {
+
       theme: {
-        preset: Aura,
         options: {
-          darkModeSelector: false || "none",
           cssLayer: {
                           name: 'primevue',
                           order: 'tailwind-base, primevue, tailwind-utilities'
