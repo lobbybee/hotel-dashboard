@@ -33,15 +33,11 @@
             </Button>
             <div>
               <h1 class="text-lg font-semibold text-surface-900">{{ pageTitle }}</h1>
-              <p class="text-xs text-surface-500">{{ hotel.name }}</p>
             </div>
           </div>
 
           <div class="flex items-center gap-2 sm:gap-4">
-            <div class="hidden items-center gap-2 lg:flex">
-              <div class="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-              <span class="text-sm font-medium text-surface-700">WhatsApp Connected</span>
-            </div>
+
 
             <Button text rounded aria-label="Notifications">
               <template #icon>
@@ -90,8 +86,6 @@
 </template>
 
 <script setup>
-import { storeToRefs } from 'pinia';
-import { useAPI } from '~/composables/useAPI';
 import { useAuthStore } from '~/stores/auth';
 
 const router = useRouter();
@@ -125,11 +119,6 @@ watch(isAuthenticated, (isAuth) => {
 }, { immediate: true });
 
 const userMenuItems = ref([
-  {
-    label: 'Profile',
-    icon: 'prime:user',
-    route: '/hotel-profile' // Corrected route
-  },
   {
     label: 'Settings',
     icon: 'prime:cog',
@@ -189,17 +178,14 @@ const navigation = computed(() => {
       { name: 'Staff Management', href: '/staff', icon: 'prime:users' },
       { name: 'Room Categories', href: '/rooms', icon: 'prime:home' },
       { name: 'Departments', href: '/departments', icon: 'prime:briefcase' },
-      { name: 'Menu Builder', href: '/manager/menu-builder', icon: 'prime:list' },
-      { name: 'Message Templates', href: '/manager/templates', icon: 'prime:comment' },
-      { name: 'Analytics', href: '/manager/analytics', icon: 'prime:chart-bar' }
+      { name: 'Message Templates', href: '/message_templates', icon: 'prime:comment' },
     ];
   } else if (role === 'receptionist') {
     return [
       { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
       { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
-      { name: 'Room Management', href: '/receptionist/rooms', icon: 'prime:home' },
+      { name: 'Room Management', href: '/rooms', icon: 'prime:home' },
       { name: 'Check-out', href: '/checkout', icon: 'prime:sign-out' },
-      { name: 'Service Requests', href: '/receptionist/service-requests', icon: 'prime:wrench' }
     ];
   }
   return [];

@@ -1,5 +1,5 @@
 <template>
 <div class="py-3">
-    <Button label="Verify" />
+    DASHBOARD
 </div>
 </template>

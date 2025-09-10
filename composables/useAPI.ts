@@ -144,9 +144,43 @@ export const useAPI = () => {
     };
   };
 
+  const requestPasswordReset = async (credentials: { email: string }) => {
+    try {
+      const response = await API('/password-reset/request/', {
+        method: 'POST',
+        body: credentials,
+      });
+      return response;
+    }
+    catch (err) {
+      if (err instanceof APIError) {
+        throw err;
+      }
+      throw new Error(err.message || 'Request password reset failed');
+    }
+  };
+
+  const confirmPasswordReset = async (credentials: { email: string; otp: string; new_password: string }) => {
+    try {
+      const response = await API('/password-reset/confirm/', {
+        method: 'POST',
+        body: credentials,
+      });
+      return response;
+    }
+    catch (err) {
+      if (err instanceof APIError) {
+        throw err;
+      }
+      throw new Error(err.message || 'Confirm password reset failed');
+    }
+  };
+
   return {
     login,
     logout,
+    requestPasswordReset,
+    confirmPasswordReset,
     API,
     refreshTokens,
   };

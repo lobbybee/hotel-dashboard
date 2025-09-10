@@ -42,12 +42,18 @@
           icon="pi pi-lock"
           class="w-full mt-4"
         />
+        <div class="text-center mt-2">
+          <NuxtLink to="/reset" class="forgot-password-link">
+            Forgot Password?
+          </NuxtLink>
+        </div>
       </form>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useAPI, APIError } from '~/composables/useAPI';
 definePageMeta({
   layout: 'auth'
 })
@@ -130,7 +136,7 @@ async function handleLogin() {
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .field {
@@ -150,5 +156,16 @@ async function handleLogin() {
 
 :deep(.p-password) {
   width: 100%;
+}
+
+.forgot-password-link {
+  color: var(--p-primary-color);
+  font-size: 0.875rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
 }
 </style>

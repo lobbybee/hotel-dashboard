@@ -612,19 +612,7 @@ import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
 import { useDebounceFn } from '@vueuse/core';
 
-// Import composables
-import {
-  useFetchRooms,
-  useFetchRoomCategories,
-  useCreateRoomCategory,
-  useUpdateRoomCategory,
-  useDeleteRoomCategory,
-  useBulkCreateRooms,
-  useUpdateRoom,
-  usePatchRoom,
-  useDeleteRoom,
-  useFetchFloors,
-} from '~/composables/useHotel';
+
 
 const toast = useToast();
 
@@ -650,7 +638,7 @@ const categoryFilters = computed(() => ({
 }));
 
 // Data Fetching
-const { data: floorsData, isLoading: isFloorsLoading, error: floorsError, refetch: refetchFloors } = useFetchFloors();
+const { data: floorsData, isLoading: isFloorsLoading, error: floorsError, refetch: refetchFloors } = useFetchHotelRoomFloors();
 const {
   data: roomsData,
   isLoading: isRoomsLoading,
