@@ -179,6 +179,7 @@ const navigation = computed(() => {
       { name: 'Room Categories', href: '/rooms', icon: 'prime:home' },
       { name: 'Departments', href: '/departments', icon: 'prime:briefcase' },
       { name: 'Message Templates', href: '/message_templates', icon: 'prime:comment' },
+      { name: 'Billing', href: '/payments', icon: 'prime:credit-card' }
     ];
   } else if (role === 'receptionist') {
     return [
