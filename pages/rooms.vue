@@ -961,10 +961,13 @@ const saveRoom = async () => {
   }
 
   try {
+    console.log(roomForm);
     await updateRoomAPI({
       id: selectedRoomForEdit.value.id,
       category: roomForm.category_id,
-      status: roomForm.status
+      status: roomForm.status,
+      room_number: selectedRoomForEdit.value.room_number,
+      floor: selectedRoomForEdit.value.floor
     });
 
     toast.add({
