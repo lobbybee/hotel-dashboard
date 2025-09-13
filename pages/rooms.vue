@@ -189,7 +189,7 @@
 
                 <div class="flex items-center gap-2 text-gray-600 text-sm">
                   <i class="pi pi-dollar"></i>
-                  <span>${{ category.base_price }}/night</span>
+                  <span>₹{{ category.base_price }}/night</span>
                 </div>
 
                 <div class="mt-3 pt-3 border-t border-gray-100">
@@ -296,10 +296,10 @@
               class="w-full"
               :class="{'p-invalid': categoryErrors.base_price}"
               mode="currency"
-              currency="USD"
+              currency="INR"
               :min="0"
             />
-            <label for="base_price">Base Price ($)</label>
+            <label for="base_price">Base Price (₹)</label>
           </FloatLabel>
           <small v-if="categoryErrors.base_price" class="p-error">{{ categoryErrors.base_price }}</small>
         </div>
@@ -610,7 +610,7 @@ import SelectButton from 'primevue/selectbutton';
 import ProgressSpinner from 'primevue/progressspinner';
 import Paginator from 'primevue/paginator';
 import { useToast } from 'primevue/usetoast';
-import { useDebounceFn } from '@vueuse/core';
+import { refDebounced } from '@vueuse/core';
 
 
 
@@ -621,20 +621,24 @@ const selectedFloor = ref<number>(1);
 const roomPage = ref(1);
 const categoryPage = ref(1);
 const categorySearch = ref('');
+const debouncedCategorySearch = refDebounced(categorySearch, 500);
+
 
 const roomSearch = ref('');
 const roomStatusFilter = ref('');
+const debouncedRoomSearch = refDebounced(roomSearch, 500);
+
 
 const roomFilters = computed(() => ({
   floor: selectedFloor.value,
   page: roomPage.value,
-  search: roomSearch.value,
+  search: debouncedRoomSearch.value,
   status: roomStatusFilter.value,
 }));
 
 const categoryFilters = computed(() => ({
   page: categoryPage.value,
-  search: categorySearch.value,
+  search: debouncedCategorySearch.value,
 }));
 
 // Data Fetching
@@ -1128,25 +1132,8 @@ const onCategoryPageChange = (event: any) => {
   categoryPage.value = event.page + 1;
 };
 
-const debouncedRoomSearch = useDebounceFn(() => {
-  refetchRooms();
-}, 500);
-
-watch(roomSearch, () => {
-  debouncedRoomSearch();
-});
-
 watch(roomStatusFilter, () => {
   refetchRooms();
-});
-
-// Search
-const debouncedCategorySearch = useDebounceFn(() => {
-  refetchCategories();
-}, 500);
-
-watch(categorySearch, () => {
-  debouncedCategorySearch();
 });
 
 
