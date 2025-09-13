@@ -84,7 +84,7 @@ const handleDirectCheckin = (stay: any) => {
 
 const isConfirmingCheckin = computed(() => isVerifyingAndCheckingIn.value || isPatchingStay.value || isCreatingStay.value);
 
-const handleConfirmCheckin = async ({ roomId }: { roomId: number | null }) => {
+const handleConfirmCheckin = async ({ roomId, registerNumber }: { roomId: number | null, registerNumber: string }) => {
   if (!selectedStayForCheckin.value) return;
 
   try {
@@ -92,7 +92,7 @@ const handleConfirmCheckin = async ({ roomId }: { roomId: number | null }) => {
       await patchStay({ id: selectedStayForCheckin.value.id, room: roomId });
     }
 
-    await verifyAndCheckIn(selectedStayForCheckin.value.id);
+    await verifyAndCheckIn({ stayId: selectedStayForCheckin.value.id, register_number: registerNumber });
 
     toast.add({ severity: 'success', summary: 'Success', detail: 'Guest checked in successfully.', life: 3000 });
 
@@ -106,7 +106,7 @@ const handleConfirmCheckin = async ({ roomId }: { roomId: number | null }) => {
   }
 };
 
-const handleCreateStay = async ({ guestId, roomId, checkOutDate }: { guestId: number, roomId: number, checkOutDate: string }) => {
+const handleCreateStay = async ({ guestId, roomId, checkOutDate, registerNumber }: { guestId: number, roomId: number, checkOutDate: string, registerNumber: string }) => {
     try {
         const newStay = await createStay({
             guest: guestId,
@@ -115,7 +115,7 @@ const handleCreateStay = async ({ guestId, roomId, checkOutDate }: { guestId: nu
             check_out_date: checkOutDate,
         });
 
-        await verifyAndCheckIn(newStay.id);
+        await verifyAndCheckIn({ stayId: newStay.id, register_number: registerNumber });
 
         toast.add({ severity: 'success', summary: 'Success', detail: 'Guest checked in successfully.', life: 3000 });
 

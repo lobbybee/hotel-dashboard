@@ -385,10 +385,11 @@ export const useInitiateCheckIn = (stayId: Ref<string>) => {
 export const useVerifyAndCheckIn = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (stayId: string) => {
+    mutation: async ({ stayId, register_number }: { stayId: string, register_number?: string }) => {
       if (!stayId) throw new Error('Stay ID is required to verify and check-in');
       return await API(`/stays/${stayId}/verify-and-check-in/`, {
         method: 'POST',
+        body: { register_number },
       });
     },
   });

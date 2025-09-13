@@ -54,6 +54,11 @@
                 <label for="checkout" class="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
                 <Calendar id="checkout" v-model="checkOutDate" class="w-full" showIcon />
             </div>
+
+            <div>
+                <label for="register_number" class="block text-sm font-medium text-gray-700 mb-1">Register Number</label>
+                <InputText id="register_number" v-model="registerNumber" class="w-full" />
+            </div>
         </div>
       </div>
     </div>
@@ -75,6 +80,8 @@ import Badge from 'primevue/badge';
 import Calendar from 'primevue/calendar';
 import { useFetchRooms, useFetchRoomCategories, useFetchHotelRoomFloors } from '~/composables/useHotel';
 
+import InputText from 'primevue/inputtext';
+
 const props = defineProps({
   visible: Boolean,
   stay: Object as () => any,
@@ -83,6 +90,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'confirmed', 'create-stay']);
 
+const registerNumber = ref<string>('');
 const selectedCategory = ref<number | null>(null);
 const selectedFloor = ref<number | null>(null);
 const selectedRoom = ref<number | null>(null);
@@ -115,7 +123,7 @@ const formatDocumentType = (type: string) => {
 };
 
 const confirmCheckin = () => {
-  emit('confirmed', { roomId: selectedRoom.value });
+  emit('confirmed', { roomId: selectedRoom.value, registerNumber: registerNumber.value });
 };
 
 const createStayAndCheckin = () => {
@@ -123,7 +131,8 @@ const createStayAndCheckin = () => {
     emit('create-stay', { 
         guestId: props.stay.guest.id, 
         roomId: selectedRoom.value, 
-        checkOutDate: checkOutDate.value.toISOString() 
+        checkOutDate: checkOutDate.value.toISOString(),
+        registerNumber: registerNumber.value
     });
   }
 };
