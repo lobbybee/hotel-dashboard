@@ -153,7 +153,25 @@ export const useUploadIdentityDocument = () => {
       Object.keys(documentData).forEach(key => {
         formData.append(key, documentData[key]);
       });
-      return await API('/identity-documents/', {
+      return await API('/identity-document-upload/', {
+        method: 'POST',
+        body: formData,
+      });
+    },
+  });
+};
+
+/**
+ * Uploads a back image for an existing identity document.
+ */
+export const useUploadBackIdentityDocument = () => {
+  const { API } = useAPI();
+  return useMutation({
+    mutation: async ({ id, document_file_back }: { id: string, document_file_back: File }) => {
+      if (!id) throw new Error('Document ID is required for update');
+      const formData = new FormData();
+      formData.append('document_file_back', document_file_back);
+      return await API(`/identity-documents/${id}/upload-back/`, {
         method: 'POST',
         body: formData,
       });

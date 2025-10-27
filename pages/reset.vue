@@ -1,73 +1,73 @@
 <template>
-  <div class="reset-container">
-    <div class="reset-card">
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8">
+
       <!-- Step 1: Request Reset -->
       <div v-if="step === 'request'">
-        <div class="reset-header">
-          <h2>Reset Password</h2>
-          <p>Enter your email to receive a password reset code.</p>
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Reset Password</h2>
+          <p class="text-gray-600 text-sm">Enter your email to receive a password reset code.</p>
         </div>
 
-        <form @submit.prevent="handleRequestReset" class="reset-form">
-          <div class="field">
-            <label for="email">Email</label>
+        <form @submit.prevent="handleRequestReset" class="space-y-5">
+          <div class="space-y-2">
+            <label for="email" class="block text-sm font-medium text-gray-800">Email</label>
             <InputText
               id="email"
               type="email"
               v-model="email"
               placeholder="Enter your email"
               :invalid="!!error"
-              class="w-full"
+              class="w-full h-12 text-base border-2 border-gray-200 rounded-lg px-4 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none"
               required
             />
           </div>
 
-          <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
-          <Message v-if="message" severity="info" :closable="false">{{ message }}</Message>
-
+          <Message v-if="error" severity="error" :closable="false" class="w-full" />
+          <Message v-if="message" severity="info" :closable="false" class="w-full" />
 
           <Button
             type="submit"
             label="Send Reset Code"
             :loading="loading"
             icon="pi pi-envelope"
-            class="w-full mt-2"
+            class="w-full h-12 bg-blue-500 hover:bg-blue-600 border-none rounded-lg text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg disabled:hover:translate-y-0 disabled:hover:shadow-none mt-2"
           />
         </form>
       </div>
 
       <!-- Step 2: Confirm Reset -->
       <div v-if="step === 'confirm'">
-        <div class="reset-header">
-          <h2>Confirm Reset</h2>
-          <p>Enter the code from your email and a new password.</p>
+        <div class="text-center mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Confirm Reset</h2>
+          <p class="text-gray-600 text-sm">Enter the code from your email and a new password.</p>
         </div>
 
-        <form @submit.prevent="handleConfirmReset" class="reset-form">
-          <div class="field">
-            <label for="confirm-email">Email</label>
+        <form @submit.prevent="handleConfirmReset" class="space-y-5">
+          <div class="space-y-2">
+            <label for="confirm-email" class="block text-sm font-medium text-gray-800">Email</label>
             <InputText
               id="confirm-email"
               v-model="email"
-              class="w-full"
+              class="w-full h-12 text-base border-2 border-gray-200 rounded-lg px-4 bg-gray-50 cursor-not-allowed"
               readonly
             />
           </div>
 
-          <div class="field">
-            <label for="otp">Reset Code (OTP)</label>
+          <div class="space-y-2">
+            <label for="otp" class="block text-sm font-medium text-gray-800">Reset Code (OTP)</label>
             <InputText
               id="otp"
               v-model="otp"
               placeholder="Enter 6-digit code"
               :invalid="!!error"
-              class="w-full"
+              class="w-full h-12 text-base border-2 border-gray-200 rounded-lg px-4 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none"
               required
             />
           </div>
 
-          <div class="field">
-            <label for="new_password">New Password</label>
+          <div class="space-y-2">
+            <label for="new_password" class="block text-sm font-medium text-gray-800">New Password</label>
             <Password
               id="new_password"
               v-model="new_password"
@@ -76,26 +76,34 @@
               :feedback="true"
               :toggleMask="true"
               class="w-full"
+              input-class="w-full h-12 text-base border-2 border-gray-200 rounded-lg px-4 pr-12 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none"
               required
             />
           </div>
 
-          <Message v-if="message" severity="success" :closable="false">{{ message }}</Message>
-          <Message v-if="error" severity="error" :closable="false">{{ error }}</Message>
+          <Message v-if="message" severity="success" :closable="false" class="w-full" >
+              Success
+          </Message>
+          <Message v-if="error" severity="error" :closable="false" class="w-full" >
+              Error
+          </Message>
 
           <Button
             type="submit"
             label="Set New Password"
             :loading="loading"
             icon="pi pi-check"
-            class="w-full mt-2"
+            class="w-full h-12 bg-blue-500 hover:bg-blue-600 border-none rounded-lg text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg disabled:hover:translate-y-0 disabled:hover:shadow-none mt-2"
           />
         </form>
       </div>
 
-      <div class="text-center mt-4">
-        <NuxtLink to="/login" class="back-to-login">
-          &larr; Back to Login
+      <div class="text-center mt-6">
+        <NuxtLink to="/login" class="inline-flex items-center text-sm text-blue-500 hover:text-blue-600 hover:underline transition-colors duration-200 font-medium">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Login
         </NuxtLink>
       </div>
     </div>
@@ -173,74 +181,40 @@ async function handleConfirmReset() {
 </script>
 
 <style scoped>
-.reset-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 1rem;
-  background-color: var(--p-surface-100);
+/* Custom styles for PrimeVue components */
+:deep(.p-inputtext) {
+  @apply w-full h-12 text-base border-2 border-gray-200 rounded-lg px-4 transition-all duration-200;
 }
 
-.reset-card {
-  width: 100%;
-  max-width: 420px;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  background-color: var(--p-surface-0);
+:deep(.p-inputtext:focus) {
+  @apply border-blue-500 ring-2 ring-blue-100 outline-none;
 }
 
-.reset-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.reset-header h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: var(--p-surface-900);
-}
-
-.reset-header p {
-  color: var(--p-surface-600);
-  font-size: 0.875rem;
-}
-
-.reset-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.field label {
-  font-weight: 500;
-  color: var(--p-surface-800);
-}
-
-.back-to-login {
-  color: var(--p-primary-color);
-  font-size: 0.875rem;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.back-to-login:hover {
-  text-decoration: underline;
-}
-
-:deep(.p-message) {
-  margin: 0;
+:deep(.p-inputtext:read-only) {
+  @apply bg-gray-50 cursor-not-allowed;
 }
 
 :deep(.p-password) {
-  width: 100%;
+  @apply w-full;
+}
+
+:deep(.p-password .p-inputtext) {
+  @apply w-full pr-12;
+}
+
+:deep(.p-button) {
+  @apply w-full h-12 bg-blue-500 hover:bg-blue-600 border-none rounded-lg text-base font-semibold;
+}
+
+:deep(.p-button:hover:not(:disabled)) {
+  @apply bg-blue-600 -translate-y-0.5 shadow-lg;
+}
+
+:deep(.p-button:disabled:hover) {
+  @apply translate-y-0 shadow-none;
+}
+
+:deep(.p-message) {
+  @apply mt-0;
 }
 </style>

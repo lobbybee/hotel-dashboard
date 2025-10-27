@@ -6,17 +6,19 @@ export interface StaffCreateData {
   username: string;
   email: string;
   password: string;
-  user_type: 'hotel_admin' | 'manager' | 'receptionist' | 'department_staff';
+  user_type: 'manager' | 'receptionist' | 'department_staff' | 'other_staff';
   phone_number?: string;
+  department?: string[];
 }
 
 export interface StaffUpdateData {
   username?: string;
   email?: string;
   password?: string;
-  user_type?: 'hotel_admin' | 'manager' | 'receptionist' | 'department_staff';
+  user_type?: 'hotel_admin' | 'manager' | 'receptionist' | 'department_staff' | 'other_staff';
   phone_number?: string;
   is_active_hotel_user?: boolean;
+  department?: string[];
 }
 
 // Fetch all staff members

@@ -1,50 +1,41 @@
 <template>
-  <Card class="shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-    <template #title>
-      <h3 class="flex items-center gap-2 text-lg font-semibold">
-        <i class="pi pi-qrcode text-primary-500"></i> QR Code
-      </h3>
-    </template>
-    <template #content>
-      <div v-if="hotel && hotel.status === 'verified'" class="text-center">
+  <div class="bg-white rounded-2xl shadow-2xl p-8">
+    <div class="text-center">
+      <h3 class="text-lg font-bold text-gray-900 ">Hotel QR Code</h3>
+      <div v-if="hotel && hotel.status === 'verified'" class="space-y-4">
         <div
           ref="qrCodeContainer"
-          class="flex justify-center items-center mb-4 min-h-[220px] p-4"
-          style="min-height: 220px;"
+          :key="hotel.id"
+          class="flex justify-center items-center bg-gray-50 rounded-lg min-h-[180px]"
         >
-          <!-- QR Code will be generated here -->
-          <div v-if="!isQRGenerated && isGenerating" class="text-gray-500">
+          <div v-if="!isQRGenerated && isGenerating" class="text-gray-500 text-sm">
             Generating QR code...
           </div>
         </div>
-        <div class="mb-3 pb-2 border-b border-gray-100">
-          <h3 class="text-xl font-serif font-bold text-gray-800 tracking-wide mb-1">{{ hotel.name }}</h3>
-          <p class="text-xs text-gray-500 tracking-widest font-light uppercase">POWERED BY <span class="font-semibold">LOBBYBEE</span>.COM</p>
-        </div>
-        <p class="text-sm text-gray-600 mt-2 mb-3">Scan for guest check-in</p>
+
         <Button
-          label="Download High Quality (1080px)"
+          label="Download QR"
           icon="pi pi-download"
-          class="p-button-sm mt-2 hover:scale-105 transition-transform duration-200"
+          size="small"
+          class=" bg-blue-500 hover:bg-blue-600 text-white  rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
           @click="downloadHighQualityQR"
           :loading="isGenerating"
           :disabled="!isQRGenerated"
         />
       </div>
-      <div v-else class="text-center text-gray-500 py-4">
-        <p>QR Code will be generated upon profile verification.</p>
+
+      <div v-else class="py-4">
+        <p class="text-sm text-gray-500 mb-4">QR Code available after verification</p>
         <Button
           label="Verify Profile"
           icon="pi pi-check-circle"
-          class="p-button-sm mt-3"
+          class="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
           @click="verifyProfile"
-          :disabled="isGenerating"
         />
       </div>
-    </template>
-  </Card>
+    </div>
+  </div>
 </template>
-
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted } from 'vue';
 import Card from 'primevue/card';

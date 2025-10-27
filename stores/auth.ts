@@ -4,7 +4,7 @@ interface User {
   id: number;
   username: string;
   email: string;
-  user_type: 'hotel_admin' | 'manager' | 'receptionist';
+  user_type: 'hotel_admin' | 'manager' | 'receptionist' | 'department_staff';
   phone_number: string;
   hotel_id: string;
   first_name?: string;

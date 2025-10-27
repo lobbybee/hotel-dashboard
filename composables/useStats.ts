@@ -11,13 +11,20 @@ import { useAPI } from './useAPI';
  */
 export const useFetchGeneralStats = (options?: Ref<{ date?: string }>) => {
   const { API } = useAPI();
-  return useQuery({
+  const {
+    data: stats,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     key: computed(() => ['stats', 'general', options?.value]),
     query: async () => {
       const response = await API('/stat/', { params: options?.value });
       return response;
     },
   });
+
+  return { stats, isLoading, error, refetch };
 };
 
 /**
@@ -33,7 +40,12 @@ export const useFetchDetailedStats = (
   options?: Ref<{ date?: string }>
 ) => {
   const { API } = useAPI();
-  return useQuery({
+  const {
+    data: stats,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     key: computed(() => ['stats', 'detailed', statType.value, options?.value]),
     query: async () => {
       if (!statType.value) return null;
@@ -42,4 +54,6 @@ export const useFetchDetailedStats = (
     },
     enabled: computed(() => !!statType.value),
   });
+
+  return { stats, isLoading, error, refetch };
 };

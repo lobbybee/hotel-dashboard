@@ -1,45 +1,40 @@
 <template>
-  <Card v-if="hotel" class="shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-    <template #title>
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold flex items-center gap-2">
-          <i class="pi pi-info-circle text-blue-500"></i> Hotel Status
-        </h3>
-        <Badge :value="hotel.status" :severity="getStatusSeverity(hotel.status)" class="px-3 py-1 text-sm" />
+  <div class="bg-white rounded-2xl shadow-2xl p-8">
+    <div class="text-center flex flex-col justify-center items-center h-full">
+      <div class="w-16 h-16 bg-gradient-to-br from-yellow-50 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <i class="pi pi-check-circle text-2xl text-green-500"></i>
       </div>
-    </template>
-    <template #content>
-      <p class="text-gray-600 leading-relaxed">
-        Your hotel profile is currently <span class="font-semibold">{{ hotel.status }}</span>.
-        <span v-if="hotel.status === 'pending'"> Complete your profile and upload documents for verification.</span>
-        <span v-if="hotel.status === 'verified'"> Your hotel is verified and visible to customers.</span>
-        <span v-if="hotel.status === 'rejected'"> Verification was rejected. Please review and resubmit.</span>
-      </p>
-    </template>
-  </Card>
+      <h3 class="text-lg font-bold text-gray-900 mb-2">Verified Hotel</h3>
+      <p class="text-sm text-gray-600">All documents approved</p>
+      <div class="mt-4">
+        <Badge
+          :value="hotel?.status || 'active'"
+          :severity="getStatusSeverity(hotel?.status || 'active')"
+          class="px-4 py-2 text-sm font-semibold rounded-lg"
+        />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import Card from 'primevue/card';
 import Badge from 'primevue/badge';
 
-// Define props
 const props = defineProps({
   hotel: {
     type: Object,
-    required: true
+    default: () => ({})
   }
 });
 
 const getStatusSeverity = (status: string) => {
   switch (status) {
-    case 'pending':
-      return 'warning';
+    case 'active':
     case 'verified':
       return 'success';
+    case 'pending':
+      return 'warning';
     case 'suspended':
-      return 'danger';
     case 'rejected':
       return 'danger';
     default:

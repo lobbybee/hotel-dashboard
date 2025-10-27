@@ -9,9 +9,9 @@
           </h1>
           <p class="text-gray-500">Manage your hotel's subscription and payments.</p>
         </div>
-        <Button 
-          label="Refresh All Data" 
-          icon="pi pi-refresh" 
+        <Button
+          label="Refresh All Data"
+          icon="pi pi-refresh"
           @click="refetchAll"
           class="p-button-outlined"
         />
@@ -32,19 +32,19 @@
       <!-- Main Content -->
       <div v-else class="space-y-8">
         <!-- Current Subscription -->
-        <MySubscription 
+        <MySubscription
           :subscription="mySubscription"
           @refresh="refetchAll"
         />
 
         <!-- Subscription Plans -->
-        <PaymentPlans 
+        <!-- <PaymentPlans
           :plans="plans"
           @refresh="refetchAll"
-        />
+        /> -->
 
         <!-- Recent Transactions -->
-        <PaymentTransactions 
+        <PaymentTransactions
           :transactions="transactions"
           @refresh="refetchAll"
         />
@@ -62,7 +62,7 @@ import { useToast } from 'primevue/usetoast';
 import type { SubscriptionPlan, Transaction, HotelSubscription } from '~/composables/usePayments';
 
 // Import composables
-import { 
+import {
   useFetchPlans,
   useFetchTransactions,
   useFetchMySubscription
@@ -93,7 +93,7 @@ const refetchAll = async () => {
       refetchTransactions(),
       refetchSubscription()
     ]);
-    
+
     toast.add({
       severity: 'success',
       summary: 'Success',

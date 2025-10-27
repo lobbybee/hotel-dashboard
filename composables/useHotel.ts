@@ -206,7 +206,7 @@ export const useDeleteRoomCategory = () => {
 
 // Rooms
 
-export const useFetchRooms = (options?: Ref<{ status?: string; floor?: number; category?: number; occupied?: boolean; page?: number; ordering?: string; search?: string }>) => {
+export const useFetchRooms = (options?: Ref<{ status?: string; floor?: number; category?: number; occupied?: boolean; page?: number; ordering?: string; search?: string,page_size?:number }>) => {
     const { API } = useAPI();
     return useQuery({
       key: computed(() => ['rooms', options?.value]),

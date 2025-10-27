@@ -1,59 +1,76 @@
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <div class="login-header">
-        <h2>Hotel Dashboard Login</h2>
-        <p>Welcome back! Please enter your credentials</p>
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 max-w-6xl w-full min-h-[600px] bg-white rounded-3xl shadow-2xl overflow-hidden">
+
+      <!-- Left side - Login Form -->
+      <div class="flex items-center justify-center p-6 lg:p-12">
+        <div class="w-full max-w-md">
+          <div class="mb-10">
+            <h1 class="text-2xl md:text-4xl font-bold text-gray-900 mb-2 font-sans">Welcome Back !</h1>
+            <p class="text-gray-600 text-base">Login to your lobbybee account</p>
+          </div>
+
+          <form @submit.prevent="handleLogin" class="space-y-5">
+            <div>
+              <InputText
+                id="username"
+                v-model="username"
+                placeholder="Username"
+                :invalid="!!error"
+                class="w-full h-12 text-base border-2 border-gray-200 rounded-lg px-4 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <Password
+                id="password"
+                v-model="password"
+                placeholder="Password"
+                :invalid="!!error"
+                :feedback="false"
+                :toggleMask="true"
+                class="w-full"
+                input-class="w-full h-12 text-base border-2 border-gray-200 rounded-lg px-4 pr-12 transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none"
+              />
+            </div>
+
+            <div class="text-right -mt-2">
+              <NuxtLink to="/reset" class="text-sm text-gray-600 hover:text-blue-500 hover:underline transition-colors duration-200">
+                Forgot Password?
+              </NuxtLink>
+            </div>
+
+            <Message v-if="error" severity="error" :closable="false" class="w-full" />
+
+            <Button
+              type="submit"
+              label="Sign In"
+              :loading="loading"
+              class="w-full h-12 bg-blue-500 hover:bg-blue-600 border-none rounded-lg text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg disabled:hover:translate-y-0 disabled:hover:shadow-none"
+            />
+          </form>
+        </div>
       </div>
 
-      <form @submit.prevent="handleLogin" class="login-form">
-        <div class="field">
-          <label for="username">Username</label>
-          <InputText
-            id="username"
-            v-model="username"
-            placeholder="Enter your username"
-            :invalid="!!error"
-            class="w-full"
-          />
+      <!-- Right side - Branding -->
+      <div class=" hidden md:flex bg-gradient-to-br from-yellow-50 to-orange-100 flex flex-col items-center justify-center p-6 lg:p-12 text-center order-first lg:order-last">
+        <div class="mb-8">
+          <img src="/logo.png" alt="LobbyBee" class="w-24 h-24 lg:w-32 lg:h-32 object-contain drop-shadow-lg" />
         </div>
-
-        <div class="field">
-          <label for="password">Password</label>
-          <Password
-            id="password"
-            v-model="password"
-            placeholder="Enter your password"
-            :invalid="!!error"
-            :feedback="false"
-            :toggleMask="true"
-            class="w-full"
-          />
+        <div class="max-w-md">
+          <h2 class="text-xl lg:text-2xl font-semibold text-gray-800 leading-relaxed font-sans">
+            "Turn chats into check-ins – Smart WhatsApp automation for hotels."
+          </h2>
         </div>
+      </div>
 
-        <Message v-if="error" severity="error" :closable="false" class="w-full">
-          {{ error }}
-        </Message>
-
-        <Button
-          type="submit"
-          label="Sign In"
-          :loading="loading"
-          icon="pi pi-lock"
-          class="w-full mt-4"
-        />
-        <div class="text-center mt-2">
-          <NuxtLink to="/reset" class="forgot-password-link">
-            Forgot Password?
-          </NuxtLink>
-        </div>
-      </form>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useAPI, APIError } from '~/composables/useAPI';
+
 definePageMeta({
   layout: 'auth'
 })
@@ -81,11 +98,12 @@ async function handleLogin() {
       router.push('/manager')
     } else if (userRole === 'receptionist') {
       router.push('/receptionist')
+    } else if (userRole === 'department_staff') {
+      router.push('/chat')
     } else {
       router.push('/') // Fallback
     }
   } catch (err) {
-    // Handle APIError specifically
     if (err instanceof APIError && err.data && err.data.detail) {
       error.value = err.data.detail
     } else {
@@ -98,74 +116,36 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 1rem;
-  background-color: var(--p-surface-100);
+/* Custom styles for PrimeVue components that need CSS overrides */
+:deep(.p-inputtext) {
+  @apply w-full h-12 text-base border-2 border-gray-200 rounded-lg px-4 transition-all duration-200;
 }
 
-.login-card {
-  width: 100%;
-  max-width: 400px;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  background-color: var(--p-surface-0);
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.login-header h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: var(--p-surface-900);
-}
-
-.login-header p {
-  color: var(--p-surface-600);
-  font-size: 0.875rem;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.field label {
-  font-weight: 500;
-  color: var(--p-surface-800);
-}
-
-:deep(.p-message) {
-  margin-top: 0.5rem;
+:deep(.p-inputtext:focus) {
+  @apply border-blue-500 ring-2 ring-blue-100 outline-none;
 }
 
 :deep(.p-password) {
-  width: 100%;
+  @apply w-full;
 }
 
-.forgot-password-link {
-  color: var(--p-primary-color);
-  font-size: 0.875rem;
-  text-decoration: none;
-  font-weight: 500;
+:deep(.p-password .p-inputtext) {
+  @apply w-full pr-12;
 }
 
-.forgot-password-link:hover {
-  text-decoration: underline;
+:deep(.p-button) {
+  @apply w-full h-12 bg-blue-500 hover:bg-blue-600 border-none rounded-lg text-base font-semibold;
+}
+
+:deep(.p-button:hover:not(:disabled)) {
+  @apply bg-blue-600 -translate-y-0.5 shadow-lg;
+}
+
+:deep(.p-button:disabled:hover) {
+  @apply translate-y-0 shadow-none;
+}
+
+:deep(.p-message) {
+  @apply mt-0;
 }
 </style>

@@ -11,7 +11,7 @@
           <p class="text-gray-500">Manage your hotel's rooms by floor layout</p>
         </div>
         <div class="flex gap-2">
-          <Button label="Add Room Category" icon="pi pi-plus" @click="openAddCategoryForm"  />
+
           <Button label="Bulk Add Rooms" icon="pi pi-th-large" @click="openBulkAddDialog"  />
         </div>
       </header>
@@ -91,7 +91,7 @@
             }"
           >
             <span class="font-semibold text-gray-800">{{ room.room_number }}</span>
-            <span class="text-xs text-gray-600 mt-1">{{ getCategoryName(room.category) }}</span>
+            <span class="text-xs text-gray-600 mt-1">{{ getCategoryName(room.category.id) }}</span>
             <Tag
               :value="room.status.charAt(0).toUpperCase() + room.status.slice(1)"
               :severity="getStatusSeverity(room.status)"
@@ -160,7 +160,7 @@
       <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold text-gray-800">Room Categories</h2>
-
+ <Button label="Add Room Category" icon="pi pi-plus" @click="openAddCategoryForm"  />
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -626,13 +626,13 @@ const debouncedCategorySearch = refDebounced(categorySearch, 500);
 
 const roomSearch = ref('');
 const roomStatusFilter = ref('');
-const debouncedRoomSearch = refDebounced(roomSearch, 500);
+const debouncedRoomSearch = refDebounced(roomSearch, 2000);
 
 
 const roomFilters = computed(() => ({
   floor: selectedFloor.value,
   page: roomPage.value,
-  search: debouncedRoomSearch.value,
+  search: debouncedRoomSearch.value.length > 1 ? debouncedRoomSearch.value : '',
   status: roomStatusFilter.value,
 }));
 
@@ -666,7 +666,7 @@ const { mutateAsync: deleteRoomAPI, status: deleteRoomStatus } = useDeleteRoom()
 
 
 // Computed Data
-const floors = computed(() => floorsData.value || []);
+const floors = computed(() => floorsData.value?.floors || []);
 const rooms = computed(() => roomsData.value?.results || []);
 const totalRooms = computed(() => roomsData.value?.count || 0);
 const categories = computed(() => categoriesData.value?.results || []);
@@ -1132,8 +1132,8 @@ const onCategoryPageChange = (event: any) => {
   categoryPage.value = event.page + 1;
 };
 
-watch(roomStatusFilter, () => {
-  refetchRooms();
+watch([debouncedRoomSearch, roomStatusFilter], () => {
+  roomPage.value = 1;
 });
 
 

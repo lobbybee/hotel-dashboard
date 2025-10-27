@@ -27,6 +27,14 @@ export default defineNuxtConfig({
       },
     },
   },
+  fonts:{
+    families: [
+     {
+      name: 'Poppins',
+      provider: 'google'
+     }
+    ]
+  },
   runtimeConfig: {
      public: {
        apiUrl: 'http://localhost:8000/api'

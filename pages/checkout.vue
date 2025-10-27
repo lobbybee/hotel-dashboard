@@ -92,9 +92,7 @@ import { useToast } from 'primevue/usetoast';
 
 import { useFetchStays, useCheckOut } from '~/composables/useGuest';
 
-definePageMeta({
-  layout: 'default'
-});
+
 
 const toast = useToast();
 

@@ -1,60 +1,83 @@
 <template>
-  <Panel toggleable class="shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-    <template #header>
-      <div class="flex items-center gap-2 text-lg font-semibold w-full">
-        <i class="pi pi-cog text-primary-500"></i>
-        <span>Operational Settings</span>
-      </div>
-    </template>
-    <div class="p-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-        <div class="col-span-1">
+  <div class="bg-white rounded-2xl shadow-2xl p-8">
+    <div class="mb-6">
+      <h2 class="text-xl font-bold text-gray-900 mb-2">Operational Settings</h2>
+    </div>
+
+    <div class="space-y-6">
+      <!-- Check-in and Check-out Time Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
           <FloatLabel>
-            <DatePicker 
-              id="check_in_time" 
-              v-model="timeValue" 
+            <DatePicker
+              id="check_in_time"
+              v-model="timeValue"
               time-only
               hour-format="24"
-              class="w-full"
-              :class="{'p-invalid': errors.check_in_time}"
+              class="w-full h-12 rounded-lg"
+              input-class="h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+              :class="{'border-red-500': errors.check_in_time}"
               @update:model-value="onTimeChange"
             />
-            <label for="check_in_time">Default Check-in Time</label>
+            <label for="check_in_time" class="text-gray-800">Check-in Time</label>
           </FloatLabel>
-          <small v-if="errors.check_in_time" class="p-error">{{ errors.check_in_time }}</small>
+          <small v-if="errors.check_in_time" class="text-red-500 text-sm mt-1 block">{{ errors.check_in_time }}</small>
         </div>
-        <div class="col-span-1">
+
+        <!-- Check-out Time (placeholder for future implementation) -->
+        <div>
           <FloatLabel>
-            <Dropdown 
-              id="time_zone" 
-              v-model="localHotelForm.time_zone" 
-              :options="timezones" 
-              option-label="label" 
-              option-value="value"
-              class="w-full"
-              :class="{'p-invalid': errors.time_zone}"
-              @update:model-value="onTimezoneChange"
+            <DatePicker
+              id="check_out_time"
+              v-model="checkOutTimeValue"
+              time-only
+              hour-format="24"
+              class="w-full h-12 rounded-lg"
+              input-class="h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
             />
-            <label for="time_zone">Time Zone</label>
+            <label for="check_out_time" class="text-gray-800">Check-out Time</label>
           </FloatLabel>
-          <small v-if="errors.time_zone" class="p-error">{{ errors.time_zone }}</small>
-        </div>
-        <div class="md:col-span-2">
-          <FloatLabel>
-            <InputText 
-              id="wifi_password" 
-              v-model="localHotelForm.wifi_password" 
-              class="w-full" 
-              :class="{'p-invalid': errors.wifi_password}" 
-              @update:model-value="onWifiPasswordChange"
-            />
-            <label for="wifi_password">Guest Wi-Fi Password</label>
-          </FloatLabel>
-          <small v-if="errors.wifi_password" class="p-error">{{ errors.wifi_password }}</small>
         </div>
       </div>
+
+      <!-- Timezone -->
+      <div>
+        <FloatLabel>
+          <Dropdown
+            id="time_zone"
+            v-model="localHotelForm.time_zone"
+            :options="timezones"
+            option-label="label"
+            option-value="value"
+            class="w-full h-12 rounded-lg"
+            input-class="h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+            :class="{'border-red-500': errors.time_zone}"
+            @update:model-value="onTimezoneChange"
+          />
+          <label for="time_zone" class="text-gray-800">Timezone</label>
+        </FloatLabel>
+        <small v-if="errors.time_zone" class="text-red-500 text-sm mt-1 block">{{ errors.time_zone }}</small>
+      </div>
+
+      <!-- WiFi Password -->
+      <div>
+        <FloatLabel>
+          <InputText
+            id="wifi_password"
+            v-model="localHotelForm.wifi_password"
+            type="password"
+            class="w-full h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+            :class="{'border-red-500': errors.wifi_password}"
+            @update:model-value="onWifiPasswordChange"
+          />
+          <label for="wifi_password" class="text-gray-800">WiFi Password</label>
+        </FloatLabel>
+        <small v-if="errors.wifi_password" class="text-red-500 text-sm mt-1 block">{{ errors.wifi_password }}</small>
+      </div>
+
+
     </div>
-  </Panel>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -175,7 +198,7 @@ const onWifiPasswordChange = (value) => {
   localHotelForm.value.wifi_password = value;
   emit('update:hotelForm', localHotelForm.value);
 };
-
+const checkOutTimeValue = ref(null);
 // Save settings
 const saveSettings = () => {
   emit('save');

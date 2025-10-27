@@ -10,3 +10,6 @@
     @tailwind components;
     @tailwind utilities;
 }
+@theme {
+  --font-display: "Poppins", "sans-serif";
+}

@@ -1,136 +1,152 @@
 <template>
-  <Panel toggleable class="shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-    <template #header>
-      <div class="flex items-center gap-2 text-lg font-semibold w-full">
-        <i class="pi pi-id-card text-primary-500"></i>
-        <span>Basic Information</span>
+  <div class="bg-white rounded-2xl shadow-2xl p-8">
+    <div class="mb-6">
+      <h2 class="text-xl font-bold text-gray-900 mb-2">Basic Information</h2>
+    </div>
+
+    <div class="space-y-6">
+      <!-- Hotel Name - Full Width -->
+      <div>
+        <FloatLabel>
+          <InputText
+            id="name"
+            v-model="localHotelForm.name"
+            class="w-full h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+            :class="{'border-red-500': errors.name}"
+            @update:model-value="onNameChange"
+          />
+          <label for="name" class="text-gray-800">Hotel Name</label>
+        </FloatLabel>
+        <small v-if="errors.name" class="text-red-500 text-sm mt-1 block">{{ errors.name }}</small>
       </div>
-    </template>
-    <div class="p-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8">
-        <div class="md:col-span-2">
+
+      <!-- Description - Full Width -->
+      <div>
+        <FloatLabel>
+          <Textarea
+            id="description"
+            v-model="localHotelForm.description"
+            rows="4"
+            class="w-full rounded-lg px-4 py-3 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200 resize-none"
+            :class="{'border-red-500': errors.description}"
+            autoResize
+            @update:model-value="onDescriptionChange"
+          />
+          <label for="description" class="text-gray-800">Description</label>
+        </FloatLabel>
+        <small v-if="errors.description" class="text-red-500 text-sm mt-1 block">{{ errors.description }}</small>
+      </div>
+
+      <!-- Address - Full Width -->
+      <div>
+        <FloatLabel>
+          <Textarea
+            id="address"
+            v-model="localHotelForm.address"
+            class="w-full rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+            :class="{'border-red-500': errors.address}"
+            @update:model-value="onAddressChange"
+          />
+          <label for="address" class="text-gray-800">Address</label>
+        </FloatLabel>
+        <small v-if="errors.address" class="text-red-500 text-sm mt-1 block">{{ errors.address }}</small>
+      </div>
+
+      <!-- City and State Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
           <FloatLabel>
-            <InputText 
-              id="name" 
-              v-model="localHotelForm.name" 
-              class="w-full" 
-              :class="{'p-invalid': errors.name}" 
-              @update:model-value="onNameChange"
-            />
-            <label for="name">Hotel Name</label>
-          </FloatLabel>
-          <small v-if="errors.name" class="p-error">{{ errors.name }}</small>
-        </div>
-        <div class="md:col-span-2">
-          <FloatLabel>
-            <Textarea 
-              id="description" 
-              v-model="localHotelForm.description" 
-              rows="4" 
-              class="w-full" 
-              autoResize 
-              :class="{'p-invalid': errors.description}" 
-              @update:model-value="onDescriptionChange"
-            />
-            <label for="description">Description</label>
-          </FloatLabel>
-          <small v-if="errors.description" class="p-error">{{ errors.description }}</small>
-        </div>
-        <div class="md:col-span-2">
-          <FloatLabel>
-            <InputText 
-              id="address" 
-              v-model="localHotelForm.address" 
-              class="w-full" 
-              :class="{'p-invalid': errors.address}" 
-              @update:model-value="onAddressChange"
-            />
-            <label for="address">Address</label>
-          </FloatLabel>
-          <small v-if="errors.address" class="p-error">{{ errors.address }}</small>
-        </div>
-        <div class="col-span-1">
-          <FloatLabel>
-            <InputText 
-              id="city" 
-              v-model="localHotelForm.city" 
-              class="w-full" 
-              :class="{'p-invalid': errors.city}" 
+            <InputText
+              id="city"
+              v-model="localHotelForm.city"
+              class="w-full h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+              :class="{'border-red-500': errors.city}"
               @update:model-value="onCityChange"
             />
-            <label for="city">City</label>
+            <label for="city" class="text-gray-800">City</label>
           </FloatLabel>
-          <small v-if="errors.city" class="p-error">{{ errors.city }}</small>
+          <small v-if="errors.city" class="text-red-500 text-sm mt-1 block">{{ errors.city }}</small>
         </div>
-        <div class="col-span-1">
+
+        <div>
           <FloatLabel>
-            <InputText 
-              id="state" 
-              v-model="localHotelForm.state" 
-              class="w-full" 
-              :class="{'p-invalid': errors.state}" 
+            <InputText
+              id="state"
+              v-model="localHotelForm.state"
+              class="w-full h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+              :class="{'border-red-500': errors.state}"
               @update:model-value="onStateChange"
             />
-            <label for="state">State</label>
+            <label for="state" class="text-gray-800">State</label>
           </FloatLabel>
-          <small v-if="errors.state" class="p-error">{{ errors.state }}</small>
+          <small v-if="errors.state" class="text-red-500 text-sm mt-1 block">{{ errors.state }}</small>
         </div>
-        <div class="col-span-1">
+      </div>
+
+      <!-- Pincode and Country Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
           <FloatLabel>
-            <InputText 
-              id="pincode" 
-              v-model="localHotelForm.pincode" 
-              class="w-full" 
-              :class="{'p-invalid': errors.pincode}" 
+            <InputText
+              id="pincode"
+              v-model="localHotelForm.pincode"
+              class="w-full h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+              :class="{'border-red-500': errors.pincode}"
               @update:model-value="onPincodeChange"
             />
-            <label for="pincode">Pincode</label>
+            <label for="pincode" class="text-gray-800">Pincode</label>
           </FloatLabel>
-          <small v-if="errors.pincode" class="p-error">{{ errors.pincode }}</small>
+          <small v-if="errors.pincode" class="text-red-500 text-sm mt-1 block">{{ errors.pincode }}</small>
         </div>
-        <div class="col-span-1">
+
+        <div>
           <FloatLabel>
-            <InputText 
-              id="country" 
-              v-model="localHotelForm.country" 
-              class="w-full" 
-              :class="{'p-invalid': errors.country}" 
+            <InputText
+              id="country"
+              v-model="localHotelForm.country"
+              class="w-full h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+              :class="{'border-red-500': errors.country}"
               @update:model-value="onCountryChange"
             />
-            <label for="country">Country</label>
+            <label for="country" class="text-gray-800">Country</label>
           </FloatLabel>
-          <small v-if="errors.country" class="p-error">{{ errors.country }}</small>
+          <small v-if="errors.country" class="text-red-500 text-sm mt-1 block">{{ errors.country }}</small>
         </div>
-        <div class="col-span-1">
+      </div>
+
+      <!-- Phone and Email Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
           <FloatLabel>
-            <InputText 
-              id="phone" 
-              v-model="localHotelForm.phone" 
-              class="w-full" 
-              :class="{'p-invalid': errors.phone}" 
+            <InputText
+              id="phone"
+              v-model="localHotelForm.phone"
+              class="w-full h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+              :class="{'border-red-500': errors.phone}"
               @update:model-value="onPhoneChange"
             />
-            <label for="phone">Phone</label>
+            <label for="phone" class="text-gray-800">Phone</label>
           </FloatLabel>
-          <small v-if="errors.phone" class="p-error">{{ errors.phone }}</small>
+          <small v-if="errors.phone" class="text-red-500 text-sm mt-1 block">{{ errors.phone }}</small>
         </div>
-        <div class="col-span-1">
+
+        <div>
           <FloatLabel>
-            <InputText 
-              id="email" 
-              v-model="localHotelForm.email" 
-              type="email" 
-              class="w-full" 
-              :class="{'p-invalid': errors.email}" 
+            <InputText
+              id="email"
+              v-model="localHotelForm.email"
+              type="email"
+              class="w-full h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+              :class="{'border-red-500': errors.email}"
               @update:model-value="onEmailChange"
             />
-            <label for="email">Email</label>
+            <label for="email" class="text-gray-800">Email</label>
           </FloatLabel>
-          <small v-if="errors.email" class="p-error">{{ errors.email }}</small>
+          <small v-if="errors.email" class="text-red-500 text-sm mt-1 block">{{ errors.email }}</small>
         </div>
       </div>
     </div>
-  </Panel>
+  </div>
 </template>
 
 <script setup lang="ts">

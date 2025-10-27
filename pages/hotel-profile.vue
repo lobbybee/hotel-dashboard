@@ -1,69 +1,56 @@
 <template>
-  <div class="p-6 bg-gray-50 min-h-screen">
-    <div class="max-w-7xl mx-auto space-y-8">
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div class="max-w-7xl mx-auto p-4">
       <!-- Header -->
-      <transition name="fade-up">
-        <HotelProfileHeader />
-      </transition>
+      <HotelProfileHeader :hotel="hotel" />
 
-      <!-- Hotel Status Card -->
-      <transition name="fade-up">
-        <HotelStatusCard v-if="hotel" :hotel="hotel" />
-      </transition>
+      <!-- Status Cards Row -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <HotelQRCode :hotel="hotel" @verifyProfile="verifyProfile" />
+        <HotelStatusCard :hotel="hotel" />
+        <!-- Third card space - can be used for future features -->
+        <!-- <div class="bg-white rounded-2xl shadow-2xl p-8 flex items-center justify-center">
+          <div class="text-center text-gray-400">
+            <i class="pi pi-plus text-2xl mb-2 block"></i>
+            <p class="text-sm">Future Feature</p>
+          </div>
+        </div> -->
+      </div>
 
-      <!-- Main Layout -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Left Column -->
-        <div class="lg:col-span-2 space-y-8">
-          <!-- Basic Information -->
-          <transition name="fade-up" appear>
-            <HotelBasicInfo 
-              v-model:hotel-form="hotelForm" 
-              :errors="errors" 
-            />
-          </transition>
+      <!-- Main Content Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Left Column - Basic Information -->
+        <HotelBasicInfo
+          v-model:hotel-form="hotelForm"
+          :errors="errors"
+        />
 
-          <!-- Operational Settings -->
-          <transition name="fade-up" appear>
-            <HotelOperationalSettings 
-              v-model:hotel-form="hotelForm" 
-              :errors="errors" 
-            />
-          </transition>
-        </div>
-
-        <!-- Right Column -->
-        <div class="space-y-8">
-          <!-- Documents -->
-          <transition name="fade-up" appear>
-            <HotelDocuments 
-              :hotel="hotel" 
+        <!-- Documents Section - Full Width -->
+        <HotelDocuments
+              :hotel="hotel"
               @upload-document="uploadDocument"
               @update-document="updateDocument"
               @open-document="openDocument"
             />
-          </transition>
+      </div>
 
-          <!-- QR Code -->
-          <transition name="fade-up" appear>
-            <HotelQRCode 
-              :hotel="hotel" 
-              @downloadQR="downloadQR"
-              @verifyProfile="verifyProfile"
-            />
-          </transition>
-          
-          <!-- Save Button -->
-          <div class="flex justify-end">
-            <Button 
-              label="Save Profile" 
-              icon="pi pi-check" 
-              :loading="isUpdateLoading" 
-              @click="saveHotelProfile" 
-              class="w-full"
-            />
-          </div>
-        </div>
+
+      <!-- Right Column - Operational Settings -->
+           <HotelOperationalSettings
+             v-model:hotel-form="hotelForm"
+             :errors="errors"
+             class="max-w-xl"
+           />
+
+      <!-- Save Button -->
+      <div class="flex justify-center mt-8">
+        <Button
+          label="Save Changes"
+          icon="pi pi-check"
+          :loading="isUpdateLoading"
+          @click="saveHotelProfile"
+          class="bg-blue-500 hover:bg-blue-600 text-white h-12 px-8 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+        />
       </div>
     </div>
   </div>
@@ -143,7 +130,7 @@ watch(hotel, (newHotelData) => {
         checkInTime = `${timeParts[0]}:${timeParts[1]}`;
       }
     }
-    
+
     hotelForm.value = {
       name: newHotelData.name || '',
       description: newHotelData.description || '',
@@ -190,13 +177,13 @@ const saveHotelProfile = async () => {
 const uploadDocument = async (payload: { document_type: string, document_file: File }) => {
   try {
     await uploadHotelDocument(payload);
-    
+
     // Show success message
     console.log(`${payload.document_type} uploaded successfully`);
-    
+
     // Small delay to ensure server processing
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     // Refresh hotel data to show updated documents
     await refetchHotel();
   } catch (error) {
@@ -221,10 +208,10 @@ const verifyProfile = () => {
 const updateDocument = async (payload: { id: string, document_file: File }) => {
   try {
     await updateHotelDocument(payload);
-    
+
     // Show success message
     console.log(`Document updated successfully`);
-    
+
     // Refresh hotel data to show updated documents
     refetchHotel();
   } catch (error) {
