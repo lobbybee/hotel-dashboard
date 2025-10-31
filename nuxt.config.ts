@@ -37,7 +37,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
      public: {
-       apiUrl: 'http://localhost:8000/api'
+       apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+       wsUrl: process.env.NUXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws'
      }
    },
   ssr: false,

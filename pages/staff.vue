@@ -1,178 +1,174 @@
 <template>
-  <div class="p-6 bg-gray-50 min-h-screen">
-    <div class="max-w-7xl mx-auto space-y-8">
-
+  <div class="staff-page">
+    <div class="page-container">
       <!-- Header -->
-      <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-slide-down">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
-            <i class="pi pi-users text-primary-500"></i> Staff Management
+      <header class="header">
+        <div class="title-wrap">
+          <h1 class="page-title">
+            <i class="pi pi-users title-icon"></i>
+            Staff Management
           </h1>
-          <p class="text-gray-500">Manage hotel staff members and their roles</p>
+          <p class="page-subtitle">Manage hotel staff members and their roles</p>
         </div>
-        <Button label="Add Staff Member" icon="pi pi-plus" @click="openAddStaffForm" :loading="createAsyncStatus === 'pending'" />
+        <Button
+          label="Add Staff Member"
+          icon="pi pi-plus"
+          :rounded="true"
+          :raised="true"
+          :loading="createAsyncStatus === 'pending'"
+          @click="openAddStaffForm"
+        />
       </header>
 
-      <!-- Loading State -->
-      <div v-if="isLoading" class="flex justify-center items-center h-64">
-        <ProgressSpinner />
+      <!-- Stats -->
+      <div class="stats-bar">
+        <Tag :value="`Total: ${totalStaffCount}`" severity="info" :rounded="true" />
+        <Tag :value="`Active: ${activeStaffCount}`" severity="success" :rounded="true" />
       </div>
 
-      <!-- Error State -->
-      <div v-else-if="error" class="p-6 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">
-        <p class="font-bold">Error loading staff members</p>
-        <p>{{ error?.message || 'An unexpected error occurred' }}</p>
-        <Button label="Retry" icon="pi pi-refresh" @click="refetch" class="mt-3" />
+      <!-- Loading -->
+      <div v-if="isLoading" class="card loading-card">
+        <ProgressSpinner style="width: 48px; height: 48px" strokeWidth="6" />
+        <p class="muted">Loading staff members...</p>
       </div>
 
-      <!-- Main Content -->
-      <div v-else class="space-y-6">
+      <!-- Error -->
+      <Message v-else-if="error" severity="error" :closable="false" class="card message-card">
+        <div class="message-flex">
+          <div>
+            <div class="message-title">Error loading staff members</div>
+            <div class="message-detail">{{ error?.message || 'An unexpected error occurred' }}</div>
+          </div>
+          <Button label="Retry" icon="pi pi-refresh" text @click="refetch" />
+        </div>
+      </Message>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Total Staff Card -->
-          <Card class="shadow-sm border border-gray-200 bg-white">
-            <template #content>
-              <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <i class="pi pi-users text-3xl text-blue-600"></i>
-                </div>
-                <div>
-                  <p class="text-gray-500 text-sm font-medium">Total Staff</p>
-                  <h3 class="text-3xl font-bold text-gray-800">{{ totalStaffCount }}</h3>
-                </div>
-              </div>
-            </template>
-          </Card>
-
-          <!-- Active Staff Card -->
-          <Card class="shadow-sm border border-gray-200 bg-white">
-            <template #content>
-              <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-lg bg-green-100 flex items-center justify-center">
-                  <i class="pi pi-check-circle text-3xl text-green-600"></i>
-                </div>
-                <div>
-                  <p class="text-gray-500 text-sm font-medium">Active Staff</p>
-                  <h3 class="text-3xl font-bold text-gray-800">{{ activeStaffCount }}</h3>
-                </div>
-              </div>
-            </template>
-          </Card>
+      <!-- Main -->
+      <div v-else class="content">
+        <!-- Toolbar -->
+        <div class="card toolbar-card">
+          <div class="toolbar">
+            <div class="toolbar-title">Staff Members</div>
+            <div class="toolbar-actions">
+              <Dropdown
+                v-model="selectedDepartmentFilter"
+                :options="departmentFilterOptions"
+                placeholder="All Departments"
+                optionLabel="label"
+                optionValue="value"
+                class="toolbar-dropdown"
+              />
+              <Dropdown
+                v-model="selectedRoleFilter"
+                :options="roleFilterOptions"
+                placeholder="All Roles"
+                optionLabel="label"
+                optionValue="value"
+                class="toolbar-dropdown"
+              />
+            </div>
+          </div>
         </div>
 
-        <!-- Staff Members Section -->
-        <Card class="shadow-sm border border-gray-200 bg-white">
-          <template #title>
-            <div class="flex items-center justify-between">
-              <h2 class="text-xl font-semibold text-gray-800">Staff Members</h2>
-              <div class="flex gap-3">
-                <Dropdown
-                  v-model="selectedDepartmentFilter"
-                  :options="departmentFilterOptions"
-                  placeholder="All Departments"
-                  class="w-48"
-                  optionLabel="label"
-                  optionValue="value"
-                />
-                <Dropdown
-                  v-model="selectedRoleFilter"
-                  :options="roleFilterOptions"
-                  placeholder="All Roles"
-                  class="w-48"
-                  optionLabel="label"
-                  optionValue="value"
-                />
+        <!-- Table -->
+        <div class="card table-card">
+          <DataTable
+            :value="filteredStaffMembers"
+            :paginator="true"
+            :rows="10"
+            :rowsPerPageOptions="[5, 10, 20, 50]"
+            stripedRows
+            responsiveLayout="scroll"
+            class="p-datatable-sm"
+          >
+            <template #empty>
+              <div class="empty">
+                <i class="pi pi-users empty-icon"></i>
+                <h3 class="empty-title">No Staff Members Found</h3>
+                <p class="empty-text">Get started by adding your first staff member.</p>
+                <Button label="Add Staff Member" icon="pi pi-plus" :rounded="true" :raised="true" @click="openAddStaffForm" />
               </div>
-            </div>
-          </template>
-          <template #content>
-            <DataTable
-              :value="filteredStaffMembers"
-              :paginator="true"
-              :rows="10"
-              :rowsPerPageOptions="[5, 10, 20, 50]"
-              stripedRows
-              class="p-datatable-sm"
-              responsiveLayout="scroll"
-            >
-              <template #empty>
-                <div class="text-center py-8">
-                  <i class="pi pi-users text-5xl text-gray-300 mb-4"></i>
-                  <h3 class="text-xl font-semibold text-gray-700 mb-2">No Staff Members Found</h3>
-                  <p class="text-gray-500 mb-4">Get started by adding your first staff member.</p>
-                  <Button label="Add Staff Member" icon="pi pi-plus" @click="openAddStaffForm" />
+            </template>
+
+            <Column field="username" header="Staff Member" sortable>
+              <template #body="slotProps">
+                <div class="col-staff">
+                  <div class="staff-name">{{ slotProps.data.username }}</div>
+                  <div class="staff-id">ID: {{ slotProps.data.id }}</div>
                 </div>
               </template>
+            </Column>
 
-              <Column field="username" header="Staff Member" sortable>
-                <template #body="slotProps">
-                  <div>
-                    <div class="font-semibold text-gray-800">{{ slotProps.data.username }}</div>
-                    <div class="text-sm text-gray-500">ID: {{ slotProps.data.id }}</div>
+            <Column field="user_type" header="Role & Department" sortable>
+              <template #body="slotProps">
+                <div class="col-role">
+                  <div class="role-line">
+                    <i class="pi pi-id-card" :style="{ color: getStaffRoleColor(slotProps.data.user_type) }"></i>
+                    <span class="role-name">{{ slotProps.data.user_type.replace('_', ' ') }}</span>
                   </div>
-                </template>
-              </Column>
-
-              <Column field="user_type" header="Role & Department" sortable>
-                <template #body="slotProps">
-                  <div class="space-y-1">
-                    <div class="flex items-center gap-2">
-                      <i class="pi pi-id-card" :style="{ color: getStaffRoleColor(slotProps.data.user_type) }"></i>
-                      <span class="font-medium capitalize">{{ slotProps.data.user_type.replace('_', ' ') }}</span>
-                    </div>
-                    <div v-if="slotProps.data.department && slotProps.data.department.length" class="flex flex-wrap gap-1">
-                      <Tag v-for="dep in slotProps.data.department" :key="dep" :value="dep" class="text-xs" severity="info"></Tag>
-                    </div>
+                  <div v-if="slotProps.data.department && slotProps.data.department.length" class="dept-tags">
+                    <Tag
+                      v-for="dep in slotProps.data.department"
+                      :key="dep"
+                      :value="dep"
+                      severity="info"
+                      class="dept-tag"
+                    />
                   </div>
-                </template>
-              </Column>
+                </div>
+              </template>
+            </Column>
 
-              <Column field="email" header="Contact" sortable>
-                <template #body="slotProps">
-                  <div class="space-y-1">
-                    <div class="flex items-center gap-2 text-sm">
-                      <i class="pi pi-envelope text-gray-400"></i>
-                      <span>{{ slotProps.data.email }}</span>
-                    </div>
-                    <div v-if="slotProps.data.phone_number" class="flex items-center gap-2 text-sm text-gray-600">
-                      <i class="pi pi-phone text-gray-400"></i>
-                      <span>{{ slotProps.data.phone_number }}</span>
-                    </div>
+            <Column field="email" header="Contact" sortable>
+              <template #body="slotProps">
+                <div class="col-contact">
+                  <div class="contact-line">
+                    <i class="pi pi-envelope contact-icon"></i>
+                    <span>{{ slotProps.data.email }}</span>
                   </div>
-                </template>
-              </Column>
+                  <div v-if="slotProps.data.phone_number" class="contact-line">
+                    <i class="pi pi-phone contact-icon"></i>
+                    <span>{{ slotProps.data.phone_number }}</span>
+                  </div>
+                </div>
+              </template>
+            </Column>
 
-              <Column field="is_active_hotel_user" header="Status" sortable>
-                <template #body="slotProps">
-                  <Badge
-                    :value="slotProps.data.is_active_hotel_user ? 'active' : 'inactive'"
-                    :severity="slotProps.data.is_active_hotel_user ? 'success' : 'danger'"
+            <Column field="is_active_hotel_user" header="Status" sortable>
+              <template #body="slotProps">
+                <Badge
+                  :value="slotProps.data.is_active_hotel_user ? 'active' : 'inactive'"
+                  :severity="slotProps.data.is_active_hotel_user ? 'success' : 'danger'"
+                />
+              </template>
+            </Column>
+
+            <Column header="Actions" :exportable="false">
+              <template #body="slotProps">
+                <div class="actions">
+                  <Button
+                    icon="pi pi-pencil"
+                    size="small"
+                    text
+                    :rounded="true"
+                    severity="info"
+                    @click="openEditStaffForm(slotProps.data)"
+                    v-tooltip.top="'Edit'"
                   />
-                </template>
-              </Column>
-
-              <Column header="Actions" :exportable="false">
-                <template #body="slotProps">
-                  <div class="flex gap-2">
-                    <Button
-                      icon="pi pi-pencil"
-                      class="p-button-sm p-button-text p-button-info"
-                      @click="openEditStaffForm(slotProps.data)"
-                      v-tooltip.top="'Edit'"
-                    />
-                    <Button
-                      icon="pi pi-trash"
-                      class="p-button-sm p-button-text p-button-danger"
-                      @click="openDeleteConfirmation(slotProps.data)"
-                      v-tooltip.top="'Delete'"
-                    />
-                  </div>
-                </template>
-              </Column>
-            </DataTable>
-          </template>
-        </Card>
+                  <Button
+                    icon="pi pi-trash"
+                    size="small"
+                    text
+                    :rounded="true"
+                    severity="danger"
+                    @click="openDeleteConfirmation(slotProps.data)"
+                    v-tooltip.top="'Delete'"
+                  />
+                </div>
+              </template>
+            </Column>
+          </DataTable>
+        </div>
       </div>
     </div>
   </div>
@@ -182,13 +178,13 @@
     v-model:visible="staffDialogVisible"
     :header="editingStaff ? 'Edit Staff Member' : 'Add Staff Member'"
     :modal="true"
-    :style="{ width: '500px' }"
+    :style="{ width: '520px' }"
     :draggable="false"
     :closeOnEscape="true"
     :dismissableMask="true"
   >
-    <div class="space-y-6">
-      <div>
+    <div class="dialog-body">
+      <div class="field">
         <FloatLabel>
           <InputText
             id="username"
@@ -201,7 +197,7 @@
         <small v-if="staffErrors.username" class="p-error">{{ staffErrors.username }}</small>
       </div>
 
-      <div>
+      <div class="field">
         <FloatLabel>
           <InputText
             id="email"
@@ -214,7 +210,7 @@
         <small v-if="staffErrors.email" class="p-error">{{ staffErrors.email }}</small>
       </div>
 
-      <div>
+      <div class="field">
         <FloatLabel>
           <Password
             id="password"
@@ -229,7 +225,7 @@
         <small v-if="staffErrors.password" class="p-error">{{ staffErrors.password }}</small>
       </div>
 
-      <div>
+      <div class="field">
         <FloatLabel>
           <Dropdown
             id="user_type"
@@ -245,7 +241,7 @@
         <small v-if="staffErrors.user_type" class="p-error">{{ staffErrors.user_type }}</small>
       </div>
 
-      <div v-if="staffForm.user_type === 'department_staff'">
+      <div class="field" v-if="staffForm.user_type === 'department_staff'">
         <FloatLabel>
           <MultiSelect
             id="department"
@@ -258,7 +254,7 @@
         </FloatLabel>
       </div>
 
-      <div>
+      <div class="field">
         <FloatLabel>
           <InputText
             id="phone_number"
@@ -271,24 +267,19 @@
         <small v-if="staffErrors.phone_number" class="p-error">{{ staffErrors.phone_number }}</small>
       </div>
 
-      <div class="flex items-center">
+      <div class="checkbox-line">
         <Checkbox
           id="is_active_hotel_user"
           v-model="staffForm.is_active_hotel_user"
           :binary="true"
-          class="mr-2"
         />
-        <label for="is_active_hotel_user" class="cursor-pointer">Staff Member is Active</label>
+        <label for="is_active_hotel_user">Staff Member is Active</label>
       </div>
     </div>
 
     <template #footer>
-      <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="closeStaffForm" />
-      <Button
-        :label="editingStaff ? 'Update' : 'Create'"
-        icon="pi pi-check"
-        @click="saveStaff"
-      />
+      <Button label="Cancel" icon="pi pi-times" text :rounded="true" @click="closeStaffForm" />
+      <Button :label="editingStaff ? 'Update' : 'Create'" icon="pi pi-check" :rounded="true" @click="saveStaff" />
     </template>
   </Dialog>
 
@@ -297,21 +288,21 @@
     v-model:visible="deleteDialogVisible"
     header="Confirm Delete"
     :modal="true"
-    :style="{ width: '450px' }"
+    :style="{ width: '460px' }"
     :draggable="false"
     :closeOnEscape="true"
     :dismissableMask="true"
   >
-    <div class="flex items-center gap-4">
-      <i class="pi pi-exclamation-triangle text-3xl text-red-500"></i>
+    <div class="delete-body">
+      <i class="pi pi-exclamation-triangle delete-icon"></i>
       <span>
         Are you sure you want to delete <b>{{ selectedStaff?.username }}</b>? This action cannot be undone.
       </span>
     </div>
 
     <template #footer>
-      <Button label="Cancel" icon="pi pi-times" class="p-button-text" @click="closeDeleteConfirmation" />
-      <Button label="Delete" icon="pi pi-trash" class="p-button-danger" @click="deleteStaff" />
+      <Button label="Cancel" icon="pi pi-times" text :rounded="true" @click="closeDeleteConfirmation" />
+      <Button label="Delete" icon="pi pi-trash" severity="danger" :rounded="true" @click="deleteStaff" />
     </template>
   </Dialog>
 </template>
@@ -332,9 +323,9 @@ import MultiSelect from 'primevue/multiselect';
 import Tag from 'primevue/tag';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import Message from 'primevue/message';
 import { useToast } from 'primevue/usetoast';
 
-// Import composables
 import {
   useFetchStaff,
   useCreateStaff,
@@ -343,21 +334,18 @@ import {
   useDeleteStaff
 } from '~/composables/useStaff';
 
-// Initialize composables
 const { staff: staffMembers, isLoading, error, refetch } = useFetchStaff();
 const { createStaff, asyncStatus: createAsyncStatus } = useCreateStaff();
 const { updateStaff, asyncStatus: updateAsyncStatus } = useUpdateStaff();
 const { partialUpdateStaff } = usePartialUpdateStaff();
 const { deleteStaff: deleteStaffAPI, asyncStatus: deleteAsyncStatus } = useDeleteStaff();
 
-// Toast for notifications
 const toast = useToast();
 
 const departmentChoices = [
   'Housekeeping', 'Room Service', 'Café/Restaurant'
 ];
 
-// User types based on requirements
 const userTypes = [
   { label: 'Hotel Admin', value: 'hotel_admin' },
   { label: 'Manager', value: 'manager' },
@@ -366,7 +354,6 @@ const userTypes = [
   { label: 'Other Staff', value: 'other_staff' }
 ];
 
-// Colors for user types
 const userTypeColors: Record<string, string> = {
   hotel_admin: '#F59E0B',
   manager: '#3B82F6',
@@ -375,27 +362,21 @@ const userTypeColors: Record<string, string> = {
   other_staff: '#64748b'
 };
 
-// Filters
 const selectedDepartmentFilter = ref<string>('all');
 const selectedRoleFilter = ref<string>('all');
 
 const departmentFilterOptions = computed(() => {
   const options = [{ label: 'All Departments', value: 'all' }];
-  departmentChoices.forEach(dep => {
-    options.push({ label: dep, value: dep });
-  });
+  departmentChoices.forEach(dep => options.push({ label: dep, value: dep }));
   return options;
 });
 
 const roleFilterOptions = computed(() => {
   const options = [{ label: 'All Roles', value: 'all' }];
-  userTypes.forEach(type => {
-    options.push({ label: type.label, value: type.value });
-  });
+  userTypes.forEach(type => options.push({ label: type.label, value: type.value }));
   return options;
 });
 
-// Form handling
 const staffDialogVisible = ref(false);
 const deleteDialogVisible = ref(false);
 const editingStaff = ref<any>(null);
@@ -413,41 +394,32 @@ const staffForm = reactive({
 
 const staffErrors = ref<Record<string, string>>({});
 
-// Computed properties
 const totalStaffCount = computed(() => staffMembers.value?.length || 0);
-
 const activeStaffCount = computed(() =>
   staffMembers.value?.filter((staff: any) => staff.is_active_hotel_user).length || 0
 );
 
 const filteredStaffMembers = computed(() => {
   if (!staffMembers.value) return [];
-
   let filtered = [...staffMembers.value];
 
-  // Filter by department
   if (selectedDepartmentFilter.value !== 'all') {
     filtered = filtered.filter((staff: any) =>
       staff.department?.includes(selectedDepartmentFilter.value)
     );
   }
-
-  // Filter by role
   if (selectedRoleFilter.value !== 'all') {
     filtered = filtered.filter((staff: any) =>
       staff.user_type === selectedRoleFilter.value
     );
   }
-
   return filtered;
 });
 
-// Helper functions
 const getStaffRoleColor = (type: string) => {
-  return userTypeColors[type] || '#6B7280';
+  return userTypeColors[type] || 'var(--primary-color)';
 };
 
-// Form actions
 const openAddStaffForm = () => {
   editingStaff.value = null;
   staffForm.username = '';
@@ -465,7 +437,7 @@ const openEditStaffForm = (staff: any) => {
   editingStaff.value = staff;
   staffForm.username = staff.username;
   staffForm.email = staff.email;
-  staffForm.password = ''; // Don't prefill password for security
+  staffForm.password = '';
   staffForm.user_type = staff.user_type;
   staffForm.phone_number = staff.phone_number || '';
   staffForm.is_active_hotel_user = staff.is_active_hotel_user;
@@ -479,39 +451,31 @@ const closeStaffForm = () => {
 };
 
 const saveStaff = async () => {
-  // Form validation
   staffErrors.value = {};
 
-  // Basic validation
   if (!staffForm.username.trim()) {
     staffErrors.value.username = 'Username is required';
   }
-
   if (!staffForm.email.trim()) {
     staffErrors.value.email = 'Email is required';
   } else if (!/^\S+@\S+\.\S+$/.test(staffForm.email)) {
     staffErrors.value.email = 'Invalid email format';
   }
-
   if (!editingStaff.value && !staffForm.password) {
-    // Only require password for new staff members
     staffErrors.value.password = 'Password is required';
   } else if (staffForm.password && staffForm.password.length < 6) {
     staffErrors.value.password = 'Password must be at least 6 characters';
   }
-
   if (!staffForm.user_type) {
     staffErrors.value.user_type = 'Role is required';
   }
 
-  // If there are errors, don't proceed
   if (Object.keys(staffErrors.value).length > 0) {
     return;
   }
 
   try {
     if (editingStaff.value) {
-      // Update existing staff member
       const updateData: any = {
         username: staffForm.username,
         email: staffForm.email,
@@ -519,29 +483,16 @@ const saveStaff = async () => {
         phone_number: staffForm.phone_number,
         is_active_hotel_user: staffForm.is_active_hotel_user,
       };
-
-      // Only include password if it was changed
       if (staffForm.password) {
         updateData.password = staffForm.password;
       }
-
       if (staffForm.user_type === 'department_staff') {
         updateData.department = staffForm.department;
       }
+      await partialUpdateStaff({ id: editingStaff.value.id, data: updateData });
 
-      await partialUpdateStaff({
-        id: editingStaff.value.id,
-        data: updateData
-      });
-
-      toast.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Staff member updated successfully',
-        life: 3000
-      });
+      toast.add({ severity: 'success', summary: 'Success', detail: 'Staff member updated successfully', life: 3000 });
     } else {
-      // Add new staff member
       const createData: any = {
         username: staffForm.username,
         email: staffForm.email,
@@ -554,31 +505,17 @@ const saveStaff = async () => {
       }
       await createStaff(createData);
 
-      toast.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Staff member created successfully',
-        life: 3000
-      });
+      toast.add({ severity: 'success', summary: 'Success', detail: 'Staff member created successfully', life: 3000 });
     }
 
-    // Refresh the staff list
     await refetch();
-
-    // Close the form
     closeStaffForm();
   } catch (err) {
     console.error('Error saving staff:', err);
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to save staff member',
-      life: 5000
-    });
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to save staff member', life: 5000 });
   }
 };
 
-// Delete actions
 const openDeleteConfirmation = (staff: any) => {
   selectedStaff.value = staff;
   deleteDialogVisible.value = true;
@@ -593,55 +530,285 @@ const deleteStaff = async () => {
   if (selectedStaff.value) {
     try {
       await deleteStaffAPI(selectedStaff.value.id);
-
-      toast.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Staff member deleted successfully',
-        life: 3000
-      });
-
-      // Refresh the staff list
+      toast.add({ severity: 'success', summary: 'Success', detail: 'Staff member deleted successfully', life: 3000 });
       await refetch();
-
       closeDeleteConfirmation();
     } catch (err) {
       console.error('Error deleting staff:', err);
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to delete staff member',
-        life: 5000
-      });
+      toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete staff member', life: 5000 });
     }
   }
 };
 
-// Handle loading and error states
 onMounted(() => {
   if (error.value) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load staff members',
-      life: 5000
-    });
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load staff members', life: 5000 });
   }
 });
 </script>
 
 <style scoped>
-:deep(.p-datatable .p-datatable-thead > tr > th) {
-  background-color: #f9fafb;
-  color: #374151;
+.staff-page {
+  padding: 2rem;
+  background: var(--surface-ground);
+  min-height: 100vh;
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  background: var(--surface-card);
+  border-radius: 16px;
+  padding: 1.5rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--surface-border);
+}
+
+.title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.page-title {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title-icon {
+  color: var(--primary-color);
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--text-color-secondary);
+  font-size: 0.95rem;
+}
+
+.stats-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0 1.25rem;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: var(--surface-card);
+  border-radius: 12px;
+  border: 1px solid var(--surface-border);
+}
+
+.loading-card {
+  padding: 3rem 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.muted {
+  color: var(--text-color-secondary);
+}
+
+.message-card {
+  padding: 1rem;
+}
+
+.message-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.message-title {
+  color: var(--text-color);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.message-detail {
+  color: var(--text-color-secondary);
+  font-size: 0.9rem;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.toolbar-card {
+  padding: 1rem 1.25rem;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toolbar-title {
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.toolbar-dropdown {
+  min-width: 220px;
+}
+
+.table-card {
+  padding: 0.5rem;
+}
+
+.empty {
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: var(--text-color-secondary);
+  opacity: 0.5;
+  margin-bottom: 0.5rem;
+}
+
+.empty-title {
+  color: var(--text-color);
+  margin: 0.25rem 0;
+}
+
+.empty-text {
+  color: var(--text-color-secondary);
+  margin-bottom: 1rem;
+}
+
+/* Column cell styles */
+.col-staff .staff-name {
+  color: var(--text-color);
   font-weight: 600;
 }
-
-:deep(.p-datatable .p-datatable-tbody > tr) {
-  transition: all 0.2s;
+.col-staff .staff-id {
+  color: var(--text-color-secondary);
+  font-size: 0.85rem;
 }
 
+.col-role .role-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.col-role .role-name {
+  text-transform: capitalize;
+  font-weight: 500;
+  color: var(--text-color);
+}
+.dept-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+.dept-tag {
+  font-size: 0.75rem;
+}
+
+.col-contact .contact-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+.contact-icon {
+  color: var(--text-color-secondary);
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+/* Dialog */
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.field small.p-error {
+  margin-top: 0.25rem;
+  display: block;
+}
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Delete Dialog */
+.delete-body {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.delete-icon {
+  font-size: 1.5rem;
+  color: var(--red-500, #ef4444);
+}
+
+/* DataTable theming */
+:deep(.p-datatable .p-datatable-thead > tr > th) {
+  background: var(--surface-ground);
+  color: var(--text-color);
+  font-weight: 600;
+  border-bottom: 1px solid var(--surface-border);
+}
+:deep(.p-datatable .p-datatable-tbody > tr) {
+  transition: background-color 0.2s ease;
+}
 :deep(.p-datatable .p-datatable-tbody > tr:hover) {
-  background-color: #f9fafb;
+  background: var(--surface-hover);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .toolbar-dropdown {
+    min-width: 0;
+    width: 100%;
+  }
 }
 </style>

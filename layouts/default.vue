@@ -167,6 +167,7 @@ const pageTitle = computed(() => {
     '/manager/analytics': 'Analytics & Reports',
     '/manager/menu-builder': 'Menu Builder',
     '/hotel-profile': 'Hotel Profile',
+    '/paymentQR': 'Payment QR Codes',
   };
   return titleMap[route.path] || 'Dashboard';
 });
@@ -184,6 +185,7 @@ const navigation = computed(() => {
       { name: 'Room Management', href: '/rooms', icon: 'prime:home' },
       // { name: 'Departments', href: '/departments', icon: 'prime:briefcase' },
       { name: 'Message Templates', href: '/message_templates', icon: 'prime:comment' },
+      { name: 'Payment QR Codes', href: '/paymentQR', icon: 'prime:qrcode' },
       { name: 'Billing', href: '/payments', icon: 'prime:credit-card' },
       { name: 'Chat', href: '/chat', icon: 'prime:comments' }
     ];
@@ -192,8 +194,9 @@ const navigation = computed(() => {
       { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
       { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
       { name: 'Room Management', href: '/rooms', icon: 'prime:home' },
+           { name: 'Payment QR Codes', href: '/paymentQR', icon: 'prime:qrcode' },
       { name: 'Check-out', href: '/checkout', icon: 'prime:sign-out' },
-      { name: 'Chat', href: '/chat', icon: 'prime:comments' }
+      { name: 'Chat', href: '/chat', icon: 'prime:comments' },
     ];
   }else if (role ==='department_staff'){
     return [

@@ -1,41 +1,89 @@
-# Message Template Editor Implementation Plan
+# Chat Implementation Plan
 
-1.  **Project Setup & Analysis:**
-    *   [x] Analyze existing components in `components/MsgTemplate/`.
-    *   [x] Analyze `composables/useFlow.ts` for API endpoints.
-    *   [x] Analyze `pages/message_templates.vue` as the container for the editor.
-    *   [x] Understand the data structures from the user request and `types/flow.ts`.
+This document outlines the steps to implement a real-time chat feature using Nuxt 3, Pinia, and a WebSocket/REST API backend.
 
-2.  **Core UI Structure:**
-    *   [x] Modify `pages/message_templates.vue` to display a list of flows.
-    *   [x] On selecting a flow, display its steps (`flow_step_template`s).
-    *   [x] Create a main editor component that will be used to edit a selected step.
+## 1. Project Structure
 
-3.  **Message Type Editors:**
-    *   [x] Create an editor component for `text` messages.
-        *   [x] Text area for the message.
-    *   [x] Create an editor component for `quick-reply` messages.
-        *   [x] Text area for the body.
-        *   [x] UI to add/edit/remove buttons.
-        *   [x] For each button, a dropdown to select the next step (`conditional_next_steps`).
-    *   [x] Create an editor component for `list-picker` messages.
-        *   [x] Text area for the body.
-        *   [x] Input for the action button text.
-        *   [x] UI to manage sections and rows.
-        *   [x] For each row, a dropdown to select the next step.
+Create the following files:
 
-4.  **Message Visualization:**
-    *   [x] Create a preview component for `text` messages.
-    *   [x] Create a preview component for `quick-reply` messages.
-    *   [x] Create a preview component for `list-picker` messages.
-    *   [x] Integrate these previews into the editor UI.
+-   `composables/useChat.ts`: For chat-related data fetching and actions.
+-   `stores/chat.ts`: (Update existing) for state management.
+-   `composables/useWebSocket.ts`: To manage the WebSocket connection.
+-   `composables/useChatHandlers.ts`: To handle incoming WebSocket messages.
+-   `types/chat.ts`: For chat-related type definitions.
 
-5.  **Data & API Integration:**
-    *   [x] Use `useFlow` to fetch flow and step data.
-    *   [x] Implement the save functionality to update the `flow_step_template` using the appropriate endpoint from `useFlow`.
-    *   [x] Ensure `options` and `conditional_next_steps` are correctly constructed before saving.
+## 2. WebSocket Management (`composables/`)
 
-6.  **Refinement and Testing:**
-    *   [x] Test the editor with all three message types.
-    *   [x] Ensure the UI is intuitive and user-friendly.
-    *   [x] Handle edge cases (e.g., empty flow, deleting steps).
+### `useWebSocket.ts`
+
+-   Create a `WebSocketManager` class or composable.
+-   It should be a singleton to ensure only one WebSocket connection.
+-   **Methods:**
+    -   `connect(token: string)`: Establishes the WebSocket connection.
+    -   `disconnect()`: Closes the connection.
+    -   `sendMessage(message: object)`: Sends a JSON message to the server.
+    -   `onMessage(callback: (data: any) => void)`: Registers a callback for incoming messages.
+-   **Properties:**
+    -   `isConnected: Ref<boolean>`: A reactive property for the connection status.
+
+### `useChatHandlers.ts`
+
+-   This file will contain functions to process different types of incoming WebSocket messages (`new_message`, `new_conversation`).
+-   These handlers will be called from the `onMessage` callback in `useWebSocket.ts`.
+-   They will dispatch actions to the Pinia `chat` store to update the state.
+
+## 3. Type Definitions (`types/chat.ts`)
+
+Create TypeScript interfaces based on the API documentation for:
+
+-   `Conversation`
+-   `Message`
+-   `SenderType` (enum: 'guest', 'staff', 'system')
+
+## 4. Chat Composable (`composables/useChat.ts`)
+
+-   This composable will provide functions to interact with the chat API.
+-   It will use `useAPI` for REST calls.
+-   **Functions:**
+    -   `fetchConversations()`: GET `/api/message_manager/conversations/`
+    -   `fetchMessages(conversationId: number)`: GET `/api/message_manager/conversations/{id}/messages/`
+    -   `sendMessage(conversationId: number, text: string)`: POST `/api/message_manager/conversations/{id}/send_message/`
+    -   `subscribeToConversation(stayId: number)`: Uses WebSocket manager to send `subscribe_to_conversation` command.
+    -   `unsubscribeFromConversation(stayId: number)`: Uses WebSocket manager to send `unsubscribe_from_conversation` command.
+
+## 5. Pinia Store (`stores/chat.ts`)
+
+-   Remove all mock data.
+-   **State:**
+    -   `conversations: Ref<Conversation[]>`
+    -   `messages: Ref<Message[]>`
+    -   `selectedConversationId: Ref<number | null>`
+    -   `isLoadingConversations: Ref<boolean>`
+    -   `isLoadingMessages: Ref<boolean>`
+-   **Getters:**
+    -   `selectedConversation: ComputedRef<Conversation | undefined>`
+    -   `currentMessages: ComputedRef<Message[]>`
+-   **Actions:**
+    -   `initChat()`:
+        -   Fetch conversations.
+        -   Connect to WebSocket.
+        -   Setup message handlers.
+    -   `selectConversation(conversationId: number)`:
+        -   Set `selectedConversationId`.
+        -   Fetch messages for the selected conversation.
+        -   Subscribe to the conversation via WebSocket.
+    -   `handleNewMessage(message: Message)`: Pushes a new message to the `messages` array for the correct conversation.
+    -   `handleNewConversation(conversation: Conversation)`: Adds a new conversation to the `conversations` array.
+    -   `sendMessage(text: string)`: Sends a message for the currently selected conversation.
+
+## 6. Component Integration
+
+-   **`pages/chat.vue` / `components/Chat/App.vue`**:
+    -   On mount, call `chatStore.initChat()`.
+-   **`components/Chat/ContactsList.vue`**:
+    -   Display `chatStore.conversations`.
+    -   On contact click, call `chatStore.selectConversation(conversation.id)`.
+-   **`components/Chat/Window.vue`**:
+    -   Display `chatStore.currentMessages`.
+-   **`components/Chat/MessageInput.vue`**:
+    -   On send, call `chatStore.sendMessage(text)`.
