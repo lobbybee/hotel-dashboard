@@ -59,6 +59,17 @@ export const handleWebSocketMessage = (data: any) => {
         chatStore.handleChatError(data.message || data); // Handle both formats
         break;
 
+    case 'close_conversation':
+      console.log('Received close_conversation message:', data);
+      // Handle direct close_conversation message (not just acknowledgment)
+      if (data.conversation_id) {
+        const conversation = chatStore.conversations.find(c => c.id === data.conversation_id);
+        if (conversation) {
+          conversation.status = 'closed';
+        }
+      }
+      break;
+
     default:
       console.log('Unknown WebSocket message type:', data.type);
       console.warn('Unknown WebSocket message type:', data.type);

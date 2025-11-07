@@ -1,39 +1,13 @@
 <template>
-    <div class="flex flex-wrap gap-4 mb-4">
-        <div class="flex items-center gap-2">
-            <div
-                class="w-4 h-4 rounded border border-gray-300 bg-white"
-            ></div>
-            <span class="text-sm text-gray-600">Available</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <div
-                class="w-4 h-4 rounded border border-gray-300 bg-blue-100"
-            ></div>
-            <span class="text-sm text-gray-600">Occupied</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <div
-                class="w-4 h-4 rounded border border-gray-300 bg-yellow-100"
-            ></div>
-            <span class="text-sm text-gray-600">Cleaning</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <div
-                class="w-4 h-4 rounded border border-gray-300 bg-red-100"
-            ></div>
-            <span class="text-sm text-gray-600">Maintenance</span>
-        </div>
-        <div class="flex items-center gap-2">
-            <div
-                class="w-4 h-4 rounded border border-gray-300 bg-gray-300"
-            ></div>
-            <span class="text-sm text-gray-600">Out of Order</span>
-        </div>
+    <div class="flex flex-wrap gap-2 mb-4">
+        <Tag icon="pi pi-check-circle" severity="success" value="Available" rounded />
+        <Tag icon="pi pi-user" severity="info" value="Occupied" rounded />
+        <Tag icon="pi pi-spin pi-spinner" severity="warning" value="Cleaning" rounded />
+        <Tag icon="pi pi-wrench" severity="warning" value="Maintenance" rounded />
+        <Tag icon="pi pi-ban" severity="danger" value="Out of Order" rounded />
     </div>
 </template>
 
 <script setup lang="ts">
-// Component for displaying room status legend
-// No props needed - this is a static legend
+import Tag from "primevue/tag";
 </script>

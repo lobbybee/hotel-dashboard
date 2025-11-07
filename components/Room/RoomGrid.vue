@@ -1,10 +1,16 @@
 <template>
     <div>
-        <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+        <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-3 lg:gap-2">
             <div
                 v-for="room in rooms"
                 :key="room.id"
                 @click="$emit('toggle-room-selection', room)"
+                @keydown.enter.prevent="$emit('toggle-room-selection', room)"
+                @keydown.space.prevent="$emit('toggle-room-selection', room)"
+                role="checkbox"
+                :aria-checked="selectedRooms.includes(room.id)"
+                tabindex="0"
+                :aria-label="`Room ${room.room_number}, ${room.status}, Floor ${room.floor}, ${getCategoryName(room.category.id, categories)}`"
                 class="relative p-3 rounded border cursor-pointer transition-all duration-200 flex flex-col items-center"
                 :class="{
                     'border-gray-300 bg-white hover:shadow-md':
@@ -21,7 +27,7 @@
                         selectedRooms.includes(room.id),
                 }"
             >
-                <span class="font-semibold text-gray-800">{{
+                <span class="font-semibold text-gray-800 text-base md:text-lg">{{
                     room.room_number
                 }}</span>
                 <span class="text-xs text-gray-600 mt-1">{{
@@ -33,6 +39,7 @@
                         room.status.slice(1)
                     "
                     :severity="getStatusSeverity(room.status)"
+                    :aria-label="`Status: ${room.status}`"
                     class="mt-2 text-xs"
                 />
                 <span class="text-xs text-gray-500 mt-1"
@@ -40,7 +47,9 @@
                 >
                 <Button
                     icon="pi pi-pencil"
-                    class="p-button-rounded p-button-text p-button-sm absolute top-0 right-0"
+                    severity="secondary"
+                    :aria-label="`Edit room ${room.room_number}`"
+                    class="p-button-rounded p-button-text p-button-outlined p-button-sm absolute top-0 right-0"
                     @click.stop="$emit('edit-room', room)"
                 />
             </div>

@@ -13,11 +13,11 @@
             <Card
                 v-for="category in categories"
                 :key="category.id"
-                class="shadow-sm border border-gray-200"
+                class="shadow-sm border border-gray-200 rounded-lg transition-all hover:shadow-md hover:-translate-y-0.5"
             >
                 <template #title>
                     <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <h3 class="text-lg md:text-xl font-semibold flex items-center gap-2 truncate">
                             <i class="pi pi-building text-blue-500"></i>
                             {{ category.name }}
                         </h3>
@@ -34,29 +34,28 @@
                             {{ category.description }}
                         </p>
 
-                        <div class="flex items-center gap-2 text-gray-600 text-sm">
-                            <i class="pi pi-users"></i>
-                            <span>Max {{ category.max_occupancy }} guests</span>
-                        </div>
-
-                        <div class="flex items-center gap-2 text-gray-600 text-sm">
-                            <i class="pi pi-dollar"></i>
-                            <span>₹{{ category.base_price }}/night</span>
+                        <div class="flex flex-wrap gap-2">
+                            <Tag icon="pi pi-users" :value="`Max ${category.max_occupancy}`" severity="secondary" class="text-xs" rounded />
+                            <Tag icon="pi pi-tag" :value="`₹${category.base_price}/night`" severity="info" class="text-xs" rounded />
+                            <Tag icon="pi pi-home" :value="`${getRoomCountByCategory(category)} rooms`" severity="success" class="text-xs" rounded />
                         </div>
 
                         <div class="mt-3 pt-3 border-t border-gray-100">
-                            <div class="flex flex-wrap gap-1">
+                            <div class="flex flex-wrap gap-2">
                                 <Tag
-                                    v-for="amenity in category.amenities.slice(0, 4)"
+                                    v-for="amenity in category.amenities.slice(0, 6)"
                                     :key="amenity"
                                     :value="amenity"
+                                    severity="secondary"
                                     class="text-xs"
+                                    rounded
                                 />
                                 <Tag
-                                    v-if="category.amenities.length > 4"
-                                    :value="`+${category.amenities.length - 4}`"
+                                    v-if="category.amenities.length > 6"
+                                    :value="`+${category.amenities.length - 6}`"
                                     severity="info"
                                     class="text-xs"
+                                    rounded
                                 />
                             </div>
                         </div>

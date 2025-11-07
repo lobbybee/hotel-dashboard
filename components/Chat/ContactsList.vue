@@ -36,12 +36,20 @@
         <div class="contact-info">
           <div class="contact-header">
             <h3 class="contact-name">{{ conversation.guest_info.room_number }} - Floor {{ conversation.guest_info.floor }}</h3>
-            <Badge
-              v-if="conversation.unread_count > 0"
-              :value="conversation.unread_count"
-              severity="danger"
-              class="unread-badge"
-            />
+            <div class="header-badges">
+              <Badge
+                v-if="isConversationExpired(conversation)"
+                value="Expired"
+                severity="warning"
+                class="expired-badge"
+              />
+              <Badge
+                v-if="conversation.unread_count > 0"
+                :value="conversation.unread_count"
+                severity="danger"
+                class="unread-badge"
+              />
+            </div>
           </div>
           <p class="guest-name">{{ conversation.guest_info.full_name }}</p>
           <p class="last-message">{{ conversation.last_message_preview }}</p>
@@ -64,6 +72,17 @@ import type { Conversation } from '~/types/chat';
 
 const chatStore = useChatStore();
 const searchQuery = ref('');
+
+// Check if a conversation is expired (last message more than 2 minutes ago)
+const isConversationExpired = (conversation: Conversation) => {
+  if (!conversation.last_message_at) return false;
+  
+  const lastMessageTime = new Date(conversation.last_message_at).getTime();
+  const currentTime = new Date().getTime();
+  const twoMinutesInMs = 2 * 60 * 1000;
+  
+  return (currentTime - lastMessageTime) > twoMinutesInMs;
+};
 
 const filteredConversations = computed(() => {
   console.log('Filtering conversations...',chatStore.conversations);
@@ -149,6 +168,21 @@ const selectConversation = (conversation: Conversation) => {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
+  flex: 1;
+}
+
+.header-badges {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.expired-badge {
+  font-size: 0.625rem;
+  padding: 0.125rem 0.375rem;
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #f59e0b !important;
 }
 
 .unread-badge {

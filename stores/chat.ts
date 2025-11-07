@@ -154,7 +154,13 @@ export const useChatStore = defineStore('chat', () => {
 
   const handleChatError = (data: any) => {
     console.error('Chat error:', data);
-    // Could show error notification to user
+    
+    // Handle close conversation errors specifically
+    if (typeof data === 'string' && data.includes('Failed to close conversation')) {
+      console.log('Close conversation failed:', data);
+      // Could show a toast notification to user here
+      // For now, just log the error
+    }
   };
 
   const handleAcknowledgment = (data: any) => {

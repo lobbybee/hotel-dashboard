@@ -1,6 +1,6 @@
 <template>
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="bg-white/80 supports-[backdrop-filter]:bg-white/60 backdrop-blur p-3 md:p-4 rounded-xl shadow-md border border-gray-200 sticky bottom-4 z-20">
+        <div class="flex flex-wrap items-center justify-between gap-3 md:gap-4 w-full">
             <div>
                 <h3 class="font-semibold text-gray-800">
                     {{ selectedRoomCount }} room(s) selected
@@ -9,27 +9,31 @@
                     Perform bulk actions on selected rooms
                 </p>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap gap-2 w-full md:w-auto">
                 <Button
                     label="Change Status"
                     icon="pi pi-sync"
+                    outlined
                     @click="$emit('bulk-status-change')"
-                    class="p-button-outlined"
+                    class="w-full sm:w-auto min-w-[140px]"
                     :loading="patchRoomStatus === 'loading'"
                 />
                 <Button
                     label="Delete Rooms"
                     icon="pi pi-trash"
+                    severity="danger"
+                    outlined
                     @click="$emit('bulk-delete')"
-                    class="p-button-danger p-button-outlined"
+                    class="w-full sm:w-auto min-w-[140px]"
                     :loading="deleteRoomStatus === 'loading'"
                     :disabled="deleteRoomStatus === 'loading'"
                 />
                 <Button
                     label="Clear Selection"
                     icon="pi pi-times"
+                    text
                     @click="$emit('clear-selection')"
-                    class="p-button-text"
+                    class="w-full sm:w-auto min-w-[140px]"
                 />
             </div>
         </div>

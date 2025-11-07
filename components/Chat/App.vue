@@ -1,16 +1,5 @@
 <template>
   <div class="chat-app">
-    <!-- Mobile header -->
-    <div class="mobile-header">
-      <Button
-        icon="pi pi-bars"
-        text
-        @click="chatStore.toggleSidebar"
-        class="sidebar-toggle"
-      />
-      <h1 class="app-title">Chat</h1>
-    </div>
-
     <!-- Sidebar overlay for mobile -->
     <div
       v-if="chatStore.sidebarVisible"
@@ -59,26 +48,6 @@ onMounted(() => {
   background-color: #f8f9fa;
 }
 
-.mobile-header {
-  display: none;
-  align-items: center;
-  padding: 1rem;
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
-  gap: 1rem;
-}
-
-.app-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0;
-  color: #1f2937;
-}
-
-.sidebar-toggle {
-  padding: 0.5rem !important;
-}
-
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -111,10 +80,6 @@ onMounted(() => {
 
 /* Mobile styles */
 @media (max-width: 767px) {
-  .mobile-header {
-    display: flex;
-  }
-
   .contacts-sidebar {
     position: fixed;
     top: 0;

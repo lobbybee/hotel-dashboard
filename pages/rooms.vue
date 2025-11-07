@@ -68,34 +68,39 @@
                     @category-page-change="onCategoryPageChange"
                 />
 
-                <!-- Floor Plan Section -->
-                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                    <!-- Filters -->
-                    <RoomFilters
-                        :roomSearch="roomSearch"
-                        :roomStatusFilter="roomStatusFilter"
-                        :selectedFloor="selectedFloor"
-                        :floorOptions="floorOptions"
-                        :roomStatuses="roomStatuses"
-                        @update:roomSearch="roomSearch = $event"
-                        @update:roomStatusFilter="roomStatusFilter = $event"
-                        @update:selectedFloor="selectedFloor = $event"
-                        @add-floor="addFloor"
-                    />
 
-                    <!-- Room Legend -->
-                    <RoomLegend />
+
+                <!-- Floor Plan Section -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <!-- Sticky Filters Header -->
+                    <div class="p-4 sticky top-0 z-10 bg-white border-b border-gray-100">
+                        <RoomFilters
+                            :roomSearch="roomSearch"
+                            :roomStatusFilter="roomStatusFilter"
+                            :selectedFloor="selectedFloor"
+                            :floorOptions="floorOptions"
+                            :roomStatuses="roomStatuses"
+                            @update:roomSearch="roomSearch = $event"
+                            @update:roomStatusFilter="roomStatusFilter = $event"
+                            @update:selectedFloor="selectedFloor = $event"
+                            @add-floor="addFloor"
+                        />
+
+                        <RoomLegend />
+                    </div>
 
                     <!-- Room Grid -->
-                    <RoomGrid
-                        :rooms="rooms"
-                        :selectedRooms="selectedRooms"
-                        :totalRooms="totalRooms"
-                        :categories="categories"
-                        @toggle-room-selection="toggleRoomSelection"
-                        @edit-room="openEditRoomDialog"
-                        @room-page-change="onRoomPageChange"
-                    />
+                    <div class="p-4">
+                        <RoomGrid
+                            :rooms="rooms"
+                            :selectedRooms="selectedRooms"
+                            :totalRooms="totalRooms"
+                            :categories="categories"
+                            @toggle-room-selection="toggleRoomSelection"
+                            @edit-room="openEditRoomDialog"
+                            @room-page-change="onRoomPageChange"
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -109,7 +114,8 @@
                 @bulk-delete="openBulkDeleteConfirmation"
                 @clear-selection="clearSelection"
             />
-
+            <!-- WiFi Credentials Management -->
+                     <RoomWifiCredentialManager :categories="categories" />
             <!-- All Dialogs -->
             <RoomDialogs
                 v-model:categoryDialogVisible="categoryDialogVisible"
@@ -168,12 +174,15 @@ import RoomLegend from "~/components/Room/RoomLegend.vue";
 import RoomGrid from "~/components/Room/RoomGrid.vue";
 import SelectedRoomsActions from "~/components/Room/SelectedRoomsActions.vue";
 import RoomDialogs from "~/components/Room/RoomDialogs.vue";
+import WifiCredentialManager from "~/components/Room/WifiCredentialManager.vue";
 
 // Import PrimeVue components
 import Button from "primevue/button";
 import ProgressSpinner from "primevue/progressspinner";
 
+
 const toast = useToast();
+
 
 // State
 const selectedFloor = ref<number>(1);

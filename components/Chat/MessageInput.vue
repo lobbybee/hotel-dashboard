@@ -1,6 +1,33 @@
 <template>
   <div class="message-input-container">
-    <Card class="message-input-card">
+    <!-- Conversation Expired Message -->
+    <Card v-if="isConversationExpired" class="expired-card">
+      <template #content>
+        <div class="expired-content">
+          <div class="expired-message">
+            <i class="pi pi-clock expired-icon"></i>
+            <span>Conversation expired</span>
+          </div>
+          <div class="expired-actions">
+            <Button 
+              label="Reopen" 
+              icon="pi pi-refresh" 
+              size="small" 
+              @click="handleReopenConversation"
+            />
+            <Button 
+              label="Close" 
+              icon="pi pi-times" 
+              size="small" 
+              severity="secondary" 
+              @click="handleCloseConversation"
+            />
+          </div>
+        </div>
+      </template>
+    </Card>
+    
+    <Card v-else class="message-input-card">
       <template #content>
         <div class="input-wrapper">
           <!-- Attachment button -->
@@ -50,14 +77,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useChatStore } from '~/stores/chat';
+import { useChat } from '~/composables/useChat';
 import AudioRecorder from './AudioRecorder.vue';
 
 const chatStore = useChatStore();
+const chatComposable = useChat();
 const messageText = ref('');
 const fileInput = ref<HTMLInputElement>();
 const audioRecorder = ref();
+
+// Check if conversation is expired (last message more than 2 minutes ago)
+const isConversationExpired = computed(() => {
+  if (!chatStore.selectedConversation || !chatStore.selectedConversation.last_message_at) {
+    return false;
+  }
+  
+  const lastMessageTime = new Date(chatStore.selectedConversation.last_message_at).getTime();
+  const currentTime = new Date().getTime();
+  const twoMinutesInMs = 2 * 60 * 1000;
+  
+  return (currentTime - lastMessageTime) > twoMinutesInMs;
+});
+
+const handleReopenConversation = () => {
+  if (chatStore.selectedConversationId) {
+    chatComposable.reopenTemporaryConversation(chatStore.selectedConversationId);
+  }
+};
+
+const handleCloseConversation = () => {
+  if (chatStore.selectedConversationId) {
+    chatComposable.closeConversation(chatStore.selectedConversationId);
+  }
+};
 
 const handleSendMessage = () => {
   if (messageText.value.trim()) {
@@ -120,6 +174,37 @@ const formatDuration = (seconds: number): string => {
   padding: 1rem;
   background: #f9fafb;
   border-top: 1px solid #e5e7eb;
+}
+
+.expired-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+}
+
+.expired-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.expired-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #991b1b;
+  font-weight: 500;
+}
+
+.expired-icon {
+  font-size: 1.25rem;
+}
+
+.expired-actions {
+  display: flex;
+  gap: 0.75rem;
 }
 
 .message-input-card {

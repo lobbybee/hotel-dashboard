@@ -3,27 +3,51 @@
     <!-- Chat header -->
     <div class="chat-header">
       <div v-if="chatStore.selectedConversation" class="header-content">
-        <div class="contact-info">
-          <Avatar
-            :label="chatStore.selectedConversation.guest_info.full_name.charAt(0)"
-            size="large"
-            shape="circle"
-            class="header-avatar"
+        <div class="header-left">
+          <!-- Mobile sidebar toggle -->
+          <Button
+            icon="pi pi-bars"
+            text
+            @click="chatStore.toggleSidebar"
+            class="sidebar-toggle mobile-only"
           />
-          <div class="contact-details">
-            <h2 class="contact-name">{{ chatStore.selectedConversation.guest_info.full_name }}</h2>
-            <span class="contact-status">Room {{ chatStore.selectedConversation.guest_info.room_number }}</span>
+          
+          <div class="contact-info">
+            <Avatar
+              :label="chatStore.selectedConversation.guest_info.full_name.charAt(0)"
+              size="large"
+              shape="circle"
+              class="header-avatar"
+            />
+            <div class="contact-details">
+              <h2 class="contact-name">{{ chatStore.selectedConversation.guest_info.full_name }}</h2>
+              <span class="contact-status">Room {{ chatStore.selectedConversation.guest_info.room_number }}</span>
+            </div>
           </div>
         </div>
+        
         <div class="header-actions">
           <div :class="['connection-status', { 'connected': chatStore.isConnected, 'disconnected': !chatStore.isConnected }]">
             <i :class="['pi', chatStore.isConnected ? 'pi-check-circle' : 'pi-times-circle']"></i>
             <span>{{ chatStore.isConnected ? 'Connected' : 'Disconnected' }}</span>
           </div>
-          <Button icon="pi pi-ellipsis-v" text rounded />
+          <Button 
+            icon="pi pi-ellipsis-v" 
+            text 
+            rounded 
+            @click="toggleMenu"
+          />
+          <Menu ref="menu" :model="menuItems" popup />
         </div>
       </div>
        <div v-else class="header-content no-contact-selected">
+         <!-- Mobile sidebar toggle when no conversation selected -->
+         <Button
+           icon="pi pi-bars"
+           text
+           @click="chatStore.toggleSidebar"
+           class="sidebar-toggle mobile-only"
+         />
          <p>Select a conversation to start chatting</p>
        </div>
     </div>
@@ -41,7 +65,19 @@
     </div>
 
     <!-- Message input -->
-    <MessageInput v-if="chatStore.selectedConversation" />
+    <MessageInput v-if="chatStore.selectedConversation && chatStore.selectedConversation.status !== 'closed'" />
+    
+    <!-- Conversation closed message -->
+    <div v-else-if="chatStore.selectedConversation && chatStore.selectedConversation.status === 'closed'" class="conversation-closed">
+      <Card>
+        <template #content>
+          <div class="closed-content">
+            <i class="pi pi-lock closed-icon"></i>
+            <span>This conversation has been closed</span>
+          </div>
+        </template>
+      </Card>
+    </div>
   </div>
 </template>
 
@@ -49,10 +85,31 @@
 import MessageBubble from './MessageBubble.vue';
 import MessageInput from './MessageInput.vue';
 import { useChatStore } from '~/stores/chat';
+import { useChat } from '~/composables/useChat';
 import { ref, watch, nextTick, onMounted } from 'vue';
 
 const chatStore = useChatStore();
+const chatComposable = useChat();
 const messagesContainer = ref<HTMLElement>();
+const menu = ref();
+
+const menuItems = [
+  {
+    label: 'Close Conversation',
+    icon: 'pi pi-times',
+    command: () => handleCloseConversation()
+  }
+];
+
+const toggleMenu = (event: Event) => {
+  menu.value.toggle(event);
+};
+
+const handleCloseConversation = () => {
+  if (chatStore.selectedConversationId) {
+    chatComposable.closeConversation(chatStore.selectedConversationId);
+  }
+};
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -102,10 +159,20 @@ onMounted(() => {
   color: #6b7280;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .contact-info {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.sidebar-toggle {
+  padding: 0.5rem !important;
 }
 
 .header-avatar {
@@ -175,7 +242,36 @@ onMounted(() => {
   min-height: 100%;
 }
 
+.conversation-closed {
+  padding: 1rem;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.closed-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.closed-icon {
+  font-size: 1.5rem;
+  color: #9ca3af;
+}
+
+.mobile-only {
+  display: none;
+}
+
 @media (max-width: 767px) {
+  .mobile-only {
+    display: flex;
+  }
+
   .chat-header {
     padding: 0.75rem 1rem;
   }

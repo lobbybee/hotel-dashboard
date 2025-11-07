@@ -72,6 +72,13 @@ export const useChat = () => {
     });
   };
 
+  const reopenTemporaryConversation = (conversationId: number) => {
+    ws.sendMessage({
+      type: 'reopen-temporary',
+      conversation_id: conversationId,
+    });
+  };
+
   const uploadMedia = async (conversationId: number, file: File, caption?: string): Promise<MediaUploadResponse> => {
     const formData = new FormData();
     formData.append('conversation_id', conversationId.toString());
@@ -108,6 +115,7 @@ export const useChat = () => {
     markAsRead,
     sendTypingIndicator,
     closeConversation,
+    reopenTemporaryConversation,
     uploadMedia,
     sendMediaMessage,
   };
