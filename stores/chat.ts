@@ -114,20 +114,29 @@ export const useChatStore = defineStore('chat', () => {
   };
 
   const handleNewMessage = (message: Message) => {
-    const conversation = conversations.value.find(c => c.id === message.conversation);
-    if (conversation) {
+    const conversationIndex = conversations.value.findIndex(c => c.id === message.conversation);
+    if (conversationIndex !== -1) {
       // Add message to messages array using spread to ensure reactivity
       messages.value = [...messages.value, message];
 
-      // Update conversation's last message
-      conversation.last_message = message;
-      conversation.last_message_preview = message.content;
-      conversation.last_message_at = message.created_at;
+      // Create updated conversation object to ensure proper reactivity
+      const conversation = conversations.value[conversationIndex];
+      const updatedConversation = {
+        ...conversation,
+        last_message: message,
+        last_message_preview: message.content,
+        last_message_at: message.created_at,
+        unread_count: message.sender_type === 'guest' 
+          ? (conversation.unread_count || 0) + 1 
+          : conversation.unread_count
+      };
 
-      // Increment unread count if message is from guest
-      if (message.sender_type === 'guest') {
-        conversation.unread_count = (conversation.unread_count || 0) + 1;
-      }
+      // Replace the conversation in the array to trigger reactivity
+      conversations.value = [
+        ...conversations.value.slice(0, conversationIndex),
+        updatedConversation,
+        ...conversations.value.slice(conversationIndex + 1)
+      ];
     }
   };
 
@@ -398,6 +407,20 @@ export const useChatStore = defineStore('chat', () => {
     }
   };
 
+  const reconnectWebSocket = () => {
+    console.log('Attempting to reconnect WebSocket...');
+    if (authToken.value) {
+      // Disconnect first
+      ws.disconnect();
+      
+      // Reconnect after a short delay
+      setTimeout(() => {
+        ws.connect(authToken.value!);
+        ws.onMessage(handleWebSocketMessage);
+      }, 1000);
+    }
+  };
+
   return {
     conversations,
     messages,
@@ -422,5 +445,6 @@ export const useChatStore = defineStore('chat', () => {
     sidebarVisible,
     toggleSidebar,
     closeSidebar,
+    reconnectWebSocket,
   };
 });

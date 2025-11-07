@@ -1,7 +1,24 @@
 <template>
-  <div class="chat-window">
+  <div class="chat-window" :class="{ 'connected': chatStore.isConnected }">
+    <!-- Connection Alert Banner -->
+    <div v-if="!chatStore.isConnected" class="connection-alert">
+      <div class="alert-content">
+        <i class="pi pi-exclamation-triangle alert-icon"></i>
+        <span class="alert-text">Connection lost. Messages may not be delivered.</span>
+        <Button 
+          label="Reconnect" 
+          size="small" 
+          @click="handleReconnect"
+          class="reconnect-btn"
+        />
+      </div>
+    </div>
+
+    <!-- Disconnection Overlay -->
+    <div v-if="!chatStore.isConnected" class="disconnection-overlay"></div>
+
     <!-- Chat header -->
-    <div class="chat-header">
+    <div class="chat-header" :class="{ 'disconnected': !chatStore.isConnected }">
       <div v-if="chatStore.selectedConversation" class="header-content">
         <div class="header-left">
           <!-- Mobile sidebar toggle -->
@@ -111,6 +128,10 @@ const handleCloseConversation = () => {
   }
 };
 
+const handleReconnect = () => {
+  chatStore.reconnectWebSocket();
+};
+
 const scrollToBottom = () => {
   nextTick(() => {
     if (messagesContainer.value) {
@@ -139,6 +160,60 @@ onMounted(() => {
   height: 100%;
   max-height: 90vh;
   background: white;
+  position: relative;
+}
+
+.connection-alert {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #fee2e2;
+}
+
+.alert-icon {
+  color: #dc2626;
+  font-size: 1rem;
+}
+
+.alert-text {
+  color: #991b1b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+.reconnect-btn {
+  background: #dc2626 !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.25rem 0.75rem !important;
+  font-size: 0.75rem !important;
+}
+
+.reconnect-btn:hover {
+  background: #b91c1c !important;
+}
+
+.disconnection-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  z-index: 999;
+  pointer-events: none;
 }
 
 .chat-header {
@@ -146,6 +221,12 @@ onMounted(() => {
   border-bottom: 1px solid #e5e7eb;
   background: white;
   flex-shrink: 0;
+  transition: opacity 0.3s ease;
+}
+
+.chat-header.disconnected {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .header-content {
@@ -232,6 +313,12 @@ onMounted(() => {
   overflow-y: auto;
   background: #f9fafb;
   padding: 0;
+  transition: opacity 0.3s ease;
+}
+
+.chat-window:not(.connected) .messages-container {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .messages-list {
