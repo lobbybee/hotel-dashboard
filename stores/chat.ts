@@ -114,6 +114,12 @@ export const useChatStore = defineStore('chat', () => {
   };
 
   const handleNewMessage = (message: Message) => {
+    // Only process messages from guests (ignore our own staff messages)
+    if (message.sender_type !== 'guest') {
+      console.log('Ignoring own staff message:', message);
+      return;
+    }
+
     const conversationIndex = conversations.value.findIndex(c => c.id === message.conversation);
     if (conversationIndex !== -1) {
       // Add message to messages array using spread to ensure reactivity
@@ -140,15 +146,21 @@ export const useChatStore = defineStore('chat', () => {
     }
   };
 
-  const handleNewConversation = (conversation: Conversation) => {
-    conversations.value.unshift(conversation);
+  const handleNewConversation = async (conversation: any) => {
+    console.log('Received new conversation:', conversation);
+    // Refetch conversations from server to get complete data with proper guest_info
+    try {
+      const updatedConversations = await chatComposable.fetchConversations();
+      conversations.value = updatedConversations;
+    } catch (error) {
+      console.error('Error refetching conversations after new conversation:', error);
+    }
   };
 
-  const handleConversationUpdate = (conversation: Conversation) => {
-    const index = conversations.value.findIndex(c => c.id === conversation.id);
-    if (index !== -1) {
-      conversations.value[index] = conversation;
-    }
+  const handleConversationUpdate = (data: any) => {
+    // Ignore conversation updates since we handle new messages directly via handleNewMessage
+    // This prevents duplicate updates when messages are sent/received
+    console.log('Ignoring conversation update:', data);
   };
 
   const handleTypingIndicator = (data: any) => {
@@ -407,16 +419,28 @@ export const useChatStore = defineStore('chat', () => {
     }
   };
 
-  const reconnectWebSocket = () => {
+  const reconnectWebSocket = async () => {
     console.log('Attempting to reconnect WebSocket...');
     if (authToken.value) {
       // Disconnect first
       ws.disconnect();
       
       // Reconnect after a short delay
-      setTimeout(() => {
+      setTimeout(async () => {
         ws.connect(authToken.value!);
         ws.onMessage(handleWebSocketMessage);
+        
+        // Refetch conversations after reconnection to get latest data
+        try {
+          isLoadingConversations.value = true;
+          const updatedConversations = await chatComposable.fetchConversations();
+          conversations.value = updatedConversations;
+          console.log('Conversations refetched after reconnection');
+        } catch (error) {
+          console.error('Error refetching conversations after reconnection:', error);
+        } finally {
+          isLoadingConversations.value = false;
+        }
       }, 1000);
     }
   };

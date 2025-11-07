@@ -67,6 +67,8 @@ export const handleWebSocketMessage = (data: any) => {
         if (conversation) {
           conversation.status = 'closed';
         }
+        // Refetch conversations from server to get updated list
+        chatStore.initChat();
       }
       break;
 
