@@ -129,10 +129,112 @@ This design system captures the visual aesthetics and design principles from the
 - **Text**: Small font size with proper contrast
 
 ### 6. Buttons
-- **Primary Action**: Standard button with icon
-- **Secondary Actions**: Text buttons with rounded treatment
-- **Icon Buttons**: Small size, text variant, rounded
-- **Danger Actions**: Red/danger severity
+
+#### Button Hierarchy & Usage
+- **Primary Actions**: Main actions like "Add Staff Member", "Save", "Submit"
+- **Secondary Actions**: Supporting actions like "Cancel", "Edit", "View Details"
+- **Icon-Only Actions**: Compact actions in tables and cards (Edit, Delete, View)
+- **Destructive Actions**: Actions that remove or permanently change data (Delete, Check-out)
+- **Full-Width Actions**: Actions that take up full container width in cards and modals
+
+#### Button Variants
+
+##### Primary Button
+- **Usage**: Main page actions, form submissions
+- **Styling**: Default PrimeVue Button styling
+- **Icons**: Left-aligned icons for context
+- **Examples**: `Button label="Add Staff Member" icon="pi pi-plus"`
+
+##### Secondary Button (Text Variant)
+- **Usage**: Cancel actions, navigation, less important actions
+- **Styling**: `text` variant with optional severity
+- **Layout**: Often paired with primary buttons in dialog footers
+- **Examples**: `Button label="Cancel" text @click="closeDialog"`
+
+##### Icon-Only Buttons
+- **Usage**: Row actions, compact interfaces, quick actions
+- **Styling**: `text` variant with `rounded` treatment
+- **Icons**: Right-aligned action icons
+- **Examples**: 
+  ```vue
+  <Button icon="pi pi-pencil" text rounded @click="editItem" />
+  <Button icon="pi pi-trash" text rounded severity="danger" @click="deleteItem" />
+  ```
+
+##### Severity-Based Buttons
+- **Danger**: `severity="danger"` for destructive actions (Delete, Remove, Check-out)
+- **Success**: `severity="success"` for confirmation actions (Confirm, Approve)
+- **Warning**: `severity="warning"` for cautionary actions
+- **Info**: `severity="info"` for informational actions
+
+#### Button Layout Patterns
+
+##### Dialog Footer Pattern
+```vue
+<template #footer>
+  <Button label="Cancel" text @click="closeDialog" />
+  <Button label="Save" @click="saveData" />
+  <!-- OR for destructive actions -->
+  <Button label="Cancel" text @click="closeDialog" />
+  <Button label="Delete" severity="danger" @click="deleteItem" />
+</template>
+```
+
+##### Table Row Actions Pattern
+```vue
+<div class="flex gap-2">
+  <Button icon="pi pi-pencil" text rounded @click="editItem" />
+  <Button icon="pi pi-trash" text rounded severity="danger" @click="deleteItem" />
+</div>
+```
+
+##### Full-Width Card Actions Pattern
+```vue
+<Button
+  label="Check Out"
+  icon="pi pi-sign-out"
+  class="w-full"
+  severity="danger"
+  @click="performAction"
+/>
+```
+
+##### Page Header Actions Pattern
+```vue
+<div class="flex justify-between items-start">
+  <div>
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Page Title</h1>
+    <p class="text-gray-600">Page description</p>
+  </div>
+  <Button label="Add New" icon="pi pi-plus" @click="openAddDialog" />
+</div>
+```
+
+#### Button Sizing & Spacing
+- **Standard Size**: Default PrimeVue button sizing
+- **Icon-Only**: Compact size using default icon button dimensions
+- **Full-Width**: `class="w-full"` for card and modal actions
+- **Button Groups**: `class="flex gap-2"` for multiple related actions
+- **Icon Spacing**: Proper spacing between icons and text labels
+
+#### Button Interaction States
+- **Hover**: Smooth color transitions using PrimeVue default transitions
+- **Focus**: Clear focus indicators for accessibility
+- **Loading**: Button should show loading state when processing actions
+- **Disabled**: Proper disabled styling for unavailable actions
+
+#### Icon Usage Guidelines
+- **Action Icons**: Use semantic icons that clearly indicate action (pi-plus for add, pi-pencil for edit, pi-trash for delete)
+- **Consistency**: Use same icon for same action across the application
+- **Position**: Icons typically left-aligned for buttons with text, standalone for icon-only buttons
+- **Size**: Icon size automatically handled by PrimeVue button component
+
+#### Accessibility Considerations
+- **Semantic Usage**: Use appropriate button elements for actions
+- **ARIA Labels**: Provide clear ARIA labels for icon-only buttons
+- **Keyboard Navigation**: Ensure all buttons are keyboard accessible
+- **Color Contrast**: Ensure text and background colors meet WCAG standards
+- **Focus Indicators**: Clear visual focus states for keyboard users
 
 ### 7. Form Design Patterns
 - **Card Sections**: PrimeVue Card component with icon-enhanced titles

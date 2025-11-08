@@ -12,7 +12,6 @@
           label="Add Template"
           icon="pi pi-plus"
           @click="showAddModal = true"
-          :rounded="true" :raised="true"
         />
       </div>
       <div class="stats-bar">
@@ -23,10 +22,10 @@
     </div>
 
     <!-- Search and Filter Section -->
-    <div class="flex gap-3 items-center justify-center mb-5 flex-wrap">
-      <div class="search-bar min-w-[200px]">
-        <span class="p-input-icon-left w-full flex justify-center gap-3 items-center relative">
-          <i class="pi pi-search absolute right-3 " />
+    <div class="search-filter-section">
+      <div class="search-bar">
+        <span class="p-input-icon-left">
+          <i class="pi pi-search" />
           <InputText
             v-model="searchQuery"
             placeholder="Search templates..."
@@ -35,7 +34,37 @@
           />
         </span>
       </div>
-
+      <div class="filter-controls">
+        <Dropdown
+          v-model="selectedType"
+          :options="templateTypes?.template_types || []"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Template Type"
+          class="filter-dropdown"
+          @change="handleFilterChange"
+          showClear
+        />
+        <Dropdown
+          v-model="selectedCategory"
+          :options="templateTypes?.categories || []"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Category"
+          class="filter-dropdown"
+          @change="handleFilterChange"
+          showClear
+        />
+        <Dropdown
+          v-model="selectedFilter"
+          :options="filterOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Status"
+          class="filter-dropdown"
+          @change="handleFilterChange"
+        />
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -47,7 +76,7 @@
     <!-- Error State -->
     <Message v-else-if="error" severity="error" :closable="false" class="error-message">
       <span>{{ error.message || 'Failed to load templates' }}</span>
-      <Button label="Retry" @click="refreshData" text size="small" />
+      <Button label="Retry" @click="refreshData" text />
     </Message>
 
     <!-- Templates Grid -->
@@ -70,32 +99,32 @@
             <Button
               icon="pi pi-eye"
               @click="viewTemplate(template)"
-              :rounded="true" text size="small"
+              text rounded
               v-tooltip="'View Details'"
             />
             <Button
               icon="pi pi-search"
               @click="previewTemplateContent(template)"
-              :rounded="true" text size="small"
+              text rounded
               v-tooltip="'Preview'"
             />
             <Button
               icon="pi pi-pencil"
               @click="editTemplate(template)"
-              :rounded="true" text size="small"
+              text rounded
               v-tooltip="'Edit'"
             />
             <Button
               icon="pi pi-power-off"
               @click="toggleTemplateStatus(template)"
-              :rounded="true" text size="small"
+              text rounded
               :severity="template.is_active ? 'warning' : 'success'"
               v-tooltip="template.is_active ? 'Deactivate' : 'Activate'"
             />
             <Button
               icon="pi pi-trash"
               @click="deleteTemplate(template)"
-              :rounded="true" text size="small" severity="danger"
+              text rounded severity="danger"
               v-tooltip="'Delete'"
             />
           </div>
@@ -140,7 +169,6 @@
           label="Add Your First Template"
           icon="pi pi-plus"
           @click="showAddModal = true"
-          :rounded="true" :raised="true"
           v-if="!searchQuery && selectedFilter === 'all'"
         />
       </div>
@@ -151,7 +179,7 @@
       v-model:visible="showAddModal"
       :header="isEditing ? 'Edit Template' : 'Add New Template'"
       :modal="true"
-      :style="{ width: '650px' }"
+      :style="{ width: '35rem' }"
       :dismissableMask="true"
     >
       <form @submit.prevent="handleSubmit" class="template-form">
@@ -207,8 +235,7 @@
               <Button
                 icon="pi pi-upload"
                 @click="showMediaUpload = true"
-                outlined
-                size="small"
+                text
                 v-tooltip="'Upload Media'"
               />
             </div>
@@ -221,7 +248,7 @@
             id="content"
             v-model="formData.content"
             placeholder="Enter your template content here. Use {{variable_name}} for variables."
-            rows="6"
+            rows="3"
             required
             class="w-full"
           />
@@ -280,7 +307,7 @@
       v-model:visible="showViewModal"
       header="Template Details"
       :modal="true"
-      :style="{ width: '600px' }"
+      :style="{ width: '35rem' }"
       :dismissableMask="true"
     >
       <div v-if="selectedTemplate" class="template-view-content">
@@ -339,7 +366,7 @@
       v-model:visible="showPreviewModal"
       header="Template Preview"
       :modal="true"
-      :style="{ width: '500px' }"
+      :style="{ width: '35rem' }"
       :dismissableMask="true"
     >
       <div v-if="previewData" class="preview-content">
@@ -366,7 +393,7 @@
       v-model:visible="showMediaUpload"
       header="Upload Media"
       :modal="true"
-      :style="{ width: '400px' }"
+      :style="{ width: '35rem' }"
       :dismissableMask="true"
     >
       <div class="media-upload-content">
@@ -679,11 +706,11 @@ const truncateText = (text: string, maxLength: number) => {
 };
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const showToast = (severity: 'success' | 'error' | 'info' | 'warn', summary: string, detail: string) => {
@@ -699,50 +726,52 @@ onMounted(() => {
 <style scoped>
 .message-templates-dashboard {
   padding: 2rem;
-  background: var(--surface-ground);
+  background-color: #F9FAFB;
   min-height: 100vh;
+  max-width: 7xl;
+  margin: 0 auto;
 }
 
 .header-section {
-  background: var(--surface-card);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background-color: #FFFFFF;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 1rem;
 }
 
 .stats-bar {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin-top: 1rem;
 }
 
 .page-title {
   margin: 0 0 0.5rem 0;
-  color: var(--text-color);
-  font-size: 2rem;
+  color: #111827;
+  font-size: 1.875rem;
   font-weight: 700;
 }
 
 .page-subtitle {
   margin: 0;
-  color: var(--text-color-secondary);
+  color: #6B7280;
   font-size: 1rem;
 }
 
 .search-filter-section {
-  background: var(--surface-card);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background-color: #FFFFFF;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
   display: flex;
   gap: 1rem;
   align-items: center;
@@ -750,6 +779,7 @@ onMounted(() => {
 
 .search-bar {
   flex: 1;
+  min-width: 200px;
 }
 
 .filter-controls {
@@ -759,7 +789,7 @@ onMounted(() => {
 }
 
 .filter-dropdown {
-  min-width: 150px;
+  width: 14rem;
 }
 
 .loading-container {
@@ -768,48 +798,46 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 4rem;
-  background: var(--surface-card);
-  border-radius: 12px;
+  background-color: #FFFFFF;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
   text-align: center;
 }
 
 .error-message {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .template-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: 1rem;
 }
 
 .template-card {
-  background: var(--surface-card);
-  border-radius: 16px;
+  background-color: #FFFFFF;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  position: relative;
+  transition: all 0.2s ease;
 }
 
 .template-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  border-color: #D1D5DB;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .template-card.inactive {
-  opacity: 0.7;
-  background: var(--surface-ground);
+  opacity: 0.6;
 }
 
 .template-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  background: var(--surface-ground);
-  border-bottom: 1px solid var(--surface-border);
+  padding: 0.75rem 1rem;
+  background-color: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .template-actions {
@@ -818,98 +846,98 @@ onMounted(() => {
 }
 
 .template-card-content {
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 .template-category-type {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .template-name {
-  margin: 0 0 1rem 0;
-  font-size: 1.25rem;
+  margin: 0 0 0.75rem 0;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-color);
+  color: #111827;
 }
 
 .template-content {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .template-content p {
-  color: var(--text-color-secondary);
-  line-height: 1.6;
+  color: #4B5563;
+  line-height: 1.5;
   margin: 0;
 }
 
 .template-variables {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .variables-list {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--primary-color);
-  font-size: 0.9rem;
+  color: #2563EB;
+  font-size: 0.875rem;
 }
 
 .no-variables {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--text-color-secondary);
-  font-size: 0.9rem;
+  color: #9CA3AF;
+  font-size: 0.875rem;
 }
 
 .template-meta {
-  padding-top: 1rem;
-  border-top: 1px solid var(--surface-border);
+  padding-top: 0.75rem;
+  border-top: 1px solid #F3F4F6;
 }
 
 .template-detail-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  color: var(--text-color-secondary);
-  font-size: 0.9rem;
+  gap: 0.5rem;
+  color: #6B7280;
+  font-size: 0.875rem;
 }
 
 .template-detail-item i {
-  color: var(--primary-color);
-  width: 16px;
+  color: #2563EB;
+  width: 1rem;
 }
 
 .empty-state {
-  background: var(--surface-card);
-  border-radius: 16px;
+  background-color: #FFFFFF;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
   padding: 4rem 2rem;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .empty-state-content h3 {
-  color: var(--text-color);
+  color: #111827;
   margin: 1rem 0;
 }
 
 .empty-state-content p {
-  color: var(--text-color-secondary);
+  color: #6B7280;
   margin-bottom: 2rem;
 }
 
 .empty-icon {
-  font-size: 4rem;
-  color: #cbd5e0;
+  font-size: 3rem;
+  color: #D1D5DB;
   margin-bottom: 1rem;
 }
 
 .template-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .form-grid {
@@ -921,8 +949,8 @@ onMounted(() => {
 .form-field label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: var(--text-color);
+  font-weight: 500;
+  color: #111827;
 }
 
 .media-upload-container {
@@ -931,8 +959,9 @@ onMounted(() => {
 }
 
 .variables-help {
-  background: var(--surface-ground);
-  border-radius: 8px;
+  background-color: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.5rem;
   padding: 1rem;
 }
 
@@ -948,31 +977,32 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 0.75rem;
-  background: var(--surface-card);
-  border: 1px solid var(--surface-border);
-  border-radius: 6px;
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .variable-chip:hover {
-  border-color: var(--primary-color);
-  background: var(--surface-hover);
+  border-color: #2563EB;
+  background-color: #F3F4F6;
 }
 
 .variable-name {
-  font-family: monospace;
-  font-weight: 600;
-  color: var(--primary-color);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-weight: 500;
+  color: #2563EB;
+  font-size: 0.875rem;
 }
 
 .variable-model {
-  color: var(--text-color-secondary);
+  color: #6B7280;
   font-size: 0.75rem;
 }
 
 .text-muted {
-  color: var(--text-color-secondary);
+  color: #9CA3AF;
   font-size: 0.875rem;
 }
 
@@ -1004,22 +1034,22 @@ onMounted(() => {
 .template-view-media h4,
 .template-view-variables h4 {
   margin: 0 0 0.75rem 0;
-  color: var(--text-color);
-  font-weight: 600;
+  color: #111827;
+  font-weight: 500;
 }
 
 .content-display {
-  background: var(--surface-ground);
-  border-radius: 8px;
+  background-color: #F9FAFB;
+  border-radius: 0.5rem;
   padding: 1rem;
-  border-left: 4px solid var(--primary-color);
+  border-left: 4px solid #2563EB;
 }
 
 .template-media {
   max-width: 100%;
   max-height: 300px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
 }
 
 .variables-list-display {
@@ -1029,8 +1059,8 @@ onMounted(() => {
 }
 
 .template-view-meta {
-  background: var(--surface-ground);
-  border-radius: 8px;
+  background-color: #F9FAFB;
+  border-radius: 0.5rem;
   padding: 1rem;
 }
 
@@ -1039,7 +1069,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 0;
-  border-bottom: 1px solid var(--surface-border);
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .detail-row:last-child {
@@ -1047,7 +1077,7 @@ onMounted(() => {
 }
 
 .detail-row strong {
-  color: var(--text-color);
+  color: #111827;
 }
 
 .preview-content {
@@ -1063,16 +1093,17 @@ onMounted(() => {
 }
 
 .preview-body {
-  background: var(--surface-ground);
-  border-radius: 8px;
+  background-color: #F9FAFB;
+  border-radius: 0.5rem;
   padding: 1.5rem;
-  border-left: 4px solid var(--primary-color);
+  border-left: 4px solid #2563EB;
 }
 
 .preview-body p {
   line-height: 1.6;
   margin: 0;
   white-space: pre-wrap;
+  color: #374151;
 }
 
 .sample-data-grid {
@@ -1083,6 +1114,7 @@ onMounted(() => {
 
 .sample-data-item {
   font-size: 0.875rem;
+  color: #4B5563;
 }
 
 .media-upload-content {
@@ -1105,16 +1137,16 @@ onMounted(() => {
   justify-content: center;
   gap: 0.75rem;
   padding: 2rem;
-  border: 2px dashed var(--surface-border);
-  border-radius: 8px;
-  background: var(--surface-ground);
+  border: 2px dashed #D1D5DB;
+  border-radius: 0.5rem;
+  background-color: #F9FAFB;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .file-upload-label:hover {
-  border-color: var(--primary-color);
-  background: var(--surface-hover);
+  border-color: #2563EB;
+  background-color: #F3F4F6;
 }
 
 @media (max-width: 768px) {
@@ -1124,12 +1156,13 @@ onMounted(() => {
 
   .header-content {
     flex-direction: column;
+    align-items: flex-start;
     gap: 1rem;
-    text-align: center;
   }
 
   .search-filter-section {
     flex-direction: column;
+    gap: 1rem;
   }
 
   .filter-controls {
@@ -1151,18 +1184,22 @@ onMounted(() => {
 
   .template-view-header {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
     align-items: flex-start;
   }
 
   .preview-header {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
     align-items: flex-start;
   }
 
   .sample-data-grid {
     grid-template-columns: 1fr;
+  }
+
+  .filter-dropdown {
+    width: 100%;
   }
 }
 </style>
