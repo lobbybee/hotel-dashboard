@@ -1,285 +1,220 @@
 <template>
-  <div class="staff-page">
-    <div class="page-container">
-      <!-- Header -->
-      <header class="header">
-        <div class="title-wrap">
-          <h1 class="page-title">
-            <i class="pi pi-users title-icon"></i>
-            Staff Management
-          </h1>
-          <p class="page-subtitle">Manage hotel staff members and their roles</p>
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8 fade-in">
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">Staff Management</h1>
+          <p class="text-gray-600">Manage hotel staff members and their roles</p>
         </div>
         <Button
           label="Add Staff Member"
           icon="pi pi-plus"
-          :rounded="true"
-          :raised="true"
           :loading="createAsyncStatus === 'pending'"
           @click="openAddStaffForm"
         />
-      </header>
+      </div>
+    </div>
 
-      <!-- Stats -->
-      <div class="stats-bar">
-        <Tag :value="`Total: ${totalStaffCount}`" severity="info" :rounded="true" />
-        <Tag :value="`Active: ${activeStaffCount}`" severity="success" :rounded="true" />
+      <!-- Search and Filter Bar -->
+    <div class="mb-6 bg-white rounded-lg border border-gray-200 p-4">
+      <div class="flex flex-col sm:flex-row gap-4">
+        <div class="flex-1">
+          <span class="p-input-icon-left w-full">
+            <i class="pi pi-search"></i>
+            <InputText
+              v-model="searchQuery"
+              placeholder="Search staff by name or email..."
+              class="w-full"
+            />
+          </span>
+        </div>
+        <Dropdown
+          v-model="selectedDepartmentFilter"
+          :options="departmentFilterOptions"
+          placeholder="All Departments"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full sm:w-56"
+        />
+        <Dropdown
+          v-model="selectedRoleFilter"
+          :options="roleFilterOptions"
+          placeholder="All Roles"
+          optionLabel="label"
+          optionValue="value"
+          class="w-full sm:w-48"
+        />
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="isLoading" class="text-center py-16 bg-white rounded-lg border border-gray-200">
+      <ProgressSpinner style="width: 48px; height: 48px" strokeWidth="6" />
+      <p class="text-gray-500 mt-4">Loading staff members...</p>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="error" class="bg-white rounded-lg border border-gray-200 p-8 text-center">
+      <i class="pi pi-exclamation-triangle text-6xl text-red-300 mb-4"></i>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Error loading staff members</h3>
+      <p class="text-gray-500 mb-4">{{ error?.message || 'An unexpected error occurred' }}</p>
+      <Button label="Retry" icon="pi pi-refresh" @click="refetch" />
+    </div>
+
+        <!-- Table Content -->
+    <div v-else>
+      <div v-if="filteredStaffMembers.length === 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
+        <i class="pi pi-users text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-lg mb-2">No staff members found</p>
+        <p class="text-gray-400 text-sm">Add staff members to manage your hotel team</p>
+        <Button label="Add Staff Member" icon="pi pi-plus" class="mt-4" @click="openAddStaffForm" />
       </div>
 
-      <!-- Loading -->
-      <div v-if="isLoading" class="card loading-card">
-        <ProgressSpinner style="width: 48px; height: 48px" strokeWidth="6" />
-        <p class="muted">Loading staff members...</p>
-      </div>
-
-      <!-- Error -->
-      <Message v-else-if="error" severity="error" :closable="false" class="card message-card">
-        <div class="message-flex">
-          <div>
-            <div class="message-title">Error loading staff members</div>
-            <div class="message-detail">{{ error?.message || 'An unexpected error occurred' }}</div>
-          </div>
-          <Button label="Retry" icon="pi pi-refresh" text @click="refetch" />
-        </div>
-      </Message>
-
-      <!-- Main -->
-      <div v-else class="content">
-        <!-- Toolbar -->
-        <div class="card toolbar-card">
-          <div class="toolbar">
-            <div class="toolbar-title">Staff Members</div>
-            <div class="toolbar-actions">
-              <Dropdown
-                v-model="selectedDepartmentFilter"
-                :options="departmentFilterOptions"
-                placeholder="All Departments"
-                optionLabel="label"
-                optionValue="value"
-                class="toolbar-dropdown"
-              />
-              <Dropdown
-                v-model="selectedRoleFilter"
-                :options="roleFilterOptions"
-                placeholder="All Roles"
-                optionLabel="label"
-                optionValue="value"
-                class="toolbar-dropdown"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Table -->
-        <div class="card table-card">
-          <DataTable
-            :value="filteredStaffMembers"
-            :paginator="true"
-            :rows="10"
-            :rowsPerPageOptions="[5, 10, 20, 50]"
-            stripedRows
-            responsiveLayout="scroll"
-            class="p-datatable-sm"
-          >
-            <template #empty>
-              <div class="empty">
-                <i class="pi pi-users empty-icon"></i>
-                <h3 class="empty-title">No Staff Members Found</h3>
-                <p class="empty-text">Get started by adding your first staff member.</p>
-                <Button label="Add Staff Member" icon="pi pi-plus" :rounded="true" :raised="true" @click="openAddStaffForm" />
-              </div>
-            </template>
-
-            <Column field="username" header="Staff Member" sortable>
-              <template #body="slotProps">
-                <div class="col-staff">
-                  <div class="staff-name">{{ slotProps.data.username }}</div>
-                  <div class="staff-id">ID: {{ slotProps.data.id }}</div>
-                </div>
-              </template>
-            </Column>
-
-            <Column field="user_type" header="Role & Department" sortable>
-              <template #body="slotProps">
-                <div class="col-role">
-                  <div class="role-line">
-                    <i class="pi pi-id-card" :style="{ color: getStaffRoleColor(slotProps.data.user_type) }"></i>
-                    <span class="role-name">{{ slotProps.data.user_type.replace('_', ' ') }}</span>
+      <div v-else class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Staff Member
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contact
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr v-for="member in filteredStaffMembers" :key="member.id" class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center"
+                      :class="getRoleBgClass(member.user_type)">
+                      <i class="pi pi-user text-white"></i>
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900">{{ member.username }}</div>
+                      <div class="text-sm text-gray-500">{{ member.email }}</div>
+                    </div>
                   </div>
-                  <div v-if="slotProps.data.department && slotProps.data.department.length" class="dept-tags">
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <Tag
+                    :value="formatRole(member.user_type)"
+                    :severity="getRoleSeverity(member.user_type)"
+                  />
+                  <div v-if="member.department && member.department.length" class="mt-1">
                     <Tag
-                      v-for="dep in slotProps.data.department"
+                      v-for="dep in member.department"
                       :key="dep"
                       :value="dep"
-                      severity="info"
-                      class="dept-tag"
+                      severity="secondary"
+                      class="mr-1"
+                      style="font-size: 0.75rem;"
                     />
                   </div>
-                </div>
-              </template>
-            </Column>
-
-            <Column field="email" header="Contact" sortable>
-              <template #body="slotProps">
-                <div class="col-contact">
-                  <div class="contact-line">
-                    <i class="pi pi-envelope contact-icon"></i>
-                    <span>{{ slotProps.data.email }}</span>
-                  </div>
-                  <div v-if="slotProps.data.phone_number" class="contact-line">
-                    <i class="pi pi-phone contact-icon"></i>
-                    <span>{{ slotProps.data.phone_number }}</span>
-                  </div>
-                </div>
-              </template>
-            </Column>
-
-            <Column field="is_active_hotel_user" header="Status" sortable>
-              <template #body="slotProps">
-                <Badge
-                  :value="slotProps.data.is_active_hotel_user ? 'active' : 'inactive'"
-                  :severity="slotProps.data.is_active_hotel_user ? 'success' : 'danger'"
-                />
-              </template>
-            </Column>
-
-            <Column header="Actions" :exportable="false">
-              <template #body="slotProps">
-                <div class="actions">
-                  <Button
-                    icon="pi pi-pencil"
-                    size="small"
-                    text
-                    :rounded="true"
-                    severity="info"
-                    @click="openEditStaffForm(slotProps.data)"
-                    v-tooltip.top="'Edit'"
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ member.phone_number || 'N/A' }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <Tag
+                    :value="member.is_active_hotel_user ? 'Active' : 'Inactive'"
+                    :severity="member.is_active_hotel_user ? 'success' : 'secondary'"
                   />
-                  <Button
-                    icon="pi pi-trash"
-                    size="small"
-                    text
-                    :rounded="true"
-                    severity="danger"
-                    @click="openDeleteConfirmation(slotProps.data)"
-                    v-tooltip.top="'Delete'"
-                  />
-                </div>
-              </template>
-            </Column>
-          </DataTable>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  <div class="flex gap-2">
+                    <Button
+                      icon="pi pi-pencil"
+                      text
+                      rounded
+                      @click="openEditStaffForm(member)"
+                    />
+                    <Button
+                      icon="pi pi-trash"
+                      text
+                      rounded
+                      severity="danger"
+                      @click="openDeleteConfirmation(member)"
+                    />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
-  </div>
 
   <!-- Add/Edit Staff Dialog -->
-  <Dialog
-    v-model:visible="staffDialogVisible"
-    :header="editingStaff ? 'Edit Staff Member' : 'Add Staff Member'"
-    :modal="true"
-    :style="{ width: '520px' }"
-    :draggable="false"
-    :closeOnEscape="true"
-    :dismissableMask="true"
-  >
-    <div class="dialog-body">
-      <div class="field">
-        <FloatLabel>
-          <InputText
-            id="username"
-            v-model="staffForm.username"
-            class="w-full"
-            :class="{'p-invalid': staffErrors.username}"
-          />
-          <label for="username">Username</label>
-        </FloatLabel>
+  <Dialog v-model:visible="staffDialogVisible" modal :header="editingStaff ? 'Edit Staff Member' : 'Add Staff Member'" :style="{ width: '35rem' }">
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+        <InputText v-model="staffForm.username" class="w-full" :class="{'p-invalid': staffErrors.username}" />
         <small v-if="staffErrors.username" class="p-error">{{ staffErrors.username }}</small>
       </div>
-
-      <div class="field">
-        <FloatLabel>
-          <InputText
-            id="email"
-            v-model="staffForm.email"
-            class="w-full"
-            :class="{'p-invalid': staffErrors.email}"
-          />
-          <label for="email">Email</label>
-        </FloatLabel>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+        <InputText v-model="staffForm.email" type="email" class="w-full" :class="{'p-invalid': staffErrors.email}" />
         <small v-if="staffErrors.email" class="p-error">{{ staffErrors.email }}</small>
       </div>
-
-      <div class="field">
-        <FloatLabel>
-          <Password
-            id="password"
-            v-model="staffForm.password"
-            class="w-full"
-            :class="{'p-invalid': staffErrors.password}"
-            toggleMask
-            :feedback="false"
-          />
-          <label for="password">{{ editingStaff ? 'Password (leave blank to keep current)' : 'Password' }}</label>
-        </FloatLabel>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">{{ editingStaff ? 'Password (leave blank to keep current)' : 'Password *' }}</label>
+        <Password v-model="staffForm.password" class="w-full" :class="{'p-invalid': staffErrors.password}" toggleMask :feedback="false" />
         <small v-if="staffErrors.password" class="p-error">{{ staffErrors.password }}</small>
       </div>
-
-      <div class="field">
-        <FloatLabel>
-          <Dropdown
-            id="user_type"
-            v-model="staffForm.user_type"
-            :options="userTypes"
-            optionLabel="label"
-            optionValue="value"
-            class="w-full"
-            :class="{'p-invalid': staffErrors.user_type}"
-          />
-          <label for="user_type">Role</label>
-        </FloatLabel>
-        <small v-if="staffErrors.user_type" class="p-error">{{ staffErrors.user_type }}</small>
-      </div>
-
-      <div class="field" v-if="staffForm.user_type === 'department_staff'">
-        <FloatLabel>
-          <MultiSelect
-            id="department"
-            v-model="staffForm.department"
-            :options="departmentChoices"
-            class="w-full"
-            display="chip"
-          />
-          <label for="department">Departments</label>
-        </FloatLabel>
-      </div>
-
-      <div class="field">
-        <FloatLabel>
-          <InputText
-            id="phone_number"
-            v-model="staffForm.phone_number"
-            class="w-full"
-            :class="{'p-invalid': staffErrors.phone_number}"
-          />
-          <label for="phone_number">Phone Number (optional)</label>
-        </FloatLabel>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+        <InputText v-model="staffForm.phone_number" class="w-full" :class="{'p-invalid': staffErrors.phone_number}" />
         <small v-if="staffErrors.phone_number" class="p-error">{{ staffErrors.phone_number }}</small>
       </div>
-
-      <div class="checkbox-line">
-        <Checkbox
-          id="is_active_hotel_user"
-          v-model="staffForm.is_active_hotel_user"
-          :binary="true"
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+        <Dropdown
+          v-model="staffForm.user_type"
+          :options="userTypes.filter(r => r.value)"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select role"
+          class="w-full"
+          :class="{'p-invalid': staffErrors.user_type}"
         />
-        <label for="is_active_hotel_user">Staff Member is Active</label>
+        <small v-if="staffErrors.user_type" class="p-error">{{ staffErrors.user_type }}</small>
+      </div>
+      <div v-if="staffForm.user_type === 'department_staff'">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Departments</label>
+        <MultiSelect
+          v-model="staffForm.department"
+          :options="departmentChoices"
+          placeholder="Select departments"
+          class="w-full"
+          display="chip"
+        />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+        <div class="flex items-center gap-2">
+          <InputSwitch v-model="staffForm.is_active_hotel_user" />
+          <span class="text-sm text-gray-700">
+            {{ staffForm.is_active_hotel_user ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
       </div>
     </div>
-
     <template #footer>
-      <Button label="Cancel" icon="pi pi-times" text :rounded="true" @click="closeStaffForm" />
-      <Button :label="editingStaff ? 'Update' : 'Create'" icon="pi pi-check" :rounded="true" @click="saveStaff" />
+      <Button label="Cancel" text @click="closeStaffForm" />
+      <Button :label="editingStaff ? 'Update' : 'Add'" @click="saveStaff" />
     </template>
   </Dialog>
 
@@ -305,25 +240,21 @@
       <Button label="Delete" icon="pi pi-trash" severity="danger" :rounded="true" @click="deleteStaff" />
     </template>
   </Dialog>
+
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
-import Card from 'primevue/card';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
-import Checkbox from 'primevue/checkbox';
-import FloatLabel from 'primevue/floatlabel';
-import Badge from 'primevue/badge';
 import Password from 'primevue/password';
 import ProgressSpinner from 'primevue/progressspinner';
 import MultiSelect from 'primevue/multiselect';
 import Tag from 'primevue/tag';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
-import Message from 'primevue/message';
+import InputSwitch from 'primevue/inputswitch';
 import { useToast } from 'primevue/usetoast';
 
 import {
@@ -418,6 +349,34 @@ const filteredStaffMembers = computed(() => {
 
 const getStaffRoleColor = (type: string) => {
   return userTypeColors[type] || 'var(--primary-color)';
+};
+
+const formatRole = (role: string) => {
+  return role.split('_').map(word =>
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ')
+};
+
+const getRoleSeverity = (role: string) => {
+  const severities = {
+    hotel_admin: 'danger',
+    manager: 'warning',
+    receptionist: 'info',
+    department_staff: 'success',
+    other_staff: 'secondary'
+  }
+  return severities[role as keyof typeof severities] || 'secondary';
+};
+
+const getRoleBgClass = (role: string) => {
+  const classes = {
+    hotel_admin: 'bg-red-600',
+    manager: 'bg-amber-600',
+    receptionist: 'bg-blue-600',
+    department_staff: 'bg-green-600',
+    other_staff: 'bg-gray-600'
+  }
+  return classes[role as keyof typeof classes] || 'bg-gray-600';
 };
 
 const openAddStaffForm = () => {
@@ -548,222 +507,312 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.staff-page {
-  padding: 2rem;
-  background: var(--surface-ground);
-  min-height: 100vh;
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
 }
 
-.page-container {
-  max-width: 1200px;
-  margin: 0 auto;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.header {
-  background: var(--surface-card);
-  border-radius: 16px;
-  padding: 1.5rem 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid var(--surface-border);
+/* Role background classes */
+.bg-red-600 {
+  background-color: #DC2626;
 }
 
-.title-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.bg-amber-600 {
+  background-color: #D97706;
 }
 
-.page-title {
-  margin: 0;
-  color: var(--text-color);
-  font-size: 1.75rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.bg-blue-600 {
+  background-color: #2563EB;
 }
 
-.title-icon {
-  color: var(--primary-color);
+.bg-green-600 {
+  background-color: #059669;
 }
 
-.page-subtitle {
-  margin: 0;
-  color: var(--text-color-secondary);
-  font-size: 0.95rem;
+.bg-gray-600 {
+  background-color: #4B5563;
 }
 
-.stats-bar {
-  display: flex;
-  gap: 0.5rem;
-  margin: 1rem 0 1.25rem;
-  flex-wrap: wrap;
+/* Utility classes */
+.max-w-7xl {
+  max-width: 80rem;
 }
 
-.card {
-  background: var(--surface-card);
-  border-radius: 12px;
-  border: 1px solid var(--surface-border);
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.loading-card {
-  padding: 3rem 1rem;
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+.mb-8 {
+  margin-bottom: 2rem;
 }
 
-.muted {
-  color: var(--text-color-secondary);
+.mb-6 {
+  margin-bottom: 1.5rem;
 }
 
-.message-card {
-  padding: 1rem;
-}
-
-.message-flex {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.message-title {
-  color: var(--text-color);
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.message-detail {
-  color: var(--text-color-secondary);
-  font-size: 0.9rem;
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.toolbar-card {
-  padding: 1rem 1.25rem;
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.toolbar-title {
-  color: var(--text-color);
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-
-.toolbar-actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.toolbar-dropdown {
-  min-width: 220px;
-}
-
-.table-card {
-  padding: 0.5rem;
-}
-
-.empty {
-  padding: 3rem 1rem;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 3rem;
-  color: var(--text-color-secondary);
-  opacity: 0.5;
-  margin-bottom: 0.5rem;
-}
-
-.empty-title {
-  color: var(--text-color);
-  margin: 0.25rem 0;
-}
-
-.empty-text {
-  color: var(--text-color-secondary);
+.mb-4 {
   margin-bottom: 1rem;
 }
 
-/* Column cell styles */
-.col-staff .staff-name {
-  color: var(--text-color);
-  font-weight: 600;
-}
-.col-staff .staff-id {
-  color: var(--text-color-secondary);
-  font-size: 0.85rem;
+.mb-2 {
+  margin-bottom: 0.5rem;
 }
 
-.col-role .role-line {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.mt-4 {
+  margin-top: 1rem;
 }
-.col-role .role-name {
-  text-transform: capitalize;
-  font-weight: 500;
-  color: var(--text-color);
-}
-.dept-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
+
+.mt-1 {
   margin-top: 0.25rem;
 }
-.dept-tag {
-  font-size: 0.75rem;
+
+.p-4 {
+  padding: 1rem;
 }
 
-.col-contact .contact-line {
+.p-8 {
+  padding: 2rem;
+}
+
+.py-16 {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+.py-4 {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.px-6 {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.flex {
   display: flex;
+}
+
+.items-center {
   align-items: center;
+}
+
+.items-start {
+  align-items: flex-start;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.gap-2 {
   gap: 0.5rem;
-  color: var(--text-color);
-  font-size: 0.95rem;
-}
-.contact-icon {
-  color: var(--text-color-secondary);
 }
 
-/* Actions */
-.actions {
-  display: flex;
-  gap: 0.25rem;
-  align-items: center;
-}
-
-/* Dialog */
-.dialog-body {
-  display: flex;
-  flex-direction: column;
+.gap-4 {
   gap: 1rem;
 }
-.field small.p-error {
-  margin-top: 0.25rem;
-  display: block;
+
+.gap-0\.5rem {
+  gap: 0.125rem;
 }
-.checkbox-line {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+
+.w-full {
+  width: 100%;
+}
+
+.w-10 {
+  width: 2.5rem;
+}
+
+.h-10 {
+  height: 2.5rem;
+}
+
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-row {
+  flex-direction: row;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-3xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.text-lg {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.text-gray-900 {
+  color: #111827;
+}
+
+.text-gray-600 {
+  color: #4B5563;
+}
+
+.text-gray-500 {
+  color: #6B7280;
+}
+
+.text-gray-400 {
+  color: #9CA3AF;
+}
+
+.text-gray-300 {
+  color: #D1D5DB;
+}
+
+.text-red-300 {
+  color: #FCA5A5;
+}
+
+.text-white {
+  color: #FFFFFF;
+}
+
+.bg-white {
+  background-color: #FFFFFF;
+}
+
+.bg-gray-50 {
+  background-color: #F9FAFB;
+}
+
+.border {
+  border-width: 1px;
+}
+
+.border-gray-200 {
+  border-color: #E5E7EB;
+}
+
+.border-gray-300 {
+  border-color: #D1D5DB;
+}
+
+.border-b {
+  border-bottom-width: 1px;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+.rounded-full {
+  border-radius: 9999px;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.tracking-wider {
+  letter-spacing: 0.05em;
+}
+
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+
+.divide-y > :not([hidden]) ~ :not([hidden]) {
+  border-top-width: 1px;
+}
+
+.divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #E5E7EB;
+}
+
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+.space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1rem;
+}
+
+/* Hover effects */
+.hover\:bg-gray-50:hover {
+  background-color: #F9FAFB;
+}
+
+/* Responsive classes */
+@media (min-width: 640px) {
+  .sm\:flex-row {
+    flex-direction: row;
+  }
+  
+  .sm\:w-56 {
+    width: 14rem;
+  }
+  
+  .sm\:w-48 {
+    width: 12rem;
+  }
 }
 
 /* Delete Dialog */
@@ -772,43 +821,9 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
 }
+
 .delete-icon {
   font-size: 1.5rem;
-  color: var(--red-500, #ef4444);
-}
-
-/* DataTable theming */
-:deep(.p-datatable .p-datatable-thead > tr > th) {
-  background: var(--surface-ground);
-  color: var(--text-color);
-  font-weight: 600;
-  border-bottom: 1px solid var(--surface-border);
-}
-:deep(.p-datatable .p-datatable-tbody > tr) {
-  transition: background-color 0.2s ease;
-}
-:deep(.p-datatable .p-datatable-tbody > tr:hover) {
-  background: var(--surface-hover);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: flex-start;
-  }
-  .toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .toolbar-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-  .toolbar-dropdown {
-    min-width: 0;
-    width: 100%;
-  }
+  color: #ef4444;
 }
 </style>

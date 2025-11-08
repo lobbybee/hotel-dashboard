@@ -1,3 +1,4 @@
+
 <template>
   <div class="max-w-7xl mx-auto">
     <div class="mb-8 fade-in">
@@ -16,19 +17,7 @@
       </span>
     </div>
 
-        <div v-if="isLoading" class="text-center py-16 bg-white rounded-lg border border-gray-200">
-      <ProgressSpinner style="width: 48px; height: 48px" strokeWidth="6" />
-      <p class="text-gray-500 mt-4">Loading active stays...</p>
-    </div>
-
-    <div v-else-if="error" class="bg-white rounded-lg border border-gray-200 p-8 text-center">
-      <i class="pi pi-exclamation-triangle text-6xl text-red-300 mb-4"></i>
-      <h3 class="text-lg font-medium text-gray-900 mb-2">Error loading active stays</h3>
-      <p class="text-gray-500 mb-4">{{ error?.message }}</p>
-      <Button label="Retry" icon="pi pi-refresh" @click="refetch" />
-    </div>
-
-    <div v-else-if="filteredStays && filteredStays.length === 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
+    <div v-if="filteredActiveStays.length === 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
       <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
       <p class="text-gray-500 text-lg mb-2">No active stays</p>
       <p class="text-gray-400 text-sm">All rooms are currently available</p>
@@ -36,7 +25,7 @@
 
     <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
-        v-for="stay in filteredStays"
+        v-for="stay in filteredActiveStays"
         :key="stay.id"
         class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all"
       >
@@ -72,7 +61,7 @@
               <i class="pi pi-phone"></i>
               WhatsApp
             </span>
-            <span class="font-medium text-gray-900">{{ stay.guest.whatsapp_number || 'N/A' }}</span>
+            <span class="font-medium text-gray-900">{{ stay.guest.whatsapp_number }}</span>
           </div>
         </div>
 
@@ -96,100 +85,71 @@
           icon="pi pi-sign-out"
           class="w-full"
           severity="danger"
-          @click="handleCheckout(stay)"
+          @click="initiateCheckout(stay)"
         />
       </div>
     </div>
 
-    <!-- Check-out Confirmation Dialog -->
-    <Dialog v-model:visible="isCheckoutDialogVisible" modal header="Confirm Check-out" :style="{ width: '30rem' }">
-      <div v-if="selectedStayForCheckout" class="space-y-4">
+    <Dialog v-model:visible="checkoutDialogVisible" modal header="Confirm Check-out" :style="{ width: '30rem' }">
+      <div v-if="selectedStay" class="space-y-4">
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p class="text-sm text-blue-900 mb-2">
             <i class="pi pi-info-circle mr-2"></i>
             Guest Check-out Confirmation
           </p>
           <div class="space-y-1 text-sm">
-            <p><strong>Guest:</strong> {{ selectedStayForCheckout.guest.full_name }}</p>
-            <p><strong>Room:</strong> {{ selectedStayForCheckout.room.room_number }}</p>
-            <p><strong>Duration:</strong> {{ getDaysStayed(selectedStayForCheckout) }} night(s)</p>
+            <p><strong>Guest:</strong> {{ selectedStay.guest.full_name }}</p>
+            <p><strong>Room:</strong> {{ selectedStay.room.room_number }}</p>
+            <p><strong>Duration:</strong> {{ getDaysStayed(selectedStay) }} night(s)</p>
           </div>
         </div>
 
         <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <p class="text-sm text-amber-900">
             <i class="pi pi-exclamation-triangle mr-2"></i>
-            Room {{ selectedStayForCheckout.room.room_number }} will be marked as "Cleaning" after checkout.
+            Room {{ selectedStay.room.room_number }} will be marked as "Cleaning" after checkout.
           </p>
         </div>
       </div>
       <template #footer>
-        <Button label="Cancel" text @click="isCheckoutDialogVisible = false" />
-        <Button label="Confirm Check-out" severity="danger" @click="handleConfirmCheckout" :loading="isCheckingOut" />
+        <Button label="Cancel" text @click="checkoutDialogVisible = false" />
+        <Button label="Confirm Check-out" severity="danger" @click="confirmCheckout" />
       </template>
     </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import Button from 'primevue/button';
-import Tag from 'primevue/tag';
-import ProgressSpinner from 'primevue/progressspinner';
-import InputText from 'primevue/inputtext';
-import Dialog from 'primevue/dialog';
-import { useToast } from 'primevue/usetoast';
+import { ref, computed } from 'vue'
+import { useHotelStore } from '@/stores/hotelStore'
+import { useToast } from 'primevue/usetoast'
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import Dialog from 'primevue/dialog'
+import Tag from 'primevue/tag'
+import type { Stay } from '../types'
 
-import { useFetchStays, useCheckOut } from '~/composables/useGuest';
-import type { Stay } from '../types';
+const hotelStore = useHotelStore()
+const toast = useToast()
 
+const searchQuery = ref('')
+const checkoutDialogVisible = ref(false)
+const selectedStay = ref<Stay | null>(null)
 
+const filteredActiveStays = computed(() => {
+  let stays = hotelStore.activeStays
 
-const toast = useToast();
-
-// --- DATA FETCHING ---
-const { data: activeStaysData, isLoading, error, refetch } = useFetchStays(ref({ status: 'active' }));
-const activeStays = computed(() => activeStaysData.value?.results || []);
-
-// --- SEARCH ---
-const searchQuery = ref('');
-const filteredStays = computed(() => {
-  if (!searchQuery.value) {
-    return activeStays.value;
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    stays = stays.filter(stay =>
+      stay.guest.full_name.toLowerCase().includes(query) ||
+      stay.room.room_number.toLowerCase().includes(query) ||
+      stay.guest.email.toLowerCase().includes(query)
+    )
   }
-  const lowerCaseQuery = searchQuery.value.toLowerCase();
-  return activeStays.value.filter(stay =>
-    stay.guest.full_name.toLowerCase().includes(lowerCaseQuery) ||
-    stay.room.room_number.toLowerCase().includes(lowerCaseQuery)
-  );
-});
 
-// --- CHECKOUT LOGIC ---
-const { mutateAsync: checkOutGuest, isLoading: isCheckingOut } = useCheckOut();
-const isCheckoutDialogVisible = ref(false);
-const selectedStayForCheckout = ref<any>(null);
-
-const handleCheckout = (stay: any) => {
-  selectedStayForCheckout.value = stay;
-  isCheckoutDialogVisible.value = true;
-};
-
-const handleConfirmCheckout = async () => {
-  if (!selectedStayForCheckout.value) return;
-
-  try {
-    await checkOutGuest({ stay_id: selectedStayForCheckout.value.id });
-
-    toast.add({ severity: 'success', summary: 'Checked Out', detail: `${selectedStayForCheckout.value.guest.full_name} has been checked out. Room ${selectedStayForCheckout.value.room.room_number} is now marked for cleaning.`, life: 4000 });
-
-    isCheckoutDialogVisible.value = false;
-    await refetch(); // Refresh the list of active stays
-
-  } catch (err: any) {
-    const errorMessage = err.response?._data?.detail || 'An unexpected error occurred.';
-    toast.add({ severity: 'error', summary: 'Check-out Failed', detail: errorMessage, life: 5000 });
-  }
-};
+  return stays
+})
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -205,21 +165,40 @@ const getDaysStayed = (stay: Stay) => {
   const diff = checkOut.getTime() - checkIn.getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
+
+const initiateCheckout = (stay: Stay) => {
+  selectedStay.value = stay
+  checkoutDialogVisible.value = true
+}
+
+const confirmCheckout = () => {
+  if (selectedStay.value) {
+    hotelStore.checkOut(selectedStay.value.id)
+    toast.add({
+      severity: 'success',
+      summary: 'Checked Out',
+      detail: `${selectedStay.value.guest.full_name} has been checked out. Room ${selectedStay.value.room.room_number} is now marked for cleaning.`,
+      life: 4000
+    })
+    checkoutDialogVisible.value = false
+    selectedStay.value = null
+  }
+}
 </script>
 
 <style scoped>
-.animate-fade-slide-down {
-  animation: fade-slide-down 0.6s ease forwards;
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
 }
-@keyframes fade-slide-down {
-  0% { opacity: 0; transform: translateY(-10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-    animation: fade-in 0.5s ease forwards;
-}
-@keyframes fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
