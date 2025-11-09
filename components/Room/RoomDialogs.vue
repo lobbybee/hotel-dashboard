@@ -140,6 +140,39 @@
         :dismissableMask="true"
     >
         <div class="space-y-6">
+            <!-- Room Number Prefix and Suffix -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <FloatLabel>
+                        <InputText
+                            id="room_prefix"
+                            v-model="bulkAddForm.roomPrefix"
+                            class="w-full"
+                            placeholder="e.g., A, B, Room"
+                        />
+                        <label for="room_prefix">Room Number Prefix (Optional)</label>
+                    </FloatLabel>
+                    <small class="text-gray-500">Prefix added before room number</small>
+                </div>
+                
+                <div>
+                    <FloatLabel>
+                        <InputText
+                            id="room_suffix"
+                            v-model="bulkAddForm.roomSuffix"
+                            class="w-full"
+                            placeholder="e.g., A, B, Room"
+                        />
+                        <label for="room_suffix">Room Number Suffix (Optional)</label>
+                    </FloatLabel>
+                    <small class="text-gray-500">Suffix added after room number</small>
+                </div>
+            </div>
+            
+            <div class="text-center text-sm text-gray-600">
+                Example format: <span class="font-medium">{{ formatRoomPreview(bulkAddForm.startRoomNumber) }}</span>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <FloatLabel>
@@ -151,6 +184,7 @@
                                 'p-invalid': bulkAddErrors.startRoomNumber,
                             }"
                             :min="1"
+                            :useGrouping="false"
                         />
                         <label for="start_room_number">Start Room Number</label>
                     </FloatLabel>
@@ -171,6 +205,7 @@
                                 'p-invalid': bulkAddErrors.endRoomNumber,
                             }"
                             :min="bulkAddForm.startRoomNumber"
+                            :useGrouping="false"
                         />
                         <label for="end_room_number">End Room Number</label>
                     </FloatLabel>
@@ -183,12 +218,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <FloatLabel>
-                        <InputNumber
+                        <Dropdown
                             id="floor"
                             v-model="bulkAddForm.floor"
+                            :options="floorOptions"
+                            optionLabel="label"
+                            optionValue="value"
                             class="w-full"
                             :class="{ 'p-invalid': bulkAddErrors.floor }"
-                            :min="1"
+                            placeholder="Select Floor"
                         />
                         <label for="floor">Floor</label>
                     </FloatLabel>
@@ -219,10 +257,10 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Preview: {{ roomCount }} rooms will be created ({{
-                        bulkAddForm.startRoomNumber
-                    }}
-                    - {{ bulkAddForm.endRoomNumber }})
+                    Preview: {{ roomCount }} rooms will be created
+                    <span v-if="roomCount > 0">
+                        ({{ formatRoomPreview(bulkAddForm.startRoomNumber) }} - {{ formatRoomPreview(bulkAddForm.endRoomNumber) }})
+                    </span>
                 </label>
             </div>
         </div>
@@ -501,6 +539,8 @@ interface Props {
         endRoomNumber: number;
         floor: number;
         categoryId: number | null;
+        roomPrefix: string;
+        roomSuffix: string;
     };
     roomForm: {
         category_id: number | null;
@@ -547,8 +587,32 @@ const emit = defineEmits<{
     'delete-selected-rooms': [];
 }>();
 
+// Generate floor options (Floor 1 to Floor 100 with values 1 to 100)
+const floorOptions = computed(() => {
+    return Array.from({ length: 100 }, (_, i) => ({
+        label: `Floor ${i + 1}`,
+        value: i + 1
+    }));
+});
+
 const roomCount = computed(() => {
     if (props.bulkAddForm.startRoomNumber > props.bulkAddForm.endRoomNumber) return 0;
     return props.bulkAddForm.endRoomNumber - props.bulkAddForm.startRoomNumber + 1;
 });
+
+// Format room number preview with prefix and suffix
+const formatRoomPreview = (roomNumber: number) => {
+    const prefix = props.bulkAddForm.roomPrefix.trim();
+    const suffix = props.bulkAddForm.roomSuffix.trim();
+    const number = roomNumber.toString();
+    
+    if (prefix && suffix) {
+        return `${prefix}-${number}-${suffix}`;
+    } else if (prefix) {
+        return `${prefix}-${number}`;
+    } else if (suffix) {
+        return `${number}-${suffix}`;
+    }
+    return number;
+};
 </script>

@@ -1,81 +1,68 @@
 <template>
-  <div class="bg-white rounded-2xl shadow-2xl p-8">
+  <div class="bg-white rounded-lg border border-gray-200 p-6">
     <div class="mb-6">
-      <h2 class="text-xl font-bold text-gray-900 mb-2">Operational Settings</h2>
+      <h2 class="text-xl font-semibold text-gray-900 mb-2">Operational Settings</h2>
     </div>
 
     <div class="space-y-6">
       <!-- Check-in and Check-out Time Row -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <FloatLabel>
-            <DatePicker
-              id="check_in_time"
-              v-model="timeValue"
-              time-only
-              hour-format="24"
-              class="w-full h-12 rounded-lg"
-              input-class="h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
-              :class="{'border-red-500': errors.check_in_time}"
-              @update:model-value="onTimeChange"
-            />
-            <label for="check_in_time" class="text-gray-800">Check-in Time</label>
-          </FloatLabel>
+          <label for="check_in_time" class="block text-sm font-medium text-gray-700 mb-2">Check-in Time</label>
+          <DatePicker
+            id="check_in_time"
+            v-model="timeValue"
+            time-only
+            hour-format="24"
+            class="w-full"
+            :class="{'p-invalid': errors.check_in_time}"
+            @update:model-value="onTimeChange"
+          />
           <small v-if="errors.check_in_time" class="text-red-500 text-sm mt-1 block">{{ errors.check_in_time }}</small>
         </div>
 
         <!-- Check-out Time (placeholder for future implementation) -->
         <div>
-          <FloatLabel>
-            <DatePicker
-              id="check_out_time"
-              v-model="checkOutTimeValue"
-              time-only
-              hour-format="24"
-              class="w-full h-12 rounded-lg"
-              input-class="h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
-            />
-            <label for="check_out_time" class="text-gray-800">Check-out Time</label>
-          </FloatLabel>
+          <label for="check_out_time" class="block text-sm font-medium text-gray-700 mb-2">Check-out Time</label>
+          <DatePicker
+            id="check_out_time"
+            v-model="checkOutTimeValue"
+            time-only
+            hour-format="24"
+            class="w-full"
+          />
         </div>
       </div>
 
       <!-- Timezone -->
       <div>
-        <FloatLabel>
-          <Dropdown
-            id="time_zone"
-            v-model="localHotelForm.time_zone"
-            :options="timezones"
-            option-label="label"
-            option-value="value"
-            class="w-full h-12 rounded-lg"
-            input-class="h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
-            :class="{'border-red-500': errors.time_zone}"
-            @update:model-value="onTimezoneChange"
-          />
-          <label for="time_zone" class="text-gray-800">Timezone</label>
-        </FloatLabel>
-        <small v-if="errors.time_zone" class="text-red-500 text-sm mt-1 block">{{ errors.time_zone }}</small>
+        <label for="time_zone" class="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
+        <Dropdown
+          id="time_zone"
+          v-model="hotelForm.time_zone"
+          :options="timezones"
+          option-label="label"
+          option-value="value"
+          class="w-full"
+          :class="{'p-invalid': errors.time_zone}"
+          @update:model-value="onTimezoneChange"
+        />
+        <small v-if="errors.time_zone" class="text-red-500 text-sm mt-2 block">{{ errors.time_zone }}</small>
       </div>
 
       <!-- WiFi Password -->
       <div>
-        <FloatLabel>
-          <InputText
-            id="wifi_password"
-            v-model="localHotelForm.wifi_password"
-            type="password"
-            class="w-full h-12 rounded-lg px-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
-            :class="{'border-red-500': errors.wifi_password}"
-            @update:model-value="onWifiPasswordChange"
-          />
-          <label for="wifi_password" class="text-gray-800">WiFi Password</label>
-        </FloatLabel>
-        <small v-if="errors.wifi_password" class="text-red-500 text-sm mt-1 block">{{ errors.wifi_password }}</small>
+        <label for="wifi_password" class="block text-sm font-medium text-gray-700 mb-2">WiFi Password</label>
+        <InputText
+          id="wifi_password"
+          v-model="hotelForm.wifi_password"
+          type="password"
+          class="w-full h-12 rounded-lg px-4 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
+          :class="{'border-red-500 focus:border-red-500 focus:ring-red-100': errors.wifi_password}"
+          placeholder="Enter WiFi password"
+        />
+        <small v-if="errors.wifi_password" class="text-red-500 text-sm mt-2 block">{{ errors.wifi_password }}</small>
       </div>
-
-
     </div>
   </div>
 </template>
@@ -83,7 +70,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import Panel from 'primevue/panel';
-import FloatLabel from 'primevue/floatlabel';
 import DatePicker from 'primevue/datepicker';
 import Dropdown from 'primevue/dropdown';
 import InputText from 'primevue/inputtext';
@@ -104,15 +90,12 @@ const props = defineProps({
 // Define emits
 const emit = defineEmits(['update:hotelForm', 'save']);
 
-// Create a local copy of the hotel form
-const localHotelForm = ref({ ...props.hotelForm });
-
 // Computed property to convert string time to Date object for DatePicker
 const timeValue = computed({
   get: () => {
-    if (!localHotelForm.value.check_in_time) return null;
+    if (!props.hotelForm.check_in_time) return null;
     // Handle HH:MM:SS format from API and convert to HH:MM
-    const timeParts = localHotelForm.value.check_in_time.split(':');
+    const timeParts = props.hotelForm.check_in_time.split(':');
     const hours = parseInt(timeParts[0], 10);
     const minutes = parseInt(timeParts[1], 10);
     const date = new Date();
@@ -123,22 +106,16 @@ const timeValue = computed({
     if (value instanceof Date) {
       const hours = value.getHours().toString().padStart(2, '0');
       const minutes = value.getMinutes().toString().padStart(2, '0');
-      localHotelForm.value.check_in_time = `${hours}:${minutes}`;
-      emit('update:hotelForm', localHotelForm.value);
+      const updatedForm = {
+        ...props.hotelForm,
+        check_in_time: `${hours}:${minutes}`
+      };
+      emit('update:hotelForm', updatedForm);
     }
   }
 });
 
-// Watch for changes in the prop and update local copy
-watch(() => props.hotelForm, (newVal) => {
-  if (newVal) {
-    localHotelForm.value = { ...newVal };
-  }
-}, { deep: true, immediate: true });
-
 // Timezone options
-// Note: Etc/GMT-5 is used for IST (Indian Standard Time) which is UTC+5:30
-// The Etc/GMT timezone database uses inverted signs, so GMT-5 represents UTC+5
 const timezones = [
   { label: 'India Standard Time (IST)', value: 'Etc/GMT-5' },
   { label: 'UTC', value: 'UTC' },
@@ -177,31 +154,29 @@ const timezones = [
   { label: 'Sydney', value: 'Australia/Sydney' }
 ];
 
+// Check-out time placeholder value
+const checkOutTimeValue = ref(null);
+
 // Handle time change
 const onTimeChange = (value) => {
   if (value instanceof Date) {
     const hours = value.getHours().toString().padStart(2, '0');
     const minutes = value.getMinutes().toString().padStart(2, '0');
-    localHotelForm.value.check_in_time = `${hours}:${minutes}`;
-    emit('update:hotelForm', localHotelForm.value);
+    const updatedForm = {
+      ...props.hotelForm,
+      check_in_time: `${hours}:${minutes}`
+    };
+    emit('update:hotelForm', updatedForm);
   }
 };
 
 // Handle timezone change
 const onTimezoneChange = (value) => {
-  localHotelForm.value.time_zone = value;
-  emit('update:hotelForm', localHotelForm.value);
-};
-
-// Handle Wi-Fi password change
-const onWifiPasswordChange = (value) => {
-  localHotelForm.value.wifi_password = value;
-  emit('update:hotelForm', localHotelForm.value);
-};
-const checkOutTimeValue = ref(null);
-// Save settings
-const saveSettings = () => {
-  emit('save');
+  const updatedForm = {
+    ...props.hotelForm,
+    time_zone: value
+  };
+  emit('update:hotelForm', updatedForm);
 };
 </script>
 

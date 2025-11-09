@@ -1,10 +1,30 @@
 <template>
-    <div class="flex flex-wrap gap-2 mb-4">
-        <Tag icon="pi pi-check-circle" severity="success" value="Available" rounded />
-        <Tag icon="pi pi-user" severity="info" value="Occupied" rounded />
-        <Tag icon="pi pi-spin pi-spinner" severity="warning" value="Cleaning" rounded />
-        <Tag icon="pi pi-wrench" severity="warning" value="Maintenance" rounded />
-        <Tag icon="pi pi-ban" severity="danger" value="Out of Order" rounded />
+    <div class="bg-white p-3 rounded border border-gray-200 mb-4">
+        <div class="flex flex-wrap items-center gap-4">
+            <span class="text-sm font-medium text-gray-700">Room Status:</span>
+            <div class="flex flex-wrap gap-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-green-500 border border-green-200"></div>
+                    <span class="text-xs text-gray-600">Available</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-blue-500 border border-blue-200"></div>
+                    <span class="text-xs text-gray-600">Occupied</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-amber-500 border border-amber-200"></div>
+                    <span class="text-xs text-gray-600">Cleaning</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500 border border-red-200"></div>
+                    <span class="text-xs text-gray-600">Maintenance</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-gray-500 border border-gray-200"></div>
+                    <span class="text-xs text-gray-600">Out of Order</span>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 

@@ -1,16 +1,16 @@
 <template>
-  <div class="bg-white rounded-2xl shadow-2xl p-8">
+  <div class="bg-white rounded-lg shadow-xl border border-gray-100 p-8">
     <div class="mb-6">
-      <h2 class="text-xl font-bold text-gray-900 mb-2">Verification Documents</h2>
+      <h2 class="text-xl font-semibold text-gray-900 mb-2">Verification Documents</h2>
       <p class="text-sm text-gray-600">Upload required documents for hotel verification</p>
     </div>
 
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-6">
       <!-- Business License Section -->
       <div class="space-y-4">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 bg-gradient-to-br from-yellow-50 to-orange-100 rounded-full flex items-center justify-center">
-            <i class="pi pi-file-check text-blue-500"></i>
+          <div class="w-10 h-10 bg-gradient-to-br from-emerald-50 to-green-100 rounded-full flex items-center justify-center">
+            <i class="pi pi-file-check text-emerald-600"></i>
           </div>
           <div>
             <h3 class="font-semibold text-gray-900">Business License</h3>
@@ -23,11 +23,11 @@
           <div
             v-for="(doc, index) in getDocumentsByType('license')"
             :key="doc.id"
-            class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
+            class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 bg-emerald-50 border border-emerald-200 rounded-lg"
           >
             <div class="flex items-center gap-2 cursor-pointer" @click="openDocument(doc)">
-              <i class="pi pi-check-circle text-green-500"></i>
-              <span class="text-sm text-green-700">License {{ index + 1 }}</span>
+              <i class="pi pi-check-circle text-emerald-600"></i>
+              <span class="text-sm text-emerald-700 font-medium">License {{ index + 1 }}</span>
             </div>
              <FileUpload
               @click.stop
@@ -76,8 +76,8 @@
       <!-- Additional Documents Section -->
       <div class="space-y-4">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 bg-gradient-to-br from-yellow-50 to-orange-100 rounded-full flex items-center justify-center">
-            <i class="pi pi-files text-blue-500"></i>
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-full flex items-center justify-center">
+            <i class="pi pi-files text-blue-600"></i>
           </div>
           <div>
             <h3 class="font-semibold text-gray-900">Additional Documents</h3>
@@ -90,11 +90,11 @@
           <div
             v-for="(doc, index) in getDocumentsByType('other')"
             :key="doc.id"
-            class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
+            class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg"
           >
             <div class="flex items-center gap-2 cursor-pointer" @click="openDocument(doc)">
-              <i class="pi pi-check-circle text-green-500"></i>
-              <span class="text-sm text-green-700">Document {{ index + 1 }}</span>
+              <i class="pi pi-check-circle text-blue-600"></i>
+              <span class="text-sm text-blue-700 font-medium">Document {{ index + 1 }}</span>
             </div>
             <FileUpload
               @click.stop

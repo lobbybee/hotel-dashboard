@@ -1,7 +1,10 @@
 <template>
-  <div class="bg-white rounded-2xl shadow-2xl p-8">
+  <div class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-all duration-200">
     <div class="text-center">
-      <h3 class="text-lg font-bold text-gray-900 ">Hotel QR Code</h3>
+      <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-4">
+        <i class="pi pi-qrcode text-xl text-blue-600"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Hotel QR Code</h3>
       <div v-if="hotel && hotel.status === 'verified'" class="space-y-4">
         <div
           ref="qrCodeContainer"
@@ -16,8 +19,6 @@
         <Button
           label="Download QR"
           icon="pi pi-download"
-          size="small"
-          class=" bg-blue-500 hover:bg-blue-600 text-white  rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
           @click="downloadHighQualityQR"
           :loading="isGenerating"
           :disabled="!isQRGenerated"
@@ -29,7 +30,7 @@
         <Button
           label="Verify Profile"
           icon="pi pi-check-circle"
-          class="w-full bg-blue-500 hover:bg-blue-600 text-white h-12 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+          class="w-full"
           @click="verifyProfile"
         />
       </div>

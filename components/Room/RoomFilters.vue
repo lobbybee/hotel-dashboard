@@ -1,47 +1,47 @@
 <template>
-    <div class="flex items-center justify-between mb-5 flex-wrap gap-6">
-        <h2 class="text-xl font-semibold text-gray-800">Floor Plan</h2>
-        <div class="flex items-center gap-4 md:gap-6 flex-wrap">
-            <div class="flex flex-col min-w-[220px]">
-                <label for="room-search" class="text-xs text-gray-500 mb-1">Search</label>
-                <InputText
-                    id="room-search"
-                    v-model="localRoomSearch"
-                    placeholder="Search rooms..."
-                    class="p-inputtext-sm"
-                    @input="$emit('update:roomSearch', $event.target.value)"
-                    @keydown.enter="$emit('update:roomSearch', localRoomSearch)"
-                />
-            </div>
-            <div class="flex flex-col min-w-[220px]">
-                <label for="status-filter" class="text-xs text-gray-500 mb-1">Status</label>
+    <div class="bg-white p-4 rounded border border-gray-200 mb-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h2 class="text-xl font-bold text-gray-900">Floor Plan</h2>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="relative">
+                    <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <InputText
+                        v-model="localRoomSearch"
+                        placeholder="Search rooms..."
+                        class="pl-10 w-full sm:w-56"
+                        @input="$emit('update:roomSearch', $event.target.value)"
+                        @keydown.enter="$emit('update:roomSearch', localRoomSearch)"
+                    />
+                </div>
                 <Dropdown
-                    id="status-filter"
                     v-model="localRoomStatusFilter"
                     :options="roomStatuses"
                     optionLabel="label"
                     optionValue="value"
                     placeholder="Filter by status"
-                    class="p-inputtext-sm"
+                    class="w-full sm:w-48"
                     showClear
                     @update:modelValue="$emit('update:roomStatusFilter', $event)"
                 />
             </div>
-            <div class="flex items-center gap-2">
-                <span id="floor-selector" class="text-xs text-gray-500">Floor</span>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4 mt-4 pt-4 border-t border-gray-200">
+            <span class="text-sm font-medium text-gray-700">Floor</span>
+            <div class="flex flex-wrap items-center gap-2">
                 <SelectButton
                     v-model="localSelectedFloor"
                     :options="floorOptions"
                     optionLabel="label"
                     optionValue="value"
-                    aria-labelledby="floor-selector"
                     @update:modelValue="$emit('update:selectedFloor', $event)"
                 />
                 <Button
                     icon="pi pi-plus"
+                    text
+                    rounded
                     aria-label="Add floor"
                     @click="$emit('add-floor')"
-                    class="p-button-rounded p-button-text"
                 />
             </div>
         </div>

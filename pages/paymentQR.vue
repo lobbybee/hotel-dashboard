@@ -1,154 +1,215 @@
 <template>
-  <div class="payment-qr-dashboard">
-    <!-- Header Section -->
-    <div class="header-section">
-      <div class="header-content">
-        <div>
-          <h1 class="page-title">Payment QR Codes</h1>
-          <p class="page-subtitle">Manage payment QR codes for your hotel guests</p>
-        </div>
-        <Button
-        v-if="userRole !== 'receptionist'"
-          label="Add QR Code"
-          icon="pi pi-plus"
-          @click="showAddModal = true"
-          :rounded="true" :raised="true"
-        />
-      </div>
-      <div class="stats-bar">
-        <Tag :value="`Total: ${totalCount}`" severity="info" :rounded="true" />
-        <Tag :value="`Active: ${paymentQRCodes.filter(q=>q.active).length}`" severity="success" :rounded="true" />
-        <Tag :value="`Inactive: ${paymentQRCodes.filter(q=>!q.active).length}`" severity="danger" :rounded="true" />
-      </div>
-    </div>
-
-    <!-- Search and Filter Section -->
-    <div class="flex gap-3 items-center justify-center mb-5">
-      <div class="search-bar min-w-[200px]">
-        <span class="p-input-icon-left w-full flex justify-center gap-3 items-center relative">
-          <i class="pi pi-search absolute right-3 " />
-          <InputText
-            v-model="searchQuery"
-            placeholder="Search by name or UPI ID..."
-            class="w-full"
-            @input="handleSearch"
-          />
-        </span>
-      </div>
-      <div class="filter-controls">
-        <Dropdown
-          v-model="selectedFilter"
-          :options="filterOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="All Status"
-          class="filter-dropdown"
-          @change="handleFilterChange"
-        />
-        <Button
-          icon="pi pi-refresh"
-          @click="refreshData"
-          outlined :rounded="true"
-          v-tooltip="'Refresh'"
-        />
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="isLoading" class="loading-container">
-      <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="8" />
-      <p>Loading QR codes...</p>
-    </div>
-
-    <!-- Error State -->
-    <Message v-else-if="error" severity="error" :closable="false" class="error-message">
-      <span>{{ error.message || 'Failed to load QR codes' }}</span>
-      <Button label="Retry" @click="refreshData" text size="small" />
-    </Message>
-
-    <!-- QR Codes Grid -->
-    <div v-else-if="paymentQRCodes.length > 0" class="qr-cards-grid">
-      <div
-        v-for="qrCode in paymentQRCodes"
-        :key="qrCode.id"
-        class="qr-card"
-        :class="{ 'inactive': !qrCode.active }"
-      >
-        <div class="qr-card-header">
-          <div class="qr-status-badge">
-            <Tag
-              :value="qrCode.active ? 'Active' : 'Inactive'"
-              :severity="qrCode.active ? 'success' : 'danger'"
-              :icon="qrCode.active ? 'pi pi-check-circle' : 'pi pi-times-circle'"
-            />
+  <div class="min-h-screen bg-gray-50">
+    <!-- Page Header -->
+    <div class="bg-white border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex justify-between items-start">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Payment QR Codes</h1>
+            <p class="text-gray-600">Manage payment QR codes for your hotel guests</p>
           </div>
-          <div class="qr-actions" v-if="userRole !== 'receptionist'">
+          <div v-if="userRole !== 'receptionist'">
             <Button
-              icon="pi pi-eye"
-              @click="viewQRCode(qrCode)"
-              :rounded="true" text size="small"
-              v-tooltip="'View Details'"
-            />
-            <Button
-              icon="pi pi-pencil"
-              @click="editQRCode(qrCode)"
-              :rounded="true" text size="small"
-              v-tooltip="'Edit'"
-            />
-            <Button
-              icon="pi pi-power-off"
-              @click="toggleQRStatus(qrCode)"
-              :rounded="true" text size="small"
-              :severity="qrCode.active ? 'warning' : 'success'"
-              v-tooltip="qrCode.active ? 'Deactivate' : 'Activate'"
-            />
-            <Button
-              icon="pi pi-trash"
-              @click="deleteQRCode(qrCode)"
-              :rounded="true" text size="small" severity="danger"
-              v-tooltip="'Delete'"
+              label="Add QR Code"
+              icon="pi pi-plus"
+              @click="showAddModal = true"
             />
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="qr-image-container">
-          <img
-            :src="qrCode.image_url"
-            :alt="qrCode.name"
-            @error="handleImageError"
-            class="qr-image"
-          />
-        </div>
-
-        <div class="qr-card-content">
-          <h3 class="qr-name">{{ qrCode.name }}</h3>
-          <div class="qr-details">
-            <div class="qr-detail-item">
-              <i class="pi pi-mobile"></i>
-              <span>{{ qrCode.upi_id }}</span>
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Status Summary Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg border border-gray-200 p-6">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+              <i class="pi pi-qrcode text-xl"></i>
             </div>
-            <div class="qr-detail-item">
-              <i class="pi pi-calendar"></i>
-              <span>{{ formatDate(qrCode.created_at) }}</span>
+            <div>
+              <p class="text-2xl font-bold text-gray-900">{{ totalCount }}</p>
+              <p class="text-sm font-medium text-gray-600">Total QR Codes</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-6">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center text-green-600">
+              <i class="pi pi-check-circle text-xl"></i>
+            </div>
+            <div>
+              <p class="text-2xl font-bold text-gray-900">{{ paymentQRCodes.filter(q=>q.active).length }}</p>
+              <p class="text-sm font-medium text-gray-600">Active</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-6">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center text-red-600">
+              <i class="pi pi-times-circle text-xl"></i>
+            </div>
+            <div>
+              <p class="text-2xl font-bold text-gray-900">{{ paymentQRCodes.filter(q=>!q.active).length }}</p>
+              <p class="text-sm font-medium text-gray-600">Inactive</p>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Empty State -->
-    <div v-else class="empty-state">
-      <div class="empty-state-content">
-        <i class="pi pi-qrcode empty-icon"></i>
-        <h3>No QR Codes Found</h3>
-        <p>{{ searchQuery || selectedFilter !== 'all' ? 'Try adjusting your search or filters' : 'Start by adding your first payment QR code' }}</p>
-        <Button
-          label="Add Your First QR Code"
-          icon="pi pi-plus"
-          @click="showAddModal = true"
-          :rounded="true" :raised="true"
-          v-if="!searchQuery && selectedFilter === 'all'"
-        />
+      <!-- Search & Filter Bar -->
+      <div class="bg-white rounded-lg border border-gray-200 p-4 mb-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <div class="flex-1">
+            <div class="relative">
+              <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              <InputText
+                v-model="searchQuery"
+                placeholder="Search by name or UPI ID..."
+                class="w-full pl-10"
+                @input="handleSearch"
+              />
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <Dropdown
+              v-model="selectedFilter"
+              :options="filterOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="All Status"
+              class="w-full sm:w-48"
+              @change="handleFilterChange"
+            />
+            <Button
+              icon="pi pi-refresh"
+              @click="refreshData"
+              text
+              rounded
+              v-tooltip="'Refresh'"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="isLoading" class="flex flex-col items-center justify-center py-12">
+        <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="8" />
+        <p class="mt-4 text-gray-600">Loading QR codes...</p>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="bg-white rounded-lg border border-gray-200 p-8 text-center">
+        <div class="max-w-md mx-auto">
+          <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="pi pi-exclamation-triangle text-red-600 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">Error Loading QR Codes</h3>
+          <p class="text-gray-600 mb-4">{{ error.message || 'Failed to load QR codes' }}</p>
+          <Button label="Retry" @click="refreshData" text />
+        </div>
+      </div>
+
+      <!-- QR Codes Grid -->
+      <div v-else-if="paymentQRCodes.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div
+          v-for="qrCode in paymentQRCodes"
+          :key="qrCode.id"
+          class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-all duration-200"
+          :class="{ 'opacity-75': !qrCode.active }"
+        >
+          <div class="flex justify-between items-start mb-4 flex-wrap">
+            <div>
+              <Tag
+                :value="qrCode.active ? 'Active' : 'Inactive'"
+                :severity="qrCode.active ? 'success' : 'danger'"
+                :icon="qrCode.active ? 'pi pi-check-circle' : 'pi pi-times-circle'"
+                rounded
+              />
+            </div>
+            <div class="flex gap-2" v-if="userRole !== 'receptionist'">
+              <Button
+                icon="pi pi-eye"
+                @click="viewQRCode(qrCode)"
+                text
+                rounded
+                size="small"
+                v-tooltip="'View Details'"
+              />
+              <Button
+                icon="pi pi-pencil"
+                @click="editQRCode(qrCode)"
+                text
+                rounded
+                size="small"
+                v-tooltip="'Edit'"
+              />
+              <Button
+                icon="pi pi-power-off"
+                @click="toggleQRStatus(qrCode)"
+                text
+                rounded
+                size="small"
+                :severity="qrCode.active ? 'warning' : 'success'"
+                v-tooltip="qrCode.active ? 'Deactivate' : 'Activate'"
+              />
+              <Button
+                icon="pi pi-trash"
+                @click="deleteQRCode(qrCode)"
+                text
+                rounded
+                size="small"
+                severity="danger"
+                v-tooltip="'Delete'"
+              />
+            </div>
+          </div>
+
+          <div class="flex flex-col items-center mb-4">
+            <img
+              :src="qrCode.image_url"
+              :alt="qrCode.name"
+              @error="handleImageError"
+              class="w-32 h-32 object-contain border border-gray-200 rounded-lg"
+            />
+          </div>
+
+          <div class="text-center">
+            <h3 class="font-semibold text-gray-900 mb-2">{{ qrCode.name }}</h3>
+            <div class="space-y-1 text-sm">
+              <div class="flex items-center justify-center gap-2 text-gray-600">
+                <i class="pi pi-mobile"></i>
+                <span>{{ qrCode.upi_id }}</span>
+              </div>
+              <div class="flex items-center justify-center gap-2 text-gray-600">
+                <i class="pi pi-calendar"></i>
+                <span>{{ formatDate(qrCode.created_at) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else class="bg-white rounded-lg border border-gray-200 p-8 text-center">
+        <div class="max-w-md mx-auto">
+          <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="pi pi-qrcode text-gray-400 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">No QR Codes Found</h3>
+          <p class="text-gray-600 mb-4">
+            {{ searchQuery || selectedFilter !== 'all'
+              ? 'Try adjusting your search or filters'
+              : 'Start by adding your first payment QR code' }}
+          </p>
+          <Button
+            v-if="!searchQuery && selectedFilter === 'all'"
+            label="Add Your First QR Code"
+            icon="pi pi-plus"
+            @click="showAddModal = true"
+          />
+        </div>
       </div>
     </div>
 
@@ -157,12 +218,12 @@
       v-model:visible="showAddModal"
       :header="isEditing ? 'Edit QR Code' : 'Add New QR Code'"
       :modal="true"
-      :style="{ width: '500px' }"
+      :style="{ width: '35rem' }"
       :dismissableMask="true"
     >
-      <form @submit.prevent="handleSubmit" class="qr-form">
-        <div class="form-field">
-          <label for="name">QR Code Name *</label>
+      <form @submit.prevent="handleSubmit" class="space-y-4">
+        <div>
+          <label for="name" class="block text-sm font-medium text-gray-700 mb-2">QR Code Name *</label>
           <InputText
             id="name"
             v-model="formData.name"
@@ -172,8 +233,8 @@
           />
         </div>
 
-        <div class="form-field">
-          <label for="upi_id">UPI ID *</label>
+        <div>
+          <label for="upi_id" class="block text-sm font-medium text-gray-700 mb-2">UPI ID *</label>
           <InputText
             id="upi_id"
             v-model="formData.upi_id"
@@ -183,33 +244,38 @@
           />
         </div>
 
-        <div class="form-field">
-          <label for="image">QR Code Image *</label>
-          <div class="file-upload-container">
+        <div>
+          <label for="image" class="block text-sm font-medium text-gray-700 mb-2">QR Code Image *</label>
+          <div class="relative">
             <input
               type="file"
               id="image"
               @change="handleFileChange"
               accept="image/*"
-              class="file-input"
+              class="hidden"
               ref="fileInput"
             />
-            <div class="file-upload-label" @click="triggerFileSelect">
-              <i class="pi pi-upload"></i>
-              <span>{{ formData.image ? formData.image.name : 'Choose QR Code Image' }}</span>
+            <div
+              @click="triggerFileSelect"
+              class="border border-gray-300 rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors text-center"
+            >
+              <i class="pi pi-upload text-gray-400 text-2xl mb-2"></i>
+              <p class="text-sm text-gray-600">
+                {{ formData.image ? formData.image.name : 'Choose QR Code Image' }}
+              </p>
             </div>
           </div>
-          <small class="text-muted">Upload a clear image of your QR code (PNG, JPG)</small>
+          <p class="text-xs text-gray-500 mt-2">Upload a clear image of your QR code (PNG, JPG)</p>
         </div>
 
-        <div class="form-field">
-          <div class="form-checkbox">
+        <div>
+          <div class="flex items-center gap-2">
             <Checkbox
               id="active"
               v-model="formData.active"
               binary
             />
-            <label for="active">Active (Available for payments)</label>
+            <label for="active" class="text-sm font-medium text-gray-700">Active (Available for payments)</label>
           </div>
         </div>
       </form>
@@ -235,29 +301,42 @@
       v-model:visible="showViewModal"
       header="QR Code Details"
       :modal="true"
-      :style="{ width: '450px' }"
+      :style="{ width: '35rem' }"
       :dismissableMask="true"
     >
-      <div v-if="selectedQRCode" class="qr-view-content">
-        <div class="qr-view-image">
-          <img :src="selectedQRCode.image_url" :alt="selectedQRCode.name" />
-        </div>
-        <div class="qr-view-details">
-          <h3>{{ selectedQRCode.name }}</h3>
-          <div class="detail-row">
-            <strong>UPI ID:</strong>
-            <span>{{ selectedQRCode.upi_id }}</span>
-          </div>
-          <div class="detail-row">
-            <strong>Status:</strong>
-            <Tag
-              :value="selectedQRCode.active ? 'Active' : 'Inactive'"
-              :severity="selectedQRCode.active ? 'success' : 'danger'"
+      <div v-if="selectedQRCode" class="space-y-6">
+        <div class="flex justify-center">
+          <div class="w-48 h-48 bg-white border border-gray-200 rounded-lg p-4">
+            <img
+              :src="selectedQRCode.image_url"
+              :alt="selectedQRCode.name"
+              class="w-full h-full object-contain"
             />
           </div>
-          <div class="detail-row">
-            <strong>Created:</strong>
-            <span>{{ formatDate(selectedQRCode.created_at) }}</span>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-gray-900">{{ selectedQRCode.name }}</h3>
+
+          <div class="space-y-3">
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-sm font-medium text-gray-600">UPI ID:</span>
+              <span class="text-sm text-gray-900">{{ selectedQRCode.upi_id }}</span>
+            </div>
+
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-sm font-medium text-gray-600">Status:</span>
+              <Tag
+                :value="selectedQRCode.active ? 'Active' : 'Inactive'"
+                :severity="selectedQRCode.active ? 'success' : 'danger'"
+                rounded
+              />
+            </div>
+
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <span class="text-sm font-medium text-gray-600">Created:</span>
+              <span class="text-sm text-gray-900">{{ formatDate(selectedQRCode.created_at) }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -481,302 +560,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.payment-qr-dashboard {
-  padding: 2rem;
-  background: var(--surface-ground);
-  min-height: 100vh;
-}
-
-.header-section {
-  background: var(--surface-card);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.stats-bar {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-.page-title {
-  margin: 0 0 0.5rem 0;
-  color: var(--text-color);
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-.page-subtitle {
-  margin: 0;
-  color: var(--text-color-secondary);
-  font-size: 1rem;
-}
-
-.search-filter-section {
-  background: var(--surface-card);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.search-bar {
-  flex: 1;
-}
-
-.filter-controls {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.filter-dropdown {
-  min-width: 150px;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  background: var(--surface-card);
-  border-radius: 12px;
-  text-align: center;
-}
-
-.error-message {
-  margin-bottom: 2rem;
-}
-
-.qr-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.qr-card {
-  background: var(--surface-card);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.qr-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-}
-
-.qr-card.inactive {
-  opacity: 0.7;
-  background: var(--surface-ground);
-}
-
-.qr-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: var(--surface-ground);
-  border-bottom: 1px solid var(--surface-border);
-}
-
-.qr-actions {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.qr-image-container {
-  padding: 2rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: var(--surface-card);
-}
-
-.qr-image {
-  max-width: 200px;
-  max-height: 200px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.qr-card-content {
-  padding: 1.5rem;
-}
-
-.qr-name {
-  margin: 0 0 1rem 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-color);
-}
-
-.qr-details {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.qr-detail-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: var(--text-color-secondary);
-  font-size: 0.9rem;
-}
-
-.qr-detail-item i {
-  color: var(--primary-color);
-  width: 16px;
-}
-
-.empty-state {
-  background: var(--surface-card);
-  border-radius: 16px;
-  padding: 4rem 2rem;
-  text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-.empty-state-content h3 {
-  color: var(--text-color);
-  margin: 1rem 0;
-}
-
-.empty-state-content p {
-  color: var(--text-color-secondary);
-  margin-bottom: 2rem;
-}
-
-.empty-icon {
-  font-size: 4rem;
-  color: #cbd5e0;
-  margin-bottom: 1rem;
-}
-
-.qr-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-field label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: var(--text-color);
-}
-
-.file-upload-container {
-  position: relative;
-}
-
-.file-input {
-  display: none;
-}
-
-.file-upload-label {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  border: 2px dashed var(--surface-border);
-  border-radius: 8px;
-  background: var(--surface-ground);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.file-upload-label:hover {
-  border-color: var(--primary-color);
-  background: var(--surface-hover);
-}
-
-.text-muted {
-  color: var(--text-color-secondary);
-  font-size: 0.875rem;
-}
-
-.form-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.qr-view-content {
-  text-align: center;
-}
-
-.qr-view-image {
-  margin-bottom: 1.5rem;
-}
-
-.qr-view-image img {
-  max-width: 250px;
-  max-height: 250px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.qr-view-details h3 {
-  color: var(--text-color);
-  margin-bottom: 1.5rem;
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--surface-border);
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.detail-row strong {
-  color: var(--text-color);
-}
-
-@media (max-width: 768px) {
-  .payment-qr-dashboard {
-    padding: 1rem;
-  }
-
-  .header-content {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
-  }
-
-  .search-filter-section {
-    flex-direction: column;
-  }
-
-  .filter-controls {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .qr-cards-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* Modern design following the design system */
+/* No custom styles needed - using Tailwind classes for consistency */
 </style>

@@ -1,178 +1,201 @@
 <template>
-  <div class="message-templates-dashboard">
-    <!-- Header Section -->
-    <div class="header-section">
-      <div class="header-content">
-        <div>
-          <h1 class="page-title">Message Templates</h1>
-          <p class="page-subtitle">Manage message templates for guest communications</p>
+  <div class="page-container">
+    <!-- Page Header -->
+    <header class="bg-white border-b border-gray-200 shadow-sm">
+      <div class="content-container">
+        <div class="header-content">
+          <div>
+            <h1 class="page-title">Message Templates</h1>
+            <p class="page-subtitle">Manage message templates for guest communications</p>
+          </div>
+          <div v-if="userRole !== 'receptionist'" class="mt-4 sm:mt-0">
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="showAddModal = true"
+            >
+              <i class="pi pi-plus mr-2"></i>
+              Add Template
+            </button>
+          </div>
         </div>
-        <Button
-          v-if="userRole !== 'receptionist'"
-          label="Add Template"
-          icon="pi pi-plus"
-          @click="showAddModal = true"
-        />
       </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="content-container">
+      <div class="py-8">
+        <!-- Status Cards Row -->
       <div class="stats-bar">
-        <Tag :value="`Total: ${totalCount}`" severity="info" :rounded="true" />
-        <Tag :value="`Active: ${customTemplates.filter(t=>t.is_active).length}`" severity="success" :rounded="true" />
-        <Tag :value="`Inactive: ${customTemplates.filter(t=>!t.is_active).length}`" severity="danger" :rounded="true" />
-      </div>
-    </div>
-
-    <!-- Search and Filter Section -->
-    <div class="search-filter-section">
-      <div class="search-bar">
-        <span class="p-input-icon-left">
-          <i class="pi pi-search" />
-          <InputText
-            v-model="searchQuery"
-            placeholder="Search templates..."
-            class="w-full"
-            @input="handleSearch"
-          />
-        </span>
-      </div>
-      <div class="filter-controls">
-        <Dropdown
-          v-model="selectedType"
-          :options="templateTypes?.template_types || []"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Template Type"
-          class="filter-dropdown"
-          @change="handleFilterChange"
-          showClear
-        />
-        <Dropdown
-          v-model="selectedCategory"
-          :options="templateTypes?.categories || []"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Category"
-          class="filter-dropdown"
-          @change="handleFilterChange"
-          showClear
-        />
-        <Dropdown
-          v-model="selectedFilter"
-          :options="filterOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Status"
-          class="filter-dropdown"
-          @change="handleFilterChange"
-        />
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="isLoading" class="loading-container">
-      <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="8" />
-      <p>Loading templates...</p>
-    </div>
-
-    <!-- Error State -->
-    <Message v-else-if="error" severity="error" :closable="false" class="error-message">
-      <span>{{ error.message || 'Failed to load templates' }}</span>
-      <Button label="Retry" @click="refreshData" text />
-    </Message>
-
-    <!-- Templates Grid -->
-    <div v-else-if="customTemplates.length > 0" class="template-cards-grid">
-      <div
-        v-for="template in customTemplates"
-        :key="template.id"
-        class="template-card"
-        :class="{ 'inactive': !template.is_active }"
-      >
-        <div class="template-card-header">
-          <div class="template-status-badge">
-            <Tag
-              :value="template.is_active ? 'Active' : 'Inactive'"
-              :severity="template.is_active ? 'success' : 'danger'"
-              :icon="template.is_active ? 'pi pi-check-circle' : 'pi pi-times-circle'"
-            />
+        <div class="icon-card icon-card-primary">
+          <div class="icon-card-icon">
+            <i class="pi pi-file-text"></i>
           </div>
-          <div class="template-actions" v-if="userRole !== 'receptionist'">
-            <Button
-              icon="pi pi-eye"
-              @click="viewTemplate(template)"
-              text rounded
-              v-tooltip="'View Details'"
-            />
-            <Button
-              icon="pi pi-search"
-              @click="previewTemplateContent(template)"
-              text rounded
-              v-tooltip="'Preview'"
-            />
-            <Button
-              icon="pi pi-pencil"
-              @click="editTemplate(template)"
-              text rounded
-              v-tooltip="'Edit'"
-            />
-            <Button
-              icon="pi pi-power-off"
-              @click="toggleTemplateStatus(template)"
-              text rounded
-              :severity="template.is_active ? 'warning' : 'success'"
-              v-tooltip="template.is_active ? 'Deactivate' : 'Activate'"
-            />
-            <Button
-              icon="pi pi-trash"
-              @click="deleteTemplate(template)"
-              text rounded severity="danger"
-              v-tooltip="'Delete'"
-            />
+          <div class="icon-card-content">
+            <p class="icon-card-number">{{ totalCount }}</p>
+            <p class="icon-card-label">Total Templates</p>
           </div>
         </div>
-
-        <div class="template-card-content">
-          <div class="template-category-type">
-            <Tag :value="template.category" severity="info" size="small" />
-            <Tag :value="template.template_type" severity="secondary" size="small" />
+        <div class="icon-card icon-card-success">
+          <div class="icon-card-icon">
+            <i class="pi pi-check-circle"></i>
           </div>
-          <h3 class="template-name">{{ template.name }}</h3>
-          <div class="template-content">
-            <p>{{ truncateText(template.content, 100) }}</p>
+          <div class="icon-card-content">
+            <p class="icon-card-number">{{ customTemplates.filter(t=>t.is_active).length }}</p>
+            <p class="icon-card-label">Active</p>
           </div>
-          <div class="template-variables">
-            <div v-if="template.variables && template.variables.length > 0" class="variables-list">
-              <i class="pi pi-code"></i>
-              <span>{{ template.variables.join(', ') }}</span>
-            </div>
-            <div v-else class="no-variables">
-              <i class="pi pi-info-circle"></i>
-              <span>No variables</span>
-            </div>
+        </div>
+        <div class="icon-card icon-card-danger">
+          <div class="icon-card-icon">
+            <i class="pi pi-times-circle"></i>
           </div>
-          <div class="template-meta">
-            <div class="template-detail-item">
-              <i class="pi pi-calendar"></i>
-              <span>{{ formatDate(template.created_at) }}</span>
-            </div>
+          <div class="icon-card-content">
+            <p class="icon-card-number">{{ customTemplates.filter(t=>!t.is_active).length }}</p>
+            <p class="icon-card-label">Inactive</p>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Empty State -->
-    <div v-else class="empty-state">
-      <div class="empty-state-content">
-        <i class="pi pi-file-edit empty-icon"></i>
-        <h3>No Templates Found</h3>
-        <p>{{ searchQuery || selectedFilter !== 'all' ? 'Try adjusting your search or filters' : 'Start by adding your first message template' }}</p>
-        <Button
-          label="Add Your First Template"
-          icon="pi pi-plus"
-          @click="showAddModal = true"
-          v-if="!searchQuery && selectedFilter === 'all'"
-        />
+
+
+      <!-- Loading State -->
+      <div v-if="isLoading" class="loading-state">
+        <div class="loading-spinner">
+          <div class="spinner"></div>
+        </div>
+        <p class="loading-text">Loading templates...</p>
       </div>
-    </div>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="error-state">
+        <div class="error-content">
+          <div class="error-icon">
+            <i class="pi pi-exclamation-triangle"></i>
+          </div>
+          <h3 class="error-title">Error Loading Templates</h3>
+          <p class="error-message">{{ error.message || 'Failed to load templates' }}</p>
+          <button class="btn btn-secondary" @click="refreshData">
+            <i class="pi pi-refresh mr-2"></i>
+            Retry
+          </button>
+        </div>
+      </div>
+
+      <!-- Templates Grid -->
+      <div v-else-if="customTemplates.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div
+          v-for="template in customTemplates"
+          :key="template.id"
+          class="card card-hoverable"
+          :class="{ 'opacity-75': !template.is_active }"
+        >
+          <div class="card-header">
+            <div class="flex justify-between items-start">
+              <div class="flex gap-2 flex-wrap">
+                <span class="badge badge-info">
+                  {{ template.category }}
+                </span>
+                <span class="badge badge-secondary">
+                  {{ template.template_type }}
+                </span>
+              </div>
+              <div class="flex gap-1" v-if="userRole !== 'receptionist'">
+                <button
+                  @click="viewTemplate(template)"
+                  class="btn btn-ghost btn-icon"
+                  :aria-label="'View ' + template.name"
+                >
+                  <i class="pi pi-eye"></i>
+                </button>
+                <button
+                  @click="previewTemplateContent(template)"
+                  class="btn btn-ghost btn-icon"
+                  :aria-label="'Preview ' + template.name"
+                >
+                  <i class="pi pi-search"></i>
+                </button>
+                <button
+                  @click="editTemplate(template)"
+                  class="btn btn-ghost btn-icon"
+                  :aria-label="'Edit ' + template.name"
+                >
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button
+                  @click="toggleTemplateStatus(template)"
+                  class="btn btn-ghost btn-icon"
+                  :class="template.is_active ? 'btn-warning' : 'btn-success'"
+                  :aria-label="template.is_active ? 'Deactivate ' + template.name : 'Activate ' + template.name"
+                >
+                  <i class="pi pi-power-off"></i>
+                </button>
+                <button
+                  @click="deleteTemplate(template)"
+                  class="btn btn-ghost btn-icon btn-danger"
+                  :aria-label="'Delete ' + template.name"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ template.name }}</h3>
+
+            <div class="text-sm text-gray-600 mb-4 line-clamp-3">
+              {{ truncateText(template.content, 100) }}
+            </div>
+
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
+              <i v-if="template.variables && template.variables.length > 0" class="pi pi-code"></i>
+              <span v-if="template.variables && template.variables.length > 0">
+                {{ template.variables.length }} variables
+              </span>
+              <span v-else>
+                <i class="pi pi-info-circle"></i>
+                No variables
+              </span>
+            </div>
+
+            <div class="pt-3 border-t border-gray-100">
+              <span
+                class="badge"
+                :class="template.is_active ? 'badge-success' : 'badge-danger'"
+              >
+                <i :class="template.is_active ? 'pi pi-check-circle' : 'pi pi-times-circle'" class="mr-1"></i>
+                {{ template.is_active ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else class="empty-state">
+        <div class="empty-state-content">
+          <div class="empty-state-icon">
+            <i class="pi pi-file-text"></i>
+          </div>
+          <h3 class="empty-state-title">No Templates Found</h3>
+          <p class="empty-state-description">
+            {{ searchQuery || selectedType || selectedCategory || selectedFilter !== 'all'
+              ? 'Try adjusting your search or filters'
+              : 'Start by creating your first message template'
+            }}
+          </p>
+          <button
+            v-if="!searchQuery && selectedType === null && selectedCategory === null && selectedFilter === 'all' && userRole !== 'receptionist'"
+            class="btn btn-primary"
+            @click="showAddModal = true"
+          >
+            <i class="pi pi-plus mr-2"></i>
+            Create Your First Template
+          </button>
+        </div>
+      </div>
+      </div>
+    </main>
 
     <!-- Add/Edit Modal -->
     <Dialog
@@ -181,105 +204,128 @@
       :modal="true"
       :style="{ width: '35rem' }"
       :dismissableMask="true"
+      class="p-dialog-maximized"
     >
-      <form @submit.prevent="handleSubmit" class="template-form">
-        <div class="form-grid">
-          <div class="form-field">
-            <label for="name">Template Name *</label>
-            <InputText
-              id="name"
-              v-model="formData.name"
-              placeholder="e.g., Welcome Message"
-              required
-              class="w-full"
-            />
-          </div>
+      <form @submit.prevent="handleSubmit" class="form-container">
+        <div class="form-field">
+          <label for="name">Template Name *</label>
+          <input
+            id="name"
+            v-model="formData.name"
+            type="text"
+            placeholder="e.g., Welcome Message"
+            required
+            class="form-input"
+          />
+        </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="form-field">
             <label for="template_type">Template Type *</label>
-            <Dropdown
+            <Select
               id="template_type"
               v-model="formData.template_type"
-              :options="templateTypes?.template_types || []"
+              :options="templateTypeOptions"
               optionLabel="label"
               optionValue="value"
               placeholder="Select type"
+              :showClear="true"
+              :filter="true"
+              :filterPlaceholder="'Search types...'"
               required
               class="w-full"
+              :class="{ 'p-invalid': !formData.template_type }"
+              :emptyMessage="'No template types available'"
+              :emptyFilterMessage="'No template types found'"
             />
           </div>
 
           <div class="form-field">
             <label for="category">Category *</label>
-            <Dropdown
+            <Select
               id="category"
               v-model="formData.category"
-              :options="templateTypes?.categories || []"
+              :options="categoryOptions"
               optionLabel="label"
               optionValue="value"
               placeholder="Select category"
+              :showClear="true"
+              :filter="true"
+              :filterPlaceholder="'Search categories...'"
               required
               class="w-full"
+              :class="{ 'p-invalid': !formData.category }"
+              :emptyMessage="'No categories available'"
+              :emptyFilterMessage="'No categories found'"
             />
           </div>
+        </div>
 
-          <div class="form-field">
-            <label for="media_url">Media URL (Optional)</label>
-            <div class="media-upload-container">
-              <InputText
-                id="media_url"
-                v-model="formData.media_url"
-                placeholder="Enter media URL or upload file"
-                class="w-full"
-              />
-              <Button
-                icon="pi pi-upload"
-                @click="showMediaUpload = true"
-                text
-                v-tooltip="'Upload Media'"
-              />
-            </div>
+        <div class="form-field">
+          <label for="media_url">Media URL (Optional)</label>
+          <div class="flex gap-2">
+            <input
+              id="media_url"
+              v-model="formData.media_url"
+              type="text"
+              placeholder="Enter media URL or upload file"
+              class="form-input flex-1"
+            />
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="showMediaUpload = true"
+            >
+              <i class="pi pi-upload"></i>
+            </button>
           </div>
         </div>
 
         <div class="form-field">
           <label for="content">Template Content *</label>
-          <Textarea
+          <textarea
             id="content"
             v-model="formData.content"
             placeholder="Enter your template content here. Use {{variable_name}} for variables."
-            rows="3"
+            rows="4"
             required
-            class="w-full"
-          />
-          <small class="text-muted">Use {{variable_name}} syntax for variables (e.g., {{guest_name}})</small>
+            class="form-input resize-vertical"
+          ></textarea>
+          <small class="form-help">Use {'{variable_name}'} syntax for variables (e.g., {'{guest_name}'})</small>
         </div>
 
         <div class="form-field">
           <label>Available Variables</label>
           <div v-if="templateVariables?.variables" class="variables-help">
-            <div class="variables-grid">
-              <div
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              <button
                 v-for="variable in templateVariables.variables.slice(0, 12)"
                 :key="variable.name"
+                type="button"
                 class="variable-chip"
                 @click="insertVariable(variable.name)"
-                v-tooltip="`${variable.description} - Example: ${variable.example}`"
+                :title="`${variable.description} - Example: ${variable.example}`"
               >
                 <span class="variable-name">{{ variable.name }}</span>
                 <small class="variable-model">{{ variable.model }}</small>
-              </div>
+              </button>
             </div>
-            <small class="text-muted">Click on any variable to insert it into your template</small>
+            <small class="form-help">Click on any variable to insert it into your template</small>
+          </div>
+          <div v-else class="text-sm text-gray-500">
+            Loading variables...
           </div>
         </div>
 
+    
+
         <div class="form-field">
-          <div class="form-checkbox">
-            <Checkbox
+          <div class="checkbox-group">
+            <input
               id="is_active"
               v-model="formData.is_active"
-              binary
+              type="checkbox"
+              class="checkbox"
             />
             <label for="is_active">Active (Available for use)</label>
           </div>
@@ -287,18 +333,23 @@
       </form>
 
       <template #footer>
-        <Button
-          label="Cancel"
-          icon="pi pi-times"
+        <button
+          type="button"
+          class="btn btn-secondary"
           @click="closeModal"
-          text
-        />
-        <Button
-          :label="isEditing ? 'Update' : 'Create'"
-          icon="pi pi-check"
+        >
+          <i class="pi pi-times mr-2"></i>
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
           @click="handleSubmit"
-          :loading="isSubmitting"
-        />
+          :disabled="isSubmitting"
+        >
+          <i class="pi pi-check mr-2"></i>
+          {{ isEditing ? 'Update' : 'Create' }}
+        </button>
       </template>
     </Dialog>
 
@@ -310,52 +361,58 @@
       :style="{ width: '35rem' }"
       :dismissableMask="true"
     >
-      <div v-if="selectedTemplate" class="template-view-content">
-        <div class="template-view-header">
-          <h3>{{ selectedTemplate.name }}</h3>
-          <div class="template-view-badges">
-            <Tag :value="selectedTemplate.category" severity="info" />
-            <Tag :value="selectedTemplate.template_type" severity="secondary" />
-            <Tag
-              :value="selectedTemplate.is_active ? 'Active' : 'Inactive'"
-              :severity="selectedTemplate.is_active ? 'success' : 'danger'"
-            />
+      <div v-if="selectedTemplate" class="space-y-6">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900">{{ selectedTemplate.name }}</h3>
+            <div class="flex gap-2 mt-2">
+              <span class="badge badge-info">{{ selectedTemplate.category }}</span>
+              <span class="badge badge-secondary">{{ selectedTemplate.template_type }}</span>
+              <span
+                class="badge"
+                :class="selectedTemplate.is_active ? 'badge-success' : 'badge-danger'"
+              >
+                {{ selectedTemplate.is_active ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div class="template-view-content-section">
-          <h4>Content</h4>
+        <div>
+          <h4 class="text-sm font-medium text-gray-900 mb-2">Content</h4>
           <div class="content-display">
             <p>{{ selectedTemplate.content }}</p>
           </div>
         </div>
 
-        <div v-if="selectedTemplate.media_url" class="template-view-media">
-          <h4>Media</h4>
+        <div v-if="selectedTemplate.media_url">
+          <h4 class="text-sm font-medium text-gray-900 mb-2">Media</h4>
           <img :src="selectedTemplate.media_url" alt="Template media" class="template-media" />
         </div>
 
-        <div v-if="selectedTemplate.variables && selectedTemplate.variables.length > 0" class="template-view-variables">
-          <h4>Variables Used</h4>
-          <div class="variables-list-display">
-            <Tag
+        <div v-if="selectedTemplate.variables && selectedTemplate.variables.length > 0">
+          <h4 class="text-sm font-medium text-gray-900 mb-2">Variables Used</h4>
+          <div class="flex gap-2 flex-wrap">
+            <span
               v-for="variable in selectedTemplate.variables"
               :key="variable"
-              :value="variable"
-              severity="info"
-              size="small"
-            />
+              class="badge badge-info"
+            >
+              {{ variable }}
+            </span>
           </div>
         </div>
 
-        <div class="template-view-meta">
-          <div class="detail-row">
-            <strong>Created:</strong>
-            <span>{{ formatDate(selectedTemplate.created_at) }}</span>
-          </div>
-          <div class="detail-row">
-            <strong>Last Updated:</strong>
-            <span>{{ formatDate(selectedTemplate.updated_at) }}</span>
+        <div class="bg-gray-50 rounded-lg p-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <strong class="text-gray-900">Created:</strong>
+              <span class="text-gray-600 ml-2">{{ formatDate(selectedTemplate.created_at) }}</span>
+            </div>
+            <div>
+              <strong class="text-gray-900">Last Updated:</strong>
+              <span class="text-gray-600 ml-2">{{ formatDate(selectedTemplate.updated_at) }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -369,19 +426,24 @@
       :style="{ width: '35rem' }"
       :dismissableMask="true"
     >
-      <div v-if="previewData" class="preview-content">
-        <div class="preview-header">
-          <h4>{{ previewData.template_name }}</h4>
-          <Tag value="Sample Preview" severity="info" size="small" />
+      <div v-if="previewData" class="space-y-4">
+        <div class="flex justify-between items-center">
+          <h4 class="text-lg font-medium text-gray-900">{{ previewData.template_name }}</h4>
+          <span class="badge badge-info">Sample Preview</span>
         </div>
-        <div class="preview-body">
+        <div class="content-display">
           <p>{{ previewData.rendered_content }}</p>
         </div>
-        <div class="preview-sample-data">
-          <h5>Sample Data Used:</h5>
-          <div class="sample-data-grid">
-            <div v-for="(value, key) in previewData.sample_data" :key="key" class="sample-data-item">
-              <strong>{{ key }}:</strong> {{ value }}
+        <div>
+          <h5 class="text-sm font-medium text-gray-900 mb-3">Sample Data Used:</h5>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div
+              v-for="(value, key) in previewData.sample_data"
+              :key="key"
+              class="text-sm"
+            >
+              <strong class="text-gray-900">{{ key }}:</strong>
+              <span class="text-gray-600 ml-2">{{ value }}</span>
             </div>
           </div>
         </div>
@@ -396,7 +458,7 @@
       :style="{ width: '35rem' }"
       :dismissableMask="true"
     >
-      <div class="media-upload-content">
+      <div class="space-y-4">
         <div class="file-upload-container">
           <input
             type="file"
@@ -406,27 +468,34 @@
             class="file-input"
             ref="mediaFileInput"
           />
-          <div class="file-upload-label" @click="triggerMediaFileSelect">
-            <i class="pi pi-upload"></i>
-            <span>{{ mediaFile ? mediaFile.name : 'Choose Media File' }}</span>
-          </div>
+          <label for="media_file" class="file-upload-label">
+            <i class="pi pi-upload text-2xl text-gray-400 mb-2"></i>
+            <p class="text-gray-900">
+              {{ mediaFile ? mediaFile.name : 'Choose Media File' }}
+            </p>
+          </label>
         </div>
-        <small class="text-muted">Upload images (JPEG, PNG, GIF, WebP) up to 5MB</small>
+        <small class="form-help">Upload images (JPEG, PNG, GIF, WebP) up to 5MB</small>
       </div>
 
       <template #footer>
-        <Button
-          label="Cancel"
-          icon="pi pi-times"
+        <button
+          type="button"
+          class="btn btn-secondary"
           @click="showMediaUpload = false"
-          text
-        />
-        <Button
-          label="Upload"
-          icon="pi pi-check"
+        >
+          <i class="pi pi-times mr-2"></i>
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
           @click="handleMediaUpload"
-          :loading="isUploadingMedia"
-        />
+          :disabled="isUploadingMedia"
+        >
+          <i class="pi pi-check mr-2"></i>
+          Upload
+        </button>
       </template>
     </Dialog>
   </div>
@@ -436,6 +505,10 @@
 import { ref, computed, onMounted, reactive } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
+import Dialog from 'primevue/dialog';
+import Select from 'primevue/select';
+import Button from 'primevue/button';
+import Tag from 'primevue/tag';
 import type {
   CustomMessageTemplate,
   CustomTemplateCreateData,
@@ -452,6 +525,7 @@ const confirm = useConfirm();
 const { customTemplates, totalCount, isLoading, error, refetch } = useFetchCustomTemplates();
 const { createCustomTemplate } = useCreateCustomTemplate();
 const { updateCustomTemplate } = useUpdateCustomTemplate();
+const { partialUpdateCustomTemplate } = usePartialUpdateCustomTemplate();
 const { deleteCustomTemplate } = useDeleteCustomTemplate();
 const { previewTemplate } = usePreviewTemplate();
 const { uploadTemplateMedia } = useUploadTemplateMedia();
@@ -504,6 +578,54 @@ const formData = reactive<{
 });
 
 // Computed
+const templateTypeOptions = computed(() => {
+  // Handle API data format: [["greeting", "Greeting"], ["checkin", "Check-in"], ...]
+  // Access the .value property since templateTypes is a Vue ref/computed
+  const apiData = templateTypes.value?.template_types || [];
+  
+  if (Array.isArray(apiData) && apiData.length > 0) {
+    const convertedOptions = apiData.map((item: any) => {
+      if (Array.isArray(item) && item.length >= 2) {
+        return { value: item[0], label: item[1] };
+      }
+      // Handle if it's already in correct format
+      if (typeof item === 'object' && item !== null && item.value && item.label) {
+        return item;
+      }
+      return null;
+    }).filter(Boolean);
+    
+    return convertedOptions;
+  }
+  
+  // Return empty array if no API data available
+  return [];
+});
+
+const categoryOptions = computed(() => {
+  // Handle API data format: [["greeting", "Greeting"], ["checkin", "Check-in"], ...]
+  // Access the .value property since templateTypes is a Vue ref/computed
+  const apiData = templateTypes.value?.categories || [];
+  
+  if (Array.isArray(apiData) && apiData.length > 0) {
+    const convertedOptions = apiData.map((item: any) => {
+      if (Array.isArray(item) && item.length >= 2) {
+        return { value: item[0], label: item[1] };
+      }
+      // Handle if it's already in correct format
+      if (typeof item === 'object' && item !== null && item.value && item.label) {
+        return item;
+      }
+      return null;
+    }).filter(Boolean);
+    
+    return convertedOptions;
+  }
+  
+  // Return empty array if no API data available
+  return [];
+});
+
 const currentParams = computed(() => {
   const params: any = {};
   if (searchQuery.value) params.search = searchQuery.value;
@@ -724,252 +846,531 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.message-templates-dashboard {
-  padding: 2rem;
-  background-color: #F9FAFB;
+/* Design System Compliant Styles */
+
+/* Page Container */
+.page-container {
   min-height: 100vh;
-  max-width: 7xl;
-  margin: 0 auto;
+  background-color: #F9FAFB;
 }
 
-.header-section {
-  background-color: #FFFFFF;
-  border-radius: 0.5rem;
-  border: 1px solid #E5E7EB;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+.content-container {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .content-container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .content-container {
+    padding: 0 2rem;
+  }
+}
+
+/* Header */
+header {
+  position: relative;
+  z-index: 10;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  align-items: flex-start;
+  padding: 1.5rem 0;
+  gap: 1rem;
 }
 
-.stats-bar {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+@media (min-width: 640px) {
+  .header-content {
+    align-items: center;
+    gap: 0;
+  }
 }
 
 .page-title {
-  margin: 0 0 0.5rem 0;
-  color: #111827;
   font-size: 1.875rem;
   font-weight: 700;
+  line-height: 1.2;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
 }
 
 .page-subtitle {
-  margin: 0;
-  color: #6B7280;
   font-size: 1rem;
+  line-height: 1.5;
+  color: #6B7280;
+  margin: 0;
 }
 
-.search-filter-section {
-  background-color: #FFFFFF;
-  border-radius: 0.5rem;
-  border: 1px solid #E5E7EB;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.search-bar {
-  flex: 1;
-  min-width: 200px;
-}
-
-.filter-controls {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.filter-dropdown {
-  width: 14rem;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  background-color: #FFFFFF;
-  border-radius: 0.5rem;
-  border: 1px solid #E5E7EB;
-  text-align: center;
-}
-
-.error-message {
-  margin-bottom: 1.5rem;
-}
-
-.template-cards-grid {
+/* Stats Bar */
+.stats-bar {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(1, 1fr);
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
-.template-card {
+@media (min-width: 640px) {
+  .stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .stats-bar {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Icon Card Pattern */
+.icon-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   background-color: #FFFFFF;
+  padding: 1.5rem;
   border-radius: 0.5rem;
   border: 1px solid #E5E7EB;
-  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 }
 
-.template-card:hover {
-  border-color: #D1D5DB;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+.icon-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.template-card.inactive {
-  opacity: 0.6;
-}
-
-.template-card-header {
+.icon-card-icon {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1rem;
-  background-color: #F9FAFB;
-  border-bottom: 1px solid #E5E7EB;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
-.template-actions {
-  display: flex;
-  gap: 0.25rem;
+.icon-card-primary .icon-card-icon {
+  background-color: #DBEAFE;
+  color: #1E40AF;
 }
 
-.template-card-content {
-  padding: 1rem;
+.icon-card-success .icon-card-icon {
+  background-color: #D1FAE5;
+  color: #059669;
 }
 
-.template-category-type {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+.icon-card-danger .icon-card-icon {
+  background-color: #FEE2E2;
+  color: #DC2626;
 }
 
-.template-name {
-  margin: 0 0 0.75rem 0;
-  font-size: 1.125rem;
-  font-weight: 600;
+.icon-card-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
   color: #111827;
+  margin: 0 0 0.25rem 0;
 }
 
-.template-content {
-  margin-bottom: 0.75rem;
-}
-
-.template-content p {
-  color: #4B5563;
-  line-height: 1.5;
+.icon-card-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6B7280;
   margin: 0;
 }
 
-.template-variables {
-  margin-bottom: 0.75rem;
+/* Card Pattern */
+.card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
 }
 
-.variables-list {
+.card-hoverable:hover {
+  border-color: #D1D5DB;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.card-header {
   display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Button System */
+.btn {
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  color: #2563EB;
+  justify-content: center;
+  padding: 0.5rem 1rem;
   font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  min-height: 2.25rem;
+  white-space: nowrap;
+  gap: 0.5rem;
 }
 
-.no-variables {
-  display: flex;
+.btn:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Button Variants */
+.btn-primary {
+  background-color: #2563EB;
+  color: #FFFFFF;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1D4ED8;
+}
+
+.btn-secondary {
+  background-color: #F9FAFB;
+  color: #374151;
+  border-color: #D1D5DB;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #F3F4F6;
+  border-color: #9CA3AF;
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: #6B7280;
+  border-color: transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: #F3F4F6;
+  color: #374151;
+}
+
+.btn-icon {
+  padding: 0.5rem;
+  aspect-ratio: 1;
+}
+
+.btn-icon.btn-sm {
+  padding: 0.375rem;
+  aspect-ratio: 1;
+}
+
+/* Button Sizes */
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  min-height: 1.875rem;
+}
+
+/* Button Colors */
+.btn-success {
+  background-color: #059669;
+  color: #FFFFFF;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: #047857;
+}
+
+.btn-warning {
+  background-color: #D97706;
+  color: #FFFFFF;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background-color: #B45309;
+}
+
+.btn-danger {
+  background-color: #DC2626;
+  color: #FFFFFF;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #B91C1C;
+}
+
+/* Badge System */
+.badge {
+  display: inline-flex;
   align-items: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+}
+
+.badge-info {
+  background-color: #DBEAFE;
+  color: #1E40AF;
+  border-color: #BFDBFE;
+}
+
+.badge-secondary {
+  background-color: #F3F4F6;
+  color: #374151;
+  border-color: #E5E7EB;
+}
+
+.badge-success {
+  background-color: #D1FAE5;
+  color: #059669;
+  border-color: #A7F3D0;
+}
+
+.badge-danger {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  border-color: #FECACA;
+}
+
+/* Form System */
+.form-input {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #111827;
+  background-color: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  outline: 2px solid #2563EB;
+  outline-offset: 0;
+  border-color: #2563EB;
+}
+
+.form-input:disabled {
+  background-color: #F9FAFB;
+  color: #6B7280;
+  cursor: not-allowed;
+}
+
+.form-input::placeholder {
+  color: #9CA3AF;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
+}
+
+.form-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-help {
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin-top: 0.25rem;
+}
+
+.input-with-icon {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
   color: #9CA3AF;
   font-size: 0.875rem;
 }
 
-.template-meta {
-  padding-top: 0.75rem;
-  border-top: 1px solid #F3F4F6;
+.form-input.pl-10 {
+  padding-left: 2.5rem;
 }
 
-.template-detail-item {
+/* Checkbox System */
+.checkbox-group {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+}
+
+.checkbox {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #2563EB;
+  border: 1px solid #D1D5DB;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.checkbox:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+/* Loading States */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  margin-bottom: 1rem;
+}
+
+.spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid #E5E7EB;
+  border-top: 3px solid #2563EB;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
   color: #6B7280;
   font-size: 0.875rem;
 }
 
-.template-detail-item i {
-  color: #2563EB;
-  width: 1rem;
-}
-
-.empty-state {
-  background-color: #FFFFFF;
-  border-radius: 0.5rem;
-  border: 1px solid #E5E7EB;
-  padding: 4rem 2rem;
+/* Error States */
+.error-state {
+  padding: 3rem;
   text-align: center;
 }
 
-.empty-state-content h3 {
-  color: #111827;
-  margin: 1rem 0;
+.error-content {
+  max-width: 28rem;
+  margin: 0 auto;
 }
 
-.empty-state-content p {
+.error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  background-color: #FEE2E2;
+  color: #DC2626;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  font-size: 1.5rem;
+}
+
+.error-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.error-message {
   color: #6B7280;
-  margin-bottom: 2rem;
+  margin: 0 0 1.5rem 0;
 }
 
-.empty-icon {
-  font-size: 3rem;
-  color: #D1D5DB;
-  margin-bottom: 1rem;
+/* Empty States */
+.empty-state {
+  padding: 3rem 1rem;
+  text-align: center;
 }
 
-.template-form {
+.empty-state-content {
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.empty-state-icon {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  background-color: #F3F4F6;
+  color: #9CA3AF;
+  border-radius: 50%;
+  margin: 0 auto 1rem;
+  font-size: 1.5rem;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.form-field label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
+.empty-state-title {
+  font-size: 1.125rem;
+  font-weight: 600;
   color: #111827;
+  margin: 0 0 0.5rem 0;
 }
 
-.media-upload-container {
-  display: flex;
-  gap: 0.5rem;
+.empty-state-description {
+  color: #6B7280;
+  margin: 0 0 2rem 0;
 }
 
+/* Content Display */
+.content-display {
+  background-color: #F9FAFB;
+  border-left: 4px solid #2563EB;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.template-media {
+  max-width: 100%;
+  max-height: 18rem;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
+}
+
+/* Variables Grid */
 .variables-help {
   background-color: #F9FAFB;
   border: 1px solid #E5E7EB;
   border-radius: 0.5rem;
   padding: 1rem;
-}
-
-.variables-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
 .variable-chip {
@@ -982,6 +1383,7 @@ onMounted(() => {
   border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  gap: 0.5rem;
 }
 
 .variable-chip:hover {
@@ -990,139 +1392,18 @@ onMounted(() => {
 }
 
 .variable-name {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
   font-weight: 500;
   color: #2563EB;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
 .variable-model {
   color: #6B7280;
-  font-size: 0.75rem;
+  font-size: 0.625rem;
 }
 
-.text-muted {
-  color: #9CA3AF;
-  font-size: 0.875rem;
-}
-
-.form-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.template-view-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.template-view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.template-view-badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.template-view-content-section h4,
-.template-view-media h4,
-.template-view-variables h4 {
-  margin: 0 0 0.75rem 0;
-  color: #111827;
-  font-weight: 500;
-}
-
-.content-display {
-  background-color: #F9FAFB;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  border-left: 4px solid #2563EB;
-}
-
-.template-media {
-  max-width: 100%;
-  max-height: 300px;
-  border-radius: 0.5rem;
-  border: 1px solid #E5E7EB;
-}
-
-.variables-list-display {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.template-view-meta {
-  background-color: #F9FAFB;
-  border-radius: 0.5rem;
-  padding: 1rem;
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #E5E7EB;
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.detail-row strong {
-  color: #111827;
-}
-
-.preview-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.preview-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.preview-body {
-  background-color: #F9FAFB;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  border-left: 4px solid #2563EB;
-}
-
-.preview-body p {
-  line-height: 1.6;
-  margin: 0;
-  white-space: pre-wrap;
-  color: #374151;
-}
-
-.sample-data-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.75rem;
-}
-
-.sample-data-item {
-  font-size: 0.875rem;
-  color: #4B5563;
-}
-
-.media-upload-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
+/* File Upload */
 .file-upload-container {
   position: relative;
 }
@@ -1133,15 +1414,16 @@ onMounted(() => {
 
 .file-upload-label {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
   padding: 2rem;
   border: 2px dashed #D1D5DB;
   border-radius: 0.5rem;
   background-color: #F9FAFB;
   cursor: pointer;
   transition: all 0.3s ease;
+  gap: 0.5rem;
 }
 
 .file-upload-label:hover {
@@ -1149,9 +1431,95 @@ onMounted(() => {
   background-color: #F3F4F6;
 }
 
-@media (max-width: 768px) {
-  .message-templates-dashboard {
-    padding: 1rem;
+/* Utilities */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.resize-vertical {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.gap-1 {
+  gap: 0.25rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.gap-6 {
+  gap: 1.5rem;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.grid {
+  display: grid;
+}
+
+/* Mobile-First Responsive Design */
+@media (max-width: 639px) {
+  .stats-bar {
+    grid-template-columns: 1fr;
   }
 
   .header-content {
@@ -1160,46 +1528,69 @@ onMounted(() => {
     gap: 1rem;
   }
 
-  .search-filter-section {
+  .icon-card {
+    padding: 1rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .card-header {
     flex-direction: column;
-    gap: 1rem;
-  }
-
-  .filter-controls {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .template-cards-grid {
-    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    align-items: flex-start;
   }
 
   .form-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .content-container {
+    padding: 0 1rem;
   }
 
-  .variables-grid {
-    grid-template-columns: 1fr;
+  .p-dialog-maximized {
+    width: 95vw !important;
+    max-width: 95vw !important;
+  }
+}
+
+/* Focus Management for Accessibility */
+.btn:focus-visible,
+.form-input:focus-visible,
+.checkbox:focus-visible,
+.variable-chip:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .btn {
+    border-width: 2px;
   }
 
-  .template-view-header {
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: flex-start;
+  .form-input {
+    border-width: 2px;
   }
 
-  .preview-header {
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: flex-start;
+  .card {
+    border-width: 2px;
   }
+}
 
-  .sample-data-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .filter-dropdown {
-    width: 100%;
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 </style>

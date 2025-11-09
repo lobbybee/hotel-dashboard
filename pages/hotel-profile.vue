@@ -1,15 +1,26 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-    <div class="max-w-7xl mx-auto p-4">
-      <!-- Header -->
-      <HotelProfileHeader :hotel="hotel" />
+  <div class="min-h-screen bg-gray-50">
+    <Toast />
+    
+    <!-- Page Header -->
+    <div class="bg-white border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex justify-between items-start">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Hotel Profile</h1>
+            <p class="text-gray-600">Manage your hotel's information and settings</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Status Cards Row -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <HotelQRCode :hotel="hotel" @verifyProfile="verifyProfile" />
+        <HotelQRCode :hotel="hotel" @verify-profile="verifyProfile" />
         <HotelStatusCard :hotel="hotel" />
         <!-- Third card space - can be used for future features -->
-        <!-- <div class="bg-white rounded-2xl shadow-2xl p-8 flex items-center justify-center">
+        <!-- <div class="bg-white rounded-lg border border-gray-200 p-6 flex items-center justify-center">
           <div class="text-center text-gray-400">
             <i class="pi pi-plus text-2xl mb-2 block"></i>
             <p class="text-sm">Future Feature</p>
@@ -25,31 +36,30 @@
           :errors="errors"
         />
 
-        <!-- Documents Section - Full Width -->
-        <HotelDocuments
-              :hotel="hotel"
-              @upload-document="uploadDocument"
-              @update-document="updateDocument"
-              @open-document="openDocument"
-            />
+        <!-- Right Column - Operational Settings -->
+        <HotelOperationalSettings
+          v-model:hotel-form="hotelForm"
+          :errors="errors"
+        />
       </div>
 
-
-      <!-- Right Column - Operational Settings -->
-           <HotelOperationalSettings
-             v-model:hotel-form="hotelForm"
-             :errors="errors"
-             class="max-w-xl"
-           />
+      <!-- Documents Section - Full Width -->
+      <div class="mb-8">
+        <HotelDocuments
+          :hotel="hotel"
+          @upload-document="uploadDocument"
+          @update-document="updateDocument"
+          @open-document="openDocument"
+        />
+      </div>
 
       <!-- Save Button -->
-      <div class="flex justify-center mt-8">
+      <div class="flex justify-center">
         <Button
           label="Save Changes"
           icon="pi pi-check"
           :loading="isUpdateLoading"
           @click="saveHotelProfile"
-          class="bg-blue-500 hover:bg-blue-600 text-white h-12 px-8 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
         />
       </div>
     </div>
@@ -62,6 +72,7 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { z } from 'zod';
 import { storeToRefs } from 'pinia';
 import { useAuthStore } from '~/stores/auth';
+import { useToast } from 'primevue/usetoast';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
@@ -70,6 +81,7 @@ import FileUpload from 'primevue/fileupload';
 import Badge from 'primevue/badge';
 import FloatLabel from 'primevue/floatlabel';
 import Panel from 'primevue/panel';
+import Toast from 'primevue/toast';
 import HotelProfileHeader from '~/components/Hotel/HotelProfileHeader.vue';
 import HotelStatusCard from '~/components/Hotel/HotelStatusCard.vue';
 import HotelBasicInfo from '~/components/Hotel/HotelBasicInfo.vue';
@@ -79,6 +91,9 @@ import HotelQRCode from '~/components/Hotel/HotelQRCode.vue';
 
 const authStore = useAuthStore();
 const { hotelId } = storeToRefs(authStore);
+
+// Initialize toast service
+const toast = useToast();
 
 const { data: hotel, isLoading: isHotelLoading, error: hotelError, refetch: refetchHotel  } = useFetchHotel(hotelId);
 const { mutate: updateHotelProfile, isPending: isUpdateLoading } = usePatchHotel();
@@ -155,21 +170,50 @@ const saveHotelProfile = async () => {
   if (!result.success) {
     const fieldErrors = result.error.flatten().fieldErrors;
     const newErrors: Record<string, string> = {};
+    const errorMessages: string[] = [];
+    
     for (const key in fieldErrors) {
         if (fieldErrors[key]) {
             newErrors[key] = fieldErrors[key]![0];
+            errorMessages.push(`${key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')}: ${fieldErrors[key]![0]}`);
         }
     }
+    
     errors.value = newErrors;
+    
+    // Show validation error toast
+    toast.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: 'Please fix the errors in the form',
+        life: 5000
+    });
+    
     return;
   }
 
   try {
     await updateHotelProfile({ id: hotelId.value, ...result.data });
-    // Optionally show a success message
+    
+    // Show success toast
+    toast.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Hotel profile updated successfully',
+        life: 3000
+    });
+    
+    // Refresh hotel data
     refetchHotel();
   } catch (error) {
-    // Optionally show an error message
+    // Show error toast
+    toast.add({
+        severity: 'error',
+        summary: 'Update Failed',
+        detail: 'Failed to update hotel profile. Please try again.',
+        life: 5000
+    });
+    
     console.error("Failed to update hotel profile:", error);
   }
 };
@@ -178,8 +222,13 @@ const uploadDocument = async (payload: { document_type: string, document_file: F
   try {
     await uploadHotelDocument(payload);
 
-    // Show success message
-    console.log(`${payload.document_type} uploaded successfully`);
+    // Show success toast
+    toast.add({
+        severity: 'success',
+        summary: 'Document Uploaded',
+        detail: `${payload.document_type.charAt(0).toUpperCase() + payload.document_type.slice(1)} uploaded successfully`,
+        life: 3000
+    });
 
     // Small delay to ensure server processing
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -187,7 +236,14 @@ const uploadDocument = async (payload: { document_type: string, document_file: F
     // Refresh hotel data to show updated documents
     await refetchHotel();
   } catch (error) {
-    // Show error message
+    // Show error toast
+    toast.add({
+        severity: 'error',
+        summary: 'Upload Failed',
+        detail: `Failed to upload ${payload.document_type}. Please try again.`,
+        life: 5000
+    });
+    
     console.error(`Failed to upload ${payload.document_type}:`, error);
   }
 };
@@ -209,13 +265,25 @@ const updateDocument = async (payload: { id: string, document_file: File }) => {
   try {
     await updateHotelDocument(payload);
 
-    // Show success message
-    console.log(`Document updated successfully`);
+    // Show success toast
+    toast.add({
+        severity: 'success',
+        summary: 'Document Updated',
+        detail: 'Document updated successfully',
+        life: 3000
+    });
 
     // Refresh hotel data to show updated documents
     refetchHotel();
   } catch (error) {
-    // Show error message
+    // Show error toast
+    toast.add({
+        severity: 'error',
+        summary: 'Update Failed',
+        detail: 'Failed to update document. Please try again.',
+        life: 5000
+    });
+    
     console.error(`Failed to update document:`, error);
   }
 };
@@ -232,39 +300,18 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Fade up transition */
-.fade-up-enter-active,
-.fade-up-leave-active {
-  transition: all 0.4s ease;
-}
-.fade-up-enter-from {
-  opacity: 0;
-  transform: translateY(15px);
-}
-.fade-up-enter-to {
-  opacity: 1;
-  transform: translateY(0);
+/* Modern design following the design system */
+/* No custom styles needed - using Tailwind classes for consistency */
+
+/* PrimeVue error styling override */
+:deep(.p-error) {
+  display: block;
+  margin-top: 0.25rem;
+  color: #ef4444;
+  font-size: 0.875rem;
 }
 
-/* Slow pulse for QR code */
-@keyframes pulse-slow {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-  50% { transform: scale(1.02); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
-}
-.animate-pulse-slow {
-  animation: pulse-slow 3s infinite;
-}
-
-/* Header animation */
-.animate-fade-slide-down {
-  animation: fade-slide-down 0.6s ease forwards;
-}
-@keyframes fade-slide-down {
-  0% { opacity: 0; transform: translateY(-10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-/* PrimeVue Panel Customizations */
+/* PrimeVue Panel customizations */
 :deep(.p-panel-header) {
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
@@ -274,12 +321,5 @@ onMounted(() => {
 }
 :deep(.p-panel-toggler) {
   margin-left: auto;
-}
-
-.p-error {
-  display: block;
-  margin-top: 0.25rem;
-  color: #ef4444;
-  font-size: 0.875rem;
 }
 </style>

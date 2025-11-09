@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-7xl mx-auto">
+  <div class="max-w-7xl mx-auto p-4">
     <div class="mb-8 fade-in">
       <h1 class="text-3xl font-bold text-gray-900 mb-2">Guest Check-out</h1>
       <p class="text-gray-600">Manage guest departures and room turnover</p>

@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-7xl mx-auto">
+  <div class="max-w-7xl mx-auto p-4">
     <!-- Header -->
     <div class="mb-8 fade-in">
       <div class="flex justify-between items-start">
@@ -805,11 +805,11 @@ onMounted(() => {
   .sm\:flex-row {
     flex-direction: row;
   }
-  
+
   .sm\:w-56 {
     width: 14rem;
   }
-  
+
   .sm\:w-48 {
     width: 12rem;
   }

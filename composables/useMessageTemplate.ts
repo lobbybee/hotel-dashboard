@@ -64,8 +64,8 @@ export interface TemplateListResponse {
 
 // Template Types and Categories Response
 export interface TemplateTypesResponse {
-  template_types: Array<{ value: string; label: string }>;
-  categories: Array<{ value: string; label: string }>;
+  template_types: Array<[string, string]>; // [value, label] format
+  categories: Array<[string, string]>;    // [value, label] format
 }
 
 // Template Preview Response

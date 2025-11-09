@@ -1,28 +1,21 @@
 <template>
     <div class="p-6 bg-gray-50 min-h-screen">
-        <div class="max-w-7xl mx-auto space-y-8">
+        <div class="max-w-7xl mx-auto space-y-6">
             <!-- Header -->
-            <header
-                class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-slide-down"
-            >
+            <header class="flex justify-between items-start animate-fade-slide-down">
                 <div>
-                    <h1
-                        class="text-3xl font-bold text-gray-800 flex items-center gap-2"
-                    >
-                        <i class="pi pi-building text-primary-500"></i> Room
-                        Management
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                        Room Management
                     </h1>
-                    <p class="text-gray-500">
+                    <p class="text-gray-600">
                         Manage your hotel's rooms by floor layout
                     </p>
                 </div>
-                <div class="flex gap-2">
-                    <Button
-                        label="Bulk Add Rooms"
-                        icon="pi pi-th-large"
-                        @click="openBulkAddDialog"
-                    />
-                </div>
+                <Button
+                    label="Bulk Add Rooms"
+                    icon="pi pi-th-large"
+                    @click="openBulkAddDialog"
+                />
             </header>
 
             <!-- Loading State -->
@@ -36,22 +29,27 @@
             <!-- Error State -->
             <div
                 v-else-if="roomsError || categoriesError"
-                class="p-6 bg-red-100 border-l-4 border-red-500 text-red-700 rounded"
+                class="p-4 bg-red-50 border border-red-200 rounded-lg"
             >
-                <p class="font-bold">Error loading rooms or categories</p>
-                <p>
-                    {{
-                        roomsError?.message ||
-                        categoriesError?.message ||
-                        "An unexpected error occurred"
-                    }}
-                </p>
-                <Button
-                    label="Retry"
-                    icon="pi pi-refresh"
-                    @click="refetchAll"
-                    class="mt-3"
-                />
+                <div class="flex items-start gap-3">
+                    <i class="pi pi-exclamation-circle text-red-500 text-xl mt-1"></i>
+                    <div>
+                        <p class="font-medium text-red-900">Error loading rooms or categories</p>
+                        <p class="text-red-700 text-sm">
+                            {{
+                                roomsError?.message ||
+                                categoriesError?.message ||
+                                "An unexpected error occurred"
+                            }}
+                        </p>
+                        <Button
+                            label="Retry"
+                            icon="pi pi-refresh"
+                            @click="refetchAll"
+                            class="mt-3"
+                        />
+                    </div>
+                </div>
             </div>
 
             <!-- Main Content -->
@@ -71,9 +69,9 @@
 
 
                 <!-- Floor Plan Section -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <!-- Sticky Filters Header -->
-                    <div class="p-4 sticky top-0 z-10 bg-white border-b border-gray-100">
+                <div class="bg-white rounded border border-gray-200">
+                    <!-- Filters and Legend -->
+                    <div class="p-4 space-y-4">
                         <RoomFilters
                             :roomSearch="roomSearch"
                             :roomStatusFilter="roomStatusFilter"
@@ -90,7 +88,7 @@
                     </div>
 
                     <!-- Room Grid -->
-                    <div class="p-4">
+                    <div class="px-4 pb-4">
                         <RoomGrid
                             :rooms="rooms"
                             :selectedRooms="selectedRooms"
@@ -317,6 +315,8 @@ const bulkAddForm = reactive({
     endRoomNumber: 110,
     floor: 1,
     categoryId: null,
+    roomPrefix: '',
+    roomSuffix: '',
 });
 
 const roomForm = reactive({
@@ -483,11 +483,27 @@ const bulkAddRooms = async () => {
     }
 
     try {
+        // Format room numbers with prefix and suffix if provided
+        const formatRoomNumber = (number: number) => {
+            const prefix = bulkAddForm.roomPrefix.trim();
+            const suffix = bulkAddForm.roomSuffix.trim();
+            const numberStr = number.toString();
+            
+            if (prefix && suffix) {
+                return `${prefix}-${numberStr}-${suffix}`;
+            } else if (prefix) {
+                return `${prefix}-${numberStr}`;
+            } else if (suffix) {
+                return `${numberStr}-${suffix}`;
+            }
+            return numberStr;
+        };
+
         const bulkData = {
             category: bulkAddForm.categoryId,
             floor: bulkAddForm.floor,
-            start_number: bulkAddForm.startRoomNumber.toString(),
-            end_number: bulkAddForm.endRoomNumber.toString(),
+            start_number: formatRoomNumber(bulkAddForm.startRoomNumber),
+            end_number: formatRoomNumber(bulkAddForm.endRoomNumber),
         };
 
         await bulkCreateRooms(bulkData);

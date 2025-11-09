@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-3 lg:gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
             <div
                 v-for="room in rooms"
                 :key="room.id"
@@ -11,26 +11,26 @@
                 :aria-checked="selectedRooms.includes(room.id)"
                 tabindex="0"
                 :aria-label="`Room ${room.room_number}, ${room.status}, Floor ${room.floor}, ${getCategoryName(room.category.id, categories)}`"
-                class="relative p-3 rounded border cursor-pointer transition-all duration-200 flex flex-col items-center"
+                class="relative p-3 rounded border-2 cursor-pointer transition-all duration-200 flex flex-col items-center hover:shadow-lg aspect-square"
                 :class="{
-                    'border-gray-300 bg-white hover:shadow-md':
+                    'border-green-200 bg-green-50 text-green-900 hover:border-green-300':
                         room.status === 'available',
-                    'border-blue-300 bg-blue-100 hover:shadow-md':
+                    'border-blue-200 bg-blue-50 text-blue-900 hover:border-blue-300':
                         room.status === 'occupied',
-                    'border-yellow-300 bg-yellow-100 hover:shadow-md':
+                    'border-amber-200 bg-amber-50 text-amber-900 hover:border-amber-300':
                         room.status === 'cleaning',
-                    'border-red-300 bg-red-100 hover:shadow-md':
+                    'border-red-200 bg-red-50 text-red-900 hover:border-red-300':
                         room.status === 'maintenance',
-                    'border-gray-400 bg-gray-300 hover:shadow-md':
+                    'border-gray-200 bg-gray-50 text-gray-900 hover:border-gray-300':
                         room.status === 'out_of_order',
-                    'ring-2 ring-primary-500 ring-offset-1':
+                    'ring-4 ring-primary-500 ring-offset-1':
                         selectedRooms.includes(room.id),
                 }"
             >
-                <span class="font-semibold text-gray-800 text-base md:text-lg">{{
+                <span class="font-bold text-lg">{{
                     room.room_number
                 }}</span>
-                <span class="text-xs text-gray-600 mt-1">{{
+                <span class="text-xs text-gray-600 truncate">{{
                     getCategoryName(room.category.id, categories)
                 }}</span>
                 <Tag
@@ -40,16 +40,17 @@
                     "
                     :severity="getStatusSeverity(room.status)"
                     :aria-label="`Status: ${room.status}`"
-                    class="mt-2 text-xs"
+                    class="mt-auto text-xs"
                 />
-                <span class="text-xs text-gray-500 mt-1"
+                <span class="text-xs text-gray-500"
                     >Floor {{ room.floor }}</span
                 >
                 <Button
                     icon="pi pi-pencil"
-                    severity="secondary"
+                    text
+                    rounded
                     :aria-label="`Edit room ${room.room_number}`"
-                    class="p-button-rounded p-button-text p-button-outlined p-button-sm absolute top-0 right-0"
+                    class="absolute top-1 right-1 p-1"
                     @click.stop="$emit('edit-room', room)"
                 />
             </div>
@@ -57,10 +58,11 @@
             <!-- Empty state for floor -->
             <div
                 v-if="rooms.length === 0"
-                class="col-span-full text-center py-8"
+                class="col-span-full text-center py-12"
             >
-                <i class="pi pi-home text-3xl text-gray-300 mb-2"></i>
-                <p class="text-gray-500">No rooms found on this floor</p>
+                <i class="pi pi-home text-6xl text-gray-300 opacity-50 mb-4"></i>
+                <p class="text-gray-500 text-lg font-medium">No rooms found on this floor</p>
+                <p class="text-gray-400 text-sm">Try selecting a different floor or adjusting filters</p>
             </div>
         </div>
 
@@ -119,10 +121,10 @@ const getCategoryName = (categoryId: number, categories: Category[]) => {
 const getStatusSeverity = (status: string) => {
     const severityMap: Record<string, string> = {
         available: "success",
-        occupied: "info",
+        occupied: "info", 
         cleaning: "warning",
-        maintenance: "warning",
-        out_of_order: "danger",
+        maintenance: "danger",
+        out_of_order: "secondary",
     };
     return severityMap[status] || "secondary";
 };
