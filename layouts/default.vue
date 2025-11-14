@@ -175,7 +175,7 @@ const pageTitle = computed(() => {
 const navigation = computed(() => {
   const role = userRole.value;
   console.log(role)
-  if (role === 'manager' || role === 'hotel_admin') {
+  if (role === 'hotel_admin') {
     return [
       { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
       { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
@@ -187,6 +187,17 @@ const navigation = computed(() => {
       { name: 'Message Templates', href: '/message_templates', icon: 'prime:comment' },
       { name: 'Payment QR Codes', href: '/paymentQR', icon: 'prime:qrcode' },
       { name: 'Billing', href: '/payments', icon: 'prime:credit-card' },
+      { name: 'Chat', href: '/chat', icon: 'prime:comments' }
+    ];
+  } else if (role === 'manager') {
+    return [
+      { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
+      { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
+      { name: 'Check-out', href: '/checkout', icon: 'prime:sign-out' },
+      { name: 'Staff Management', href: '/staff', icon: 'prime:users' },
+      { name: 'Room Management', href: '/rooms', icon: 'prime:home' },
+      // { name: 'Departments', href: '/departments', icon: 'prime:briefcase' },
+      { name: 'Payment QR Codes', href: '/paymentQR', icon: 'prime:qrcode' },
       { name: 'Chat', href: '/chat', icon: 'prime:comments' }
     ];
   } else if (role === 'receptionist') {

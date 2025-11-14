@@ -5,12 +5,12 @@
     <Card class="shadow-sm border border-gray-200 mt-6">
       <template #content>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <CheckinGuestForm 
-        :guest-form="manualGuestForm" 
-        @update-guest-field="onUpdateGuestField" 
+          <CheckinGuestForm
+        :guest-form="manualGuestForm"
+        @update-guest-field="onUpdateGuestField"
         @accompanying-guest-doc-select="onAccompanyingGuestDocSelect"
       />
-          <CheckinStayForm 
+          <CheckinStayForm
             :stay-form="manualStayForm"
             :doc-form="manualDocForm"
             @file-select="onFileSelect"
@@ -35,7 +35,7 @@ import Card from 'primevue/card';
 import Button from 'primevue/button';
 import { useToast } from 'primevue/usetoast';
 
-import { useCreateGuest, useUploadIdentityDocument, useCreateStay, useVerifyAndCheckIn, useCreateBooking } from '~/composables/useGuest';
+// import { useCreateGuest, useUploadIdentityDocument, useCreateStay, useVerifyAndCheckIn, useCreateBooking } from '~/composables/useGuest';
 import { useFetchRooms } from '~/composables/useHotel';
 
 const toast = useToast();
@@ -149,7 +149,7 @@ const handleManualWalkInCheckin = async () => {
         toast.add({ severity: 'warn', summary: 'Identity Document Required', detail: 'Please upload an identity document for new walk-in guests.', life: 4000 });
         return;
     }
-    
+
     // Upload documents for accompanying guests
     for (const index in accompanyingGuestDocs) {
       const docData = accompanyingGuestDocs[index];

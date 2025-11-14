@@ -8,7 +8,7 @@
           <CheckinPendingStaysTab />
         </TabPanel>
         <TabPanel header="Manual Walk-in">
-          <CheckinManualWalkinTab />
+          <!-- <CheckinManualWalkinTab /> -->
         </TabPanel>
       </TabView>
     </div>

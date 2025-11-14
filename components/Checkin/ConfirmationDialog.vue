@@ -4,29 +4,118 @@
       
       <!-- Guest Details -->
       <div class="border-b pb-4">
-        <h4 class="font-semibold text-lg mb-2">Guest Details</h4>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-semibold text-lg">Guest Details</h4>
+          <div class="flex items-center gap-2">
+            <Checkbox inputId="editGuest" v-model="editGuestMode" binary />
+            <label for="editGuest" class="text-sm cursor-pointer">Edit Guest Info</label>
+          </div>
+        </div>
         <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <p><strong>Name:</strong> {{ stay.guest.full_name }}</p>
-            <p><strong>Email:</strong> {{ stay.guest.email }}</p>
-            <p><strong>Phone:</strong> {{ stay.guest.whatsapp_number }}</p>
-            <p><strong>Nationality:</strong> {{ stay.guest.nationality }}</p>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Name</label>
+            <InputText v-if="editGuestMode" v-model="guestEdits.full_name" class="w-full text-sm" />
+            <p v-else><strong>{{ stay.guest.full_name }}</strong></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Email</label>
+            <InputText v-if="editGuestMode" v-model="guestEdits.email" class="w-full text-sm" />
+            <p v-else><strong>{{ stay.guest.email || 'Not provided' }}</strong></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Phone</label>
+            <p><strong>{{ stay.guest.whatsapp_number }}</strong></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Nationality</label>
+            <InputText v-if="editGuestMode" v-model="guestEdits.nationality" class="w-full text-sm" />
+            <p v-else><strong>{{ stay.guest.nationality }}</strong></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Date of Birth</label>
+            <Calendar v-if="editGuestMode" v-model="guestEdits.date_of_birth" class="w-full text-sm" showIcon dateFormat="yy-mm-dd" />
+            <p v-else><strong>{{ stay.guest.date_of_birth || 'Not provided' }}</strong></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Preferred Language</label>
+            <Dropdown v-if="editGuestMode" v-model="guestEdits.preferred_language" :options="languageOptions" optionLabel="name" optionValue="code" class="w-full text-sm" />
+            <p v-else><strong>{{ getLanguageName(stay.guest.preferred_language) || 'Not specified' }}</strong></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+            <Badge :value="stay.guest.status" :severity="getStatusSeverity(stay.guest.status)" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">WhatsApp Active</label>
+            <Badge :value="stay.guest.is_whatsapp_active ? 'Active' : 'Inactive'" :severity="stay.guest.is_whatsapp_active ? 'success' : 'warning'" />
+          </div>
+        </div>
+        <div v-if="editGuestMode || stay.guest.notes" class="mt-3">
+          <label class="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+          <Textarea v-if="editGuestMode" v-model="guestEdits.notes" rows="2" class="w-full text-sm" />
+          <p v-else class="text-sm">{{ stay.guest.notes || 'No notes' }}</p>
         </div>
       </div>
 
       <!-- Identity Documents -->
       <div class="border-b pb-4">
         <h4 class="font-semibold text-lg mb-2">Identity Documents</h4>
-        <div v-if="stay.guest.identity_documents && stay.guest.identity_documents.length > 0">
-            <div v-for="doc in stay.guest.identity_documents" :key="doc.id" class="flex items-center justify-between p-2 rounded-lg bg-gray-50 mb-2">
-                <div>
-                    <p class="font-semibold">{{ formatDocumentType(doc.document_type) }}</p>
-                    <a :href="doc.document_file_url" target="_blank" class="text-sm text-blue-500 hover:underline">View Document</a>
+        <div v-if="stay.guest?.documents && stay.guest.documents.length > 0">
+            <div v-for="doc in stay.guest.documents" :key="doc.id" class="mb-3">
+                <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <p class="font-semibold text-gray-900">{{ formatDocumentType(doc.document_type) }}</p>
+                            <span v-if="doc.document_number" class="text-sm text-gray-500">({{ doc.document_number }})</span>
+                        </div>
+                        <div class="flex gap-3">
+                            <a v-if="doc.document_file_url" :href="doc.document_file_url" target="_blank" class="text-sm text-blue-500 hover:underline flex items-center gap-1">
+                                <i class="pi pi-eye"></i>
+                                View Front
+                            </a>
+                            <a v-if="doc.document_file_back_url" :href="doc.document_file_back_url" target="_blank" class="text-sm text-blue-500 hover:underline flex items-center gap-1">
+                                <i class="pi pi-eye"></i>
+                                View Back
+                            </a>
+                        </div>
+                    </div>
+                    <Badge :value="doc.is_verified ? 'Verified' : 'Not Verified'" :severity="doc.is_verified ? 'success' : 'warning'" />
                 </div>
-                <Badge :value="doc.is_verified ? 'Verified' : 'Not Verified'" :severity="doc.is_verified ? 'success' : 'warning'" />
             </div>
         </div>
         <div v-else>
             <p class="text-sm text-gray-500">No identity documents uploaded.</p>
+        </div>
+      </div>
+
+      <!-- Booking Details -->
+      <div class="border-b pb-4">
+        <h4 class="font-semibold text-lg mb-2">Booking Details</h4>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Booking ID</label>
+            <p><strong>#{{ stay.booking_details?.id }}</strong></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Booking Status</label>
+            <Badge :value="stay.booking_details?.status" :severity="getBookingStatusSeverity(stay.booking_details?.status)" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Booking Date</label>
+            <p><strong>{{ new Date(stay.booking_details?.booking_date).toLocaleDateString() }}</strong></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Total Amount</label>
+            <p><strong>${{ stay.booking_details?.total_amount || 0 }}</strong></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Via WhatsApp</label>
+            <Badge :value="stay.booking_details?.is_via_whatsapp ? 'Yes' : 'No'" :severity="stay.booking_details?.is_via_whatsapp ? 'info' : 'secondary'" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Guest Names</label>
+            <p><strong>{{ stay.booking_details?.guest_names?.join(', ') || 'N/A' }}</strong></p>
+          </div>
         </div>
       </div>
 
@@ -46,8 +135,20 @@
             </div>
 
             <div>
-                <label for="room" class="block text-sm font-medium text-gray-700 mb-1">Room</label>
-                <Dropdown id="room" v-model="selectedRoom" :options="rooms" optionLabel="room_number" optionValue="id" placeholder="Select a Room" class="w-full" :loading="isRoomsLoading" />
+                <label for="room" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ stay.room ? 'Room' : 'Assign Room' }}
+                    <span v-if="stay.room && selectedRoom !== stay.room.id" class="text-amber-500 text-xs ml-2">(Change Room)</span>
+                </label>
+                <Dropdown 
+                    id="room" 
+                    v-model="selectedRoom" 
+                    :options="rooms" 
+                    optionLabel="room_number" 
+                    optionValue="id" 
+                    :placeholder="stay.room ? stay.room.room_number + ' (Current)' : 'Select a Room'" 
+                    class="w-full" 
+                    :loading="isRoomsLoading" 
+                />
             </div>
 
             <div v-if="!stay.room">
@@ -65,8 +166,7 @@
 
     <template #footer>
       <Button label="Cancel" icon="pi pi-times" @click="emit('update:visible', false)" class="p-button-text" />
-      <Button v-if="stay && stay.room" label="Confirm & Check-in" icon="pi pi-check" @click="confirmCheckin" :loading="isConfirming" :disabled="!selectedRoom" />
-      <Button v-else label="Create Stay & Check-in" icon="pi pi-check" @click="createStayAndCheckin" :loading="isConfirming" :disabled="!selectedRoom || !checkOutDate" />
+      <Button label="Confirm & Check-in" icon="pi pi-check" @click="confirmAndCheckin" :loading="isConfirming" :disabled="!selectedRoom || (!stay.room && !checkOutDate)" />
     </template>
   </Dialog>
 </template>
@@ -78,6 +178,8 @@ import Button from 'primevue/button';
 import Dropdown from 'primevue/dropdown';
 import Badge from 'primevue/badge';
 import Calendar from 'primevue/calendar';
+import Checkbox from 'primevue/checkbox';
+import Textarea from 'primevue/textarea';
 import { useFetchRooms, useFetchRoomCategories, useFetchHotelRoomFloors } from '~/composables/useHotel';
 
 import InputText from 'primevue/inputtext';
@@ -88,13 +190,39 @@ const props = defineProps({
   isConfirming: Boolean,
 });
 
-const emit = defineEmits(['update:visible', 'confirmed', 'create-stay']);
+const emit = defineEmits(['update:visible', 'confirmed']);
 
 const registerNumber = ref<string>('');
 const selectedCategory = ref<number | null>(null);
 const selectedFloor = ref<number | null>(null);
 const selectedRoom = ref<number | null>(null);
 const checkOutDate = ref<Date | null>(null);
+
+// Guest editing mode
+const editGuestMode = ref<boolean>(false);
+const guestEdits = ref({
+  full_name: '',
+  email: '',
+  nationality: '',
+  date_of_birth: null as Date | null,
+  preferred_language: '',
+  notes: ''
+});
+
+// Language options
+const languageOptions = [
+  { name: 'English', code: 'en' },
+  { name: 'Spanish', code: 'es' },
+  { name: 'French', code: 'fr' },
+  { name: 'German', code: 'de' },
+  { name: 'Italian', code: 'it' },
+  { name: 'Portuguese', code: 'pt' },
+  { name: 'Russian', code: 'ru' },
+  { name: 'Chinese', code: 'zh' },
+  { name: 'Japanese', code: 'ja' },
+  { name: 'Arabic', code: 'ar' },
+  { name: 'Hindi', code: 'hi' }
+];
 
 const { data: categoriesData } = useFetchRoomCategories();
 const categories = computed(() => categoriesData.value?.results || []);
@@ -122,28 +250,127 @@ const formatDocumentType = (type: string) => {
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
-const confirmCheckin = () => {
-  emit('confirmed', { roomId: selectedRoom.value, registerNumber: registerNumber.value });
+const getLanguageName = (code: string) => {
+    const language = languageOptions.find(lang => lang.code === code);
+    return language ? language.name : '';
 };
 
-const createStayAndCheckin = () => {
-  if (selectedRoom.value && checkOutDate.value) {
-    emit('create-stay', { 
-        guestId: props.stay.guest.id, 
-        roomId: selectedRoom.value, 
-        checkOutDate: checkOutDate.value.toISOString(),
-        registerNumber: registerNumber.value
-    });
+const getStatusSeverity = (status: string) => {
+    switch (status) {
+        case 'pending_verification': return 'warning';
+        case 'verified': return 'success';
+        case 'rejected': return 'danger';
+        default: return 'info';
+    }
+};
+
+const getBookingStatusSeverity = (status: string) => {
+    switch (status) {
+        case 'pending': return 'warning';
+        case 'confirmed': return 'success';
+        case 'cancelled': return 'danger';
+        default: return 'info';
+    }
+};
+
+const confirmAndCheckin = () => {
+  console.log('confirmAndCheckin called', { 
+    selectedRoom: selectedRoom.value, 
+    stayRoom: props.stay?.room?.id,
+    hasRoom: !!props.stay?.room,
+    checkOutDate: checkOutDate.value,
+    editGuestMode: editGuestMode.value,
+    guestEdits: guestEdits.value
+  });
+  
+  const verifyData: any = {
+    register_number: registerNumber.value
+  };
+
+  // Always include room_id for the verify-checkin endpoint
+  if (selectedRoom.value) {
+    verifyData.room_id = selectedRoom.value;
   }
+
+  // For stays without existing room assignments, include check_out_date
+  if (!props.stay?.room && checkOutDate.value) {
+    verifyData.check_out_date = checkOutDate.value.toISOString();
+  }
+
+  // Include guest updates if edit mode is enabled and there are changes
+  if (editGuestMode.value) {
+    const guestUpdates: any = {};
+    
+    // Only include fields that have changed
+    if (guestEdits.value.full_name && guestEdits.value.full_name !== props.stay?.guest?.full_name) {
+      guestUpdates.full_name = guestEdits.value.full_name;
+    }
+    if (guestEdits.value.email && guestEdits.value.email !== props.stay?.guest?.email) {
+      guestUpdates.email = guestEdits.value.email;
+    }
+    if (guestEdits.value.nationality && guestEdits.value.nationality !== props.stay?.guest?.nationality) {
+      guestUpdates.nationality = guestEdits.value.nationality;
+    }
+    if (guestEdits.value.date_of_birth && guestEdits.value.date_of_birth !== props.stay?.guest?.date_of_birth) {
+      guestUpdates.date_of_birth = guestEdits.value.date_of_birth.toISOString().split('T')[0];
+    }
+    if (guestEdits.value.preferred_language && guestEdits.value.preferred_language !== props.stay?.guest?.preferred_language) {
+      guestUpdates.preferred_language = guestEdits.value.preferred_language;
+    }
+    if (guestEdits.value.notes !== props.stay?.guest?.notes) {
+      guestUpdates.notes = guestEdits.value.notes;
+    }
+
+    if (Object.keys(guestUpdates).length > 0) {
+      verifyData.guest_updates = guestUpdates;
+    }
+  }
+
+  console.log('Emitting confirmed with unified data:', verifyData);
+  emit('confirmed', verifyData);
 };
 
 watch(() => props.visible, async (newValue) => {
   if (newValue) {
-    selectedCategory.value = props.stay?.room?.category || null;
-    selectedFloor.value = props.stay?.room?.floor || null;
-    checkOutDate.value = null;
+    // Initialize room selection
+    if (props.stay?.room?.id) {
+      // Stay already has a room assigned
+      selectedRoom.value = props.stay.room.id;
+      selectedCategory.value = props.stay.room.category || null;
+      selectedFloor.value = props.stay.room.floor || null;
+    } else {
+      // Stay needs room assignment
+      selectedRoom.value = null;
+      selectedCategory.value = null;
+      selectedFloor.value = null;
+    }
+    
+    // Initialize check-out date for stays without rooms
+    if (!props.stay?.room && props.stay?.check_out_date) {
+      checkOutDate.value = new Date(props.stay.check_out_date);
+    } else {
+      checkOutDate.value = null;
+    }
+    
+    // Initialize register number
+    registerNumber.value = props.stay?.register_number || '';
+    
+    // Initialize guest edits with current guest data
+    if (props.stay?.guest) {
+      guestEdits.value = {
+        full_name: props.stay.guest.full_name || '',
+        email: props.stay.guest.email || '',
+        nationality: props.stay.guest.nationality || '',
+        date_of_birth: props.stay.guest.date_of_birth ? new Date(props.stay.guest.date_of_birth) : null,
+        preferred_language: props.stay.guest.preferred_language || '',
+        notes: props.stay.guest.notes || ''
+      };
+    }
+    
+    // Reset edit mode
+    editGuestMode.value = false;
+    
     await refetchRooms();
-    selectedRoom.value = props.stay?.room?.id || null;
   }
 });
 

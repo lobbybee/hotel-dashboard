@@ -58,14 +58,14 @@
               <i class="pi pi-home"></i>
               Room
             </span>
-            <span class="font-semibold text-gray-900">{{ stay.room.room_number }}</span>
+            <span class="font-semibold text-gray-900">{{ stay.room_details.room_number }}</span>
           </div>
           <div class="flex items-center justify-between text-sm">
             <span class="text-gray-600 flex items-center gap-2">
               <i class="pi pi-tag"></i>
               Category
             </span>
-            <Tag :value="stay.room.category.name" severity="info" />
+            <Tag :value="stay.room_details.category" severity="info" />
           </div>
           <div class="flex items-center justify-between text-sm">
             <span class="text-gray-600 flex items-center gap-2">
@@ -111,7 +111,7 @@
           </p>
           <div class="space-y-1 text-sm">
             <p><strong>Guest:</strong> {{ selectedStayForCheckout.guest.full_name }}</p>
-            <p><strong>Room:</strong> {{ selectedStayForCheckout.room.room_number }}</p>
+            <p><strong>Room:</strong> {{ selectedStayForCheckout.room_details.room_number }}</p>
             <p><strong>Duration:</strong> {{ getDaysStayed(selectedStayForCheckout) }} night(s)</p>
           </div>
         </div>
@@ -119,7 +119,7 @@
         <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <p class="text-sm text-amber-900">
             <i class="pi pi-exclamation-triangle mr-2"></i>
-            Room {{ selectedStayForCheckout.room.room_number }} will be marked as "Cleaning" after checkout.
+            Room {{ selectedStayForCheckout.room_details.room_number }} will be marked as "Cleaning" after checkout.
           </p>
         </div>
       </div>
@@ -140,32 +140,28 @@ import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
 import { useToast } from 'primevue/usetoast';
 
-import { useFetchStays, useCheckOut } from '~/composables/useGuest';
-import type { Stay } from '../types';
-
-
+import { useListCheckedInUsers, useCheckoutUser } from '~/composables/checkin-manager';
 
 const toast = useToast();
 
 // --- DATA FETCHING ---
-const { data: activeStaysData, isLoading, error, refetch } = useFetchStays(ref({ status: 'active' }));
-const activeStays = computed(() => activeStaysData.value?.results || []);
+const { checkedInUsers, isLoading, error, refetch } = useListCheckedInUsers();
 
 // --- SEARCH ---
 const searchQuery = ref('');
 const filteredStays = computed(() => {
   if (!searchQuery.value) {
-    return activeStays.value;
+    return checkedInUsers.value || [];
   }
   const lowerCaseQuery = searchQuery.value.toLowerCase();
-  return activeStays.value.filter(stay =>
+  return (checkedInUsers.value || []).filter(stay =>
     stay.guest.full_name.toLowerCase().includes(lowerCaseQuery) ||
-    stay.room.room_number.toLowerCase().includes(lowerCaseQuery)
+    stay.room_details.room_number.toLowerCase().includes(lowerCaseQuery)
   );
 });
 
 // --- CHECKOUT LOGIC ---
-const { mutateAsync: checkOutGuest, isLoading: isCheckingOut } = useCheckOut();
+const { checkoutUser, isLoading: isCheckingOut } = useCheckoutUser();
 const isCheckoutDialogVisible = ref(false);
 const selectedStayForCheckout = ref<any>(null);
 
@@ -178,15 +174,20 @@ const handleConfirmCheckout = async () => {
   if (!selectedStayForCheckout.value) return;
 
   try {
-    await checkOutGuest({ stay_id: selectedStayForCheckout.value.id });
+    await checkoutUser(selectedStayForCheckout.value.id);
 
-    toast.add({ severity: 'success', summary: 'Checked Out', detail: `${selectedStayForCheckout.value.guest.full_name} has been checked out. Room ${selectedStayForCheckout.value.room.room_number} is now marked for cleaning.`, life: 4000 });
+    toast.add({ 
+      severity: 'success', 
+      summary: 'Checked Out', 
+      detail: `${selectedStayForCheckout.value.guest.full_name} has been checked out successfully.`, 
+      life: 4000 
+    });
 
     isCheckoutDialogVisible.value = false;
-    await refetch(); // Refresh the list of active stays
+    await refetch();
 
   } catch (err: any) {
-    const errorMessage = err.response?._data?.detail || 'An unexpected error occurred.';
+    const errorMessage = err.error || err.response?._data?.detail || 'An unexpected error occurred.';
     toast.add({ severity: 'error', summary: 'Check-out Failed', detail: errorMessage, life: 5000 });
   }
 };
@@ -199,7 +200,7 @@ const formatDate = (dateString: string) => {
   })
 }
 
-const getDaysStayed = (stay: Stay) => {
+const getDaysStayed = (stay: any) => {
   const checkIn = new Date(stay.check_in_date)
   const checkOut = new Date(stay.check_out_date)
   const diff = checkOut.getTime() - checkIn.getTime()

@@ -36,6 +36,20 @@ export default defineNuxtRouteMiddleware((to, from) => {
     return navigateTo('/chat');
   }
 
+  // If user is manager, restrict access to billing, hotel profile, and message templates
+  if (userRole === 'manager') {
+    // Define restricted routes for managers
+    const restrictedRoutes = ['/hotel-profile', '/message_templates', '/payments'];
+    
+    // Check if the requested path is restricted
+    if (restrictedRoutes.some(route => to.path.startsWith(route))) {
+      // Redirect managers to dashboard if they try to access restricted routes
+      return navigateTo('/');
+    }
+  }
+
+  // hotel_admin has full access to all routes, no restrictions needed
+
   // For other roles, allow normal access
   return;
 });
