@@ -7,7 +7,7 @@ export interface MessageTemplate {
   name: string;
   template_type: string;
   category: string;
-  content: string;
+  text_content: string;
   variables: string[];
   is_active: boolean;
   created_at: string;
@@ -15,18 +15,35 @@ export interface MessageTemplate {
   media_url?: string;
 }
 
+// Global Template Interface (matches API response)
+export interface GlobalMessageTemplate {
+  id: number;
+  name: string;
+  template_type: string;
+  category?: string;
+  text_content: string;
+  media_file?: string;
+  media_filename?: string;
+  media_url?: string;
+  is_customizable: boolean;
+  is_active: boolean;
+  variables: string[];
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Custom Template Interface
 export interface CustomMessageTemplate extends MessageTemplate {}
 
-// Global Template Interface (same as base)
-export interface GlobalMessageTemplate extends MessageTemplate {}
+
 
 // Template Creation Data
 export interface CustomTemplateCreateData {
   name: string;
   template_type: string;
   category: string;
-  content: string;
+  text_content: string;
   variables: string[];
   is_active?: boolean;
   media_url?: string;
@@ -37,7 +54,7 @@ export interface CustomTemplateUpdateData {
   name?: string;
   template_type?: string;
   category?: string;
-  content?: string;
+  text_content?: string;
   variables?: string[];
   is_active?: boolean;
   media_url?: string;
@@ -124,7 +141,7 @@ export const useFetchCustomTemplates = (params?: TemplateListParams) => {
         Object.entries(params).filter(([_, value]) => value !== undefined) as [string, string][]
       ).toString() : '';
 
-      const url = queryString ? `/chat/custom-templates/?${queryString}` : '/chat/api/custom-templates/';
+      const url = queryString ? `/chat/custom-templates/?${queryString}` : '/chat/custom-templates/';
       const response = await API(url);
       return response as TemplateListResponse;
     }
@@ -299,9 +316,14 @@ export const useFetchGlobalTemplates = (params?: TemplateListParams) => {
         Object.entries(params).filter(([_, value]) => value !== undefined) as [string, string][]
       ).toString() : '';
 
-      const url = queryString ? `/chat/templates/?${queryString}` : '/chat/api/templates/';
+      const url = queryString ? `/chat/templates/?${queryString}` : '/chat/templates/';
       const response = await API(url);
-      return response as TemplateListResponse;
+      return response as {
+        count: number;
+        next: string | null;
+        previous: string | null;
+        results: GlobalMessageTemplate[];
+      };
     }
   });
 

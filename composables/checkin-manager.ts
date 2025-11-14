@@ -87,7 +87,7 @@ export const useVerifyCheckin = () => {
       console.log('verifyCheckin mutation called with:', { stayId, data });
       const endpoint = `/stay-management/${stayId}/verify-checkin/`;
       console.log('Making request to endpoint:', endpoint);
-      
+
       const response = await API(endpoint, {
         method: 'PATCH',
         body: data
@@ -131,6 +131,7 @@ export const useListPendingStays = () => {
 };
 
 // List Guests - Lists all guests for the hotel with optional search functionality
+
 export const useListGuests = (searchTerm?: string) => {
   const { API } = useAPI();
   const {
@@ -142,10 +143,10 @@ export const useListGuests = (searchTerm?: string) => {
     key: ['guests', searchTerm],
     query: async () => {
       const params = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-      const response = await API(`/guest-managements/${params}`);
+      const response = await API(`/guest-management/guests/${params}`);
       return response;
     },
-    enabled: computed(() => true) // Always enabled, but can be controlled by searchTerm
+    enabled: computed(() => true)
   });
 
   return {
@@ -155,6 +156,7 @@ export const useListGuests = (searchTerm?: string) => {
     refetch
   };
 };
+
 
 // Create Guest - Creates primary guest with accompanying guests and their identity documents
 export const useCreateGuest = () => {

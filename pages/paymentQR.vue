@@ -128,41 +128,54 @@
                 rounded
               />
             </div>
-            <div class="flex gap-2" v-if="userRole !== 'receptionist'">
+            <div class="flex gap-2">
+              <!-- WhatsApp button - available for all user roles -->
               <Button
-                icon="pi pi-eye"
-                @click="viewQRCode(qrCode)"
+                icon="pi pi-whatsapp"
+                @click="openWhatsAppDialog(qrCode)"
                 text
                 rounded
                 size="small"
-                v-tooltip="'View Details'"
+                severity="success"
+                v-tooltip="'Send to WhatsApp'"
+                :disabled="!qrCode.active"
               />
-              <Button
-                icon="pi pi-pencil"
-                @click="editQRCode(qrCode)"
-                text
-                rounded
-                size="small"
-                v-tooltip="'Edit'"
-              />
-              <Button
-                icon="pi pi-power-off"
-                @click="toggleQRStatus(qrCode)"
-                text
-                rounded
-                size="small"
-                :severity="qrCode.active ? 'warning' : 'success'"
-                v-tooltip="qrCode.active ? 'Deactivate' : 'Activate'"
-              />
-              <Button
-                icon="pi pi-trash"
-                @click="deleteQRCode(qrCode)"
-                text
-                rounded
-                size="small"
-                severity="danger"
-                v-tooltip="'Delete'"
-              />
+              <template v-if="userRole !== 'receptionist'">
+                <Button
+                  icon="pi pi-eye"
+                  @click="viewQRCode(qrCode)"
+                  text
+                  rounded
+                  size="small"
+                  v-tooltip="'View Details'"
+                />
+                <Button
+                  icon="pi pi-pencil"
+                  @click="editQRCode(qrCode)"
+                  text
+                  rounded
+                  size="small"
+                  v-tooltip="'Edit'"
+                />
+                <Button
+                  icon="pi pi-power-off"
+                  @click="toggleQRStatus(qrCode)"
+                  text
+                  rounded
+                  size="small"
+                  :severity="qrCode.active ? 'warning' : 'success'"
+                  v-tooltip="qrCode.active ? 'Deactivate' : 'Activate'"
+                />
+                <Button
+                  icon="pi pi-trash"
+                  @click="deleteQRCode(qrCode)"
+                  text
+                  rounded
+                  size="small"
+                  severity="danger"
+                  v-tooltip="'Delete'"
+                />
+              </template>
             </div>
           </div>
 
@@ -341,6 +354,128 @@
         </div>
       </div>
     </Dialog>
+
+    <!-- Send to WhatsApp Dialog -->
+    <Dialog
+      v-model:visible="showWhatsAppDialog"
+      header="Send QR Code to WhatsApp"
+      :modal="true"
+      :style="{ width: '40rem' }"
+      :dismissableMask="true"
+    >
+      <div v-if="selectedQRForWhatsApp" class="space-y-6">
+        <!-- QR Code Preview -->
+        <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+          <img
+            :src="selectedQRForWhatsApp.image_url"
+            :alt="selectedQRForWhatsApp.name"
+            class="w-16 h-16 object-contain border border-gray-200 rounded"
+          />
+          <div>
+            <h4 class="font-semibold text-gray-900">{{ selectedQRForWhatsApp.name }}</h4>
+            <p class="text-sm text-gray-600">UPI: {{ selectedQRForWhatsApp.upi_id }}</p>
+          </div>
+        </div>
+
+        <!-- Guest Search -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Search Guest</label>
+          <div class="relative">
+            <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <InputText
+              v-model="guestSearchQuery"
+              placeholder="Search guest by name, email, or phone..."
+              class="w-full pl-10"
+              @input="searchGuests"
+            />
+          </div>
+        </div>
+
+        <!-- Guest Selection -->
+        <div v-if="guestSearchQuery && guests?.length > 0" class="space-y-2 max-h-48 overflow-y-auto">
+          <div
+            v-for="guest in guests"
+            :key="guest.id"
+            @click="selectGuest(guest)"
+            class="p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+            :class="{ 'ring-2 ring-blue-500 bg-blue-50': selectedGuest?.id === guest.id }"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-medium text-gray-900">{{ guest.full_name }}</p>
+                <p class="text-sm text-gray-600">{{ guest.email || 'No email' }}</p>
+                <p class="text-sm text-gray-600">{{ guest.whatsapp_number || 'No WhatsApp number' }}</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <Tag
+                    :value="guest.status"
+                    :severity="guest.status === 'demo_active' ? 'success' : 'secondary'"
+                    size="small"
+                  />
+                  <Tag
+                    v-if="guest.is_primary_guest"
+                    value="Primary Guest"
+                    severity="info"
+                    size="small"
+                  />
+                  <Tag
+                    v-if="guest.is_whatsapp_active"
+                    icon="pi pi-whatsapp"
+                    severity="success"
+                    size="small"
+                  />
+                </div>
+              </div>
+              <i v-if="selectedGuest?.id === guest.id" class="pi pi-check-circle text-blue-500"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Guest Info -->
+        <div v-if="selectedGuest" class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center gap-2 text-green-800 mb-2">
+            <i class="pi pi-check-circle"></i>
+            <span class="font-medium">Selected Guest</span>
+          </div>
+          <p class="text-sm text-green-700">{{ selectedGuest.full_name }} - {{ selectedGuest.whatsapp_number }}</p>
+          <div class="flex items-center gap-2 mt-1">
+            <Tag
+              :value="selectedGuest.status"
+              :severity="selectedGuest.status === 'demo_active' ? 'success' : 'secondary'"
+              size="small"
+            />
+            <Tag
+              v-if="selectedGuest.is_whatsapp_active"
+              icon="pi pi-whatsapp"
+              severity="success"
+              size="small"
+            />
+          </div>
+        </div>
+
+        <!-- No Results -->
+        <div v-else-if="guestSearchQuery && !guestsLoading && (!guests || guests.length === 0)" class="text-center py-4">
+          <i class="pi pi-search text-gray-400 text-2xl mb-2"></i>
+          <p class="text-gray-500">No guests found matching your search</p>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button
+          label="Cancel"
+          icon="pi pi-times"
+          @click="closeWhatsAppDialog"
+          text
+        />
+        <Button
+          label="Send to WhatsApp"
+          icon="pi pi-whatsapp"
+          @click="sendToWhatsApp"
+          :loading="isSendingWhatsApp"
+          :disabled="!selectedGuest"
+          severity="success"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -349,6 +484,8 @@ import { ref, computed, onMounted, reactive } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import type { PaymentQRCode, PaymentQRCodeCreateData, PaymentQRCodeUpdateData } from '~/composables/usePaymentQRCodes';
+import { useSendPaymentQRCodeToWhatsApp } from '~/composables/usePaymentQRCodes';
+import { useListGuests } from '~/composables/checkin-manager';
 import { useAuthStore } from '~/stores/auth';
 
 // Composables
@@ -361,6 +498,8 @@ const { createPaymentQRCode } = useCreatePaymentQRCode();
 const { updatePaymentQRCode } = useUpdatePaymentQRCode();
 const { deletePaymentQRCode } = useDeletePaymentQRCode();
 const { togglePaymentQRCodeActive } = useTogglePaymentQRCodeActive();
+const { sendPaymentQRCodeToWhatsApp } = useSendPaymentQRCodeToWhatsApp();
+const { guests, isLoading: guestsLoading, refetch: refetchGuests } = useListGuests();
 const authStore = useAuthStore();
 const { userRole } = storeToRefs(authStore);
 
@@ -373,6 +512,13 @@ const isEditing = ref(false);
 const isSubmitting = ref(false);
 const selectedQRCode = ref<PaymentQRCode | null>(null);
 const fileInput = ref<HTMLInputElement>();
+
+// WhatsApp Dialog State
+const showWhatsAppDialog = ref(false);
+const guestSearchQuery = ref('');
+const selectedGuest = ref<any>(null);
+const selectedQRForWhatsApp = ref<PaymentQRCode | null>(null);
+const isSendingWhatsApp = ref(false);
 
 // Filter Options
 const filterOptions = [
@@ -551,6 +697,67 @@ const formatDate = (dateString: string) => {
 
 const showToast = (severity: 'success' | 'error' | 'info' | 'warn', summary: string, detail: string) => {
   toast.add({ severity, summary, detail, life: 3000 });
+};
+
+// Debounce utility
+const debounce = (func: Function, delay: number) => {
+  let timeoutId: number;
+  return (...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
+
+// WhatsApp Methods
+const openWhatsAppDialog = (qrCode: PaymentQRCode) => {
+  selectedQRForWhatsApp.value = qrCode;
+  showWhatsAppDialog.value = true;
+};
+
+const closeWhatsAppDialog = () => {
+  showWhatsAppDialog.value = false;
+  selectedQRForWhatsApp.value = null;
+  selectedGuest.value = null;
+  guestSearchQuery.value = '';
+};
+
+// Debounced search function
+const debouncedSearchGuests = debounce(() => {
+  if (guestSearchQuery.value.trim()) {
+    refetchGuests(guestSearchQuery.value.trim());
+  } else {
+    // Clear guests when search is empty
+    selectedGuest.value = null;
+  }
+}, 3000); // 3000ms debounce
+
+const searchGuests = debouncedSearchGuests;
+
+const selectGuest = (guest: any) => {
+  selectedGuest.value = guest;
+};
+
+const sendToWhatsApp = async () => {
+  if (!selectedQRForWhatsApp.value || !selectedGuest.value) {
+    showToast('error', 'Error', 'Please select a QR code and guest');
+    return;
+  }
+
+  isSendingWhatsApp.value = true;
+
+  try {
+    await sendPaymentQRCodeToWhatsApp({
+      qr_code_id: selectedQRForWhatsApp.value.id,
+      guest_id: selectedGuest.value.id
+    });
+
+    showToast('success', 'Sent to WhatsApp', `QR code sent to ${selectedGuest.value.full_name} via WhatsApp`);
+    closeWhatsAppDialog();
+  } catch (error: any) {
+    showToast('error', 'Error', error.message || 'Failed to send QR code to WhatsApp');
+  } finally {
+    isSendingWhatsApp.value = false;
+  }
 };
 
 // Lifecycle

@@ -41,6 +41,11 @@ export interface PaymentQRCodeListResponse {
   results: PaymentQRCode[];
 }
 
+export interface SendToWhatsAppRequest {
+  qr_code_id: string;
+  guest_id: number;
+}
+
 // Fetch all payment QR codes
 export const useFetchPaymentQRCodes = (params?: PaymentQRCodeListParams) => {
   const { API } = useAPI();
@@ -255,6 +260,38 @@ export const useTogglePaymentQRCodeActive = () => {
 
   return {
     togglePaymentQRCodeActive,
+    status,
+    error,
+    isLoading,
+    asyncStatus
+  };
+};
+
+// Send payment QR code to WhatsApp
+export const useSendPaymentQRCodeToWhatsApp = () => {
+  const { API } = useAPI();
+
+  const {
+    mutateAsync: sendPaymentQRCodeToWhatsApp,
+    status,
+    error,
+    isLoading,
+    asyncStatus
+  } = useMutation({
+    mutation: async (data: SendToWhatsAppRequest) => {
+      const response = await API('/payment-qr-codes/send-to-whatsapp/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      return response;
+    }
+  });
+
+  return {
+    sendPaymentQRCodeToWhatsApp,
     status,
     error,
     isLoading,

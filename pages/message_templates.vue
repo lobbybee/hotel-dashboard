@@ -5,10 +5,17 @@
       <div class="content-container">
         <div class="header-content">
           <div>
-            <h1 class="page-title">Message Templates</h1>
-            <p class="page-subtitle">Manage message templates for guest communications</p>
+            <h1 class="page-title">
+              {{ activeTab === 'custom' ? 'My Templates' : 'Global Templates' }}
+            </h1>
+            <p class="page-subtitle">
+              {{ activeTab === 'custom'
+                ? 'Manage your custom message templates for guest communications'
+                : 'Browse global templates and create custom versions'
+              }}
+            </p>
           </div>
-          <div v-if="userRole !== 'receptionist'" class="mt-4 sm:mt-0">
+          <div v-if="userRole !== 'receptionist' && activeTab === 'custom'" class="mt-4 sm:mt-0">
             <button
               type="button"
               class="btn btn-primary"
@@ -58,12 +65,42 @@
 
 
 
+      <!-- Tab Navigation -->
+      <div class="mb-6">
+        <div class="border-b border-gray-200">
+          <nav class="-mb-px flex space-x-8">
+            <button
+              @click="switchTab('custom')"
+              :class="[
+                'py-2 px-1 border-b-2 font-medium text-sm transition-colors',
+                activeTab === 'custom'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              ]"
+            >
+              My Templates ({{ customTotalCount }})
+            </button>
+            <button
+              @click="switchTab('global')"
+              :class="[
+                'py-2 px-1 border-b-2 font-medium text-sm transition-colors',
+                activeTab === 'global'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              ]"
+            >
+              Global Templates ({{ globalTotalCount }})
+            </button>
+          </nav>
+        </div>
+      </div>
+
       <!-- Loading State -->
       <div v-if="isLoading" class="loading-state">
         <div class="loading-spinner">
           <div class="spinner"></div>
         </div>
-        <p class="loading-text">Loading templates...</p>
+        <p class="loading-text">Loading {{ activeTab }} templates...</p>
       </div>
 
       <!-- Error State -->
@@ -82,24 +119,27 @@
       </div>
 
       <!-- Templates Grid -->
-      <div v-else-if="customTemplates.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div v-else-if="currentTemplates.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         <div
-          v-for="template in customTemplates"
+          v-for="template in currentTemplates"
           :key="template.id"
           class="card card-hoverable"
           :class="{ 'opacity-75': !template.is_active }"
         >
           <div class="card-header">
-            <div class="flex justify-between items-start">
+            <div class="flex justify-between items-center">
               <div class="flex gap-2 flex-wrap">
-                <span class="badge badge-info">
+                <span class="badge badge-info" v-if="template.category">
                   {{ template.category }}
                 </span>
                 <span class="badge badge-secondary">
                   {{ template.template_type }}
                 </span>
+                <span v-if="activeTab === 'global'" class="badge badge-success">
+                  Global
+                </span>
               </div>
-              <div class="flex gap-1" v-if="userRole !== 'receptionist'">
+              <div class="flex gap-1">
                 <button
                   @click="viewTemplate(template)"
                   class="btn btn-ghost btn-icon"
@@ -115,36 +155,51 @@
                   <i class="pi pi-search"></i>
                 </button>
                 <button
-                  @click="editTemplate(template)"
-                  class="btn btn-ghost btn-icon"
-                  :aria-label="'Edit ' + template.name"
+                  v-if="activeTab === 'global' && userRole !== 'receptionist'"
+                  @click="createFromGlobal(template)"
+                  class="btn btn-ghost btn-icon btn-primary"
+                  :aria-label="'Create custom from ' + template.name"
+                  title="Create custom template from this global template"
                 >
-                  <i class="pi pi-pencil"></i>
+                  <i class="pi pi-copy"></i>
                 </button>
-                <button
-                  @click="toggleTemplateStatus(template)"
-                  class="btn btn-ghost btn-icon"
-                  :class="template.is_active ? 'btn-warning' : 'btn-success'"
-                  :aria-label="template.is_active ? 'Deactivate ' + template.name : 'Activate ' + template.name"
-                >
-                  <i class="pi pi-power-off"></i>
-                </button>
-                <button
-                  @click="deleteTemplate(template)"
-                  class="btn btn-ghost btn-icon btn-danger"
-                  :aria-label="'Delete ' + template.name"
-                >
-                  <i class="pi pi-trash"></i>
-                </button>
+                <template v-if="activeTab === 'custom' && userRole !== 'receptionist'">
+                  <button
+                    @click="editTemplate(template)"
+                    class="btn btn-ghost btn-icon"
+                    :aria-label="'Edit ' + template.name"
+                  >
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                  <button
+                    @click="toggleTemplateStatus(template)"
+                    class="btn btn-ghost btn-icon"
+                    :class="template.is_active ? 'btn-warning' : 'btn-success'"
+                    :aria-label="template.is_active ? 'Deactivate ' + template.name : 'Activate ' + template.name"
+                  >
+                    <i class="pi pi-power-off"></i>
+                  </button>
+                  <button
+                    @click="deleteTemplate(template)"
+                    class="btn btn-ghost btn-icon btn-danger"
+                    :aria-label="'Delete ' + template.name"
+                  >
+                    <i class="pi pi-trash"></i>
+                  </button>
+                </template>
               </div>
             </div>
           </div>
 
           <div class="card-body">
-            <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ template.name }}</h3>
+            <h3 class="text-gray-500 mb-3 break-words">{{ template.name }}</h3>
+
+            <div v-if="template.description" class=" mb-2 italic line-clamp-2 text-lg font-semibold text-gray-900">
+              {{ template.description }}
+            </div>
 
             <div class="text-sm text-gray-600 mb-4 line-clamp-3">
-              {{ truncateText(template.content, 100) }}
+              {{ truncateText(template.text_content || template.content, 100) }}
             </div>
 
             <div class="flex items-center gap-2 text-xs text-gray-500 mb-4">
@@ -177,21 +232,35 @@
           <div class="empty-state-icon">
             <i class="pi pi-file-text"></i>
           </div>
-          <h3 class="empty-state-title">No Templates Found</h3>
+          <h3 class="empty-state-title">
+            {{ activeTab === 'custom' ? 'No Custom Templates' : 'No Global Templates' }}
+          </h3>
           <p class="empty-state-description">
             {{ searchQuery || selectedType || selectedCategory || selectedFilter !== 'all'
               ? 'Try adjusting your search or filters'
-              : 'Start by creating your first message template'
+              : activeTab === 'custom'
+                ? 'Create your first custom template or copy from global templates'
+                : 'No global templates are available at the moment'
             }}
           </p>
-          <button
-            v-if="!searchQuery && selectedType === null && selectedCategory === null && selectedFilter === 'all' && userRole !== 'receptionist'"
-            class="btn btn-primary"
-            @click="showAddModal = true"
-          >
-            <i class="pi pi-plus mr-2"></i>
-            Create Your First Template
-          </button>
+          <div class="flex gap-3 justify-center" v-if="!searchQuery && selectedType === null && selectedCategory === null && selectedFilter === 'all' && userRole !== 'receptionist'">
+            <button
+              v-if="activeTab === 'custom'"
+              class="btn btn-primary"
+              @click="showAddModal = true"
+            >
+              <i class="pi pi-plus mr-2"></i>
+              Create Template
+            </button>
+            <button
+              v-if="activeTab === 'custom' && globalTotalCount > 0"
+              class="btn btn-secondary"
+              @click="switchTab('global')"
+            >
+              <i class="pi pi-copy mr-2"></i>
+              Browse Global Templates
+            </button>
+          </div>
         </div>
       </div>
       </div>
@@ -285,7 +354,7 @@
           <label for="content">Template Content *</label>
           <textarea
             id="content"
-            v-model="formData.content"
+            v-model="formData.text_content"
             placeholder="Enter your template content here. Use {{variable_name}} for variables."
             rows="4"
             required
@@ -317,7 +386,7 @@
           </div>
         </div>
 
-    
+
 
         <div class="form-field">
           <div class="checkbox-group">
@@ -366,7 +435,7 @@
           <div>
             <h3 class="text-xl font-semibold text-gray-900">{{ selectedTemplate.name }}</h3>
             <div class="flex gap-2 mt-2">
-              <span class="badge badge-info">{{ selectedTemplate.category }}</span>
+              <span class="badge badge-info" v-if="selectedTemplate.category">{{ selectedTemplate.category }}</span>
               <span class="badge badge-secondary">{{ selectedTemplate.template_type }}</span>
               <span
                 class="badge"
@@ -381,7 +450,7 @@
         <div>
           <h4 class="text-sm font-medium text-gray-900 mb-2">Content</h4>
           <div class="content-display">
-            <p>{{ selectedTemplate.content }}</p>
+            <p>{{ selectedTemplate.text_content || selectedTemplate.content }}</p>
           </div>
         </div>
 
@@ -421,32 +490,73 @@
     <!-- Preview Modal -->
     <Dialog
       v-model:visible="showPreviewModal"
-      header="Template Preview"
+      header="Template Preview - WhatsApp Style"
       :modal="true"
-      :style="{ width: '35rem' }"
+      :style="{ width: '40rem' }"
       :dismissableMask="true"
     >
       <div v-if="previewData" class="space-y-4">
-        <div class="flex justify-between items-center">
-          <h4 class="text-lg font-medium text-gray-900">{{ previewData.template_name }}</h4>
-          <span class="badge badge-info">Sample Preview</span>
-        </div>
-        <div class="content-display">
-          <p>{{ previewData.rendered_content }}</p>
-        </div>
-        <div>
-          <h5 class="text-sm font-medium text-gray-900 mb-3">Sample Data Used:</h5>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div
-              v-for="(value, key) in previewData.sample_data"
-              :key="key"
-              class="text-sm"
-            >
-              <strong class="text-gray-900">{{ key }}:</strong>
-              <span class="text-gray-600 ml-2">{{ value }}</span>
+        <!-- WhatsApp Preview Container -->
+        <div class="whatsapp-preview">
+          <div class="whatsapp-chat-container">
+            <!-- WhatsApp Header -->
+            <div class="whatsapp-header">
+              <div class="whatsapp-header-avatar">H</div>
+              <div class="whatsapp-header-info">
+                <div class="whatsapp-header-name">Hotel</div>
+                <div class="whatsapp-header-status">Online</div>
+              </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="whatsapp-chat-body">
+              <!-- Received Message (Template Preview) -->
+              <div class="whatsapp-message received">
+                <div class="whatsapp-message-bubble">
+                  <p>{{ previewData.rendered_content }}</p>
+                  <div class="whatsapp-message-time">Just now</div>
+                </div>
+              </div>
+
+              <!-- Optional: Show typing indicator for visual effect -->
+              <div class="whatsapp-message received">
+                <div class="whatsapp-message-bubble">
+                  <div class="whatsapp-typing-indicator">
+                    <div class="whatsapp-typing-dot"></div>
+                    <div class="whatsapp-typing-dot"></div>
+                    <div class="whatsapp-typing-dot"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- Template Info -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="text-lg font-medium text-gray-900">{{ previewData.template_name }}</h4>
+            <span class="badge badge-info">Sample Preview</span>
+          </div>
+
+          <div>
+            <h5 class="text-sm font-medium text-gray-900 mb-3">Sample Data Used:</h5>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div
+                v-for="(value, key) in previewData.sample_data"
+                :key="key"
+                class="text-sm bg-white p-2 rounded border"
+              >
+                <strong class="text-gray-900">{{ key }}:</strong>
+                <span class="text-gray-600 ml-1">{{ value }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="text-center py-8">
+        <p class="text-gray-500">No preview available</p>
       </div>
     </Dialog>
 
@@ -511,6 +621,7 @@ import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import type {
   CustomMessageTemplate,
+  GlobalMessageTemplate,
   CustomTemplateCreateData,
   CustomTemplateUpdateData,
   TemplateVariable
@@ -522,7 +633,8 @@ const toast = useToast();
 const confirm = useConfirm();
 
 // API Functions
-const { customTemplates, totalCount, isLoading, error, refetch } = useFetchCustomTemplates();
+const { customTemplates, totalCount: customTotalCount, isLoading: isLoadingCustom, error: errorCustom, refetch: refetchCustom } = useFetchCustomTemplates();
+const { globalTemplates, totalCount: globalTotalCount, isLoading: isLoadingGlobal, error: errorGlobal, refetch: refetchGlobal } = useFetchGlobalTemplates();
 const { createCustomTemplate } = useCreateCustomTemplate();
 const { updateCustomTemplate } = useUpdateCustomTemplate();
 const { partialUpdateCustomTemplate } = usePartialUpdateCustomTemplate();
@@ -539,6 +651,7 @@ const searchQuery = ref('');
 const selectedType = ref('');
 const selectedCategory = ref('');
 const selectedFilter = ref('all');
+const activeTab = ref('custom'); // 'custom' or 'global'
 const showAddModal = ref(false);
 const showViewModal = ref(false);
 const showPreviewModal = ref(false);
@@ -546,7 +659,7 @@ const showMediaUpload = ref(false);
 const isEditing = ref(false);
 const isSubmitting = ref(false);
 const isUploadingMedia = ref(false);
-const selectedTemplate = ref<CustomMessageTemplate | null>(null);
+const selectedTemplate = ref<CustomMessageTemplate | GlobalMessageTemplate | null>(null);
 const previewData = ref<any>(null);
 const mediaFile = ref<File | null>(null);
 const mediaFileInput = ref<HTMLInputElement>();
@@ -563,7 +676,7 @@ const formData = reactive<{
   name: string;
   template_type: string;
   category: string;
-  content: string;
+  text_content: string;
   variables: string[];
   is_active: boolean;
   media_url?: string;
@@ -571,18 +684,37 @@ const formData = reactive<{
   name: '',
   template_type: '',
   category: '',
-  content: '',
+  text_content: '',
   variables: [],
   is_active: true,
   media_url: ''
 });
 
 // Computed
+const isLoading = computed(() => isLoadingCustom.value || isLoadingGlobal.value);
+const error = computed(() => errorCustom.value || errorGlobal.value);
+const totalCount = computed(() => {
+  if (activeTab.value === 'custom') {
+    return customTotalCount.value;
+  } else {
+    // Count only customizable global templates
+    return globalTemplates.value.filter(template => template.is_customizable).length;
+  }
+});
+const currentTemplates = computed(() => {
+  if (activeTab.value === 'custom') {
+    return customTemplates.value;
+  } else {
+    // Only show global templates that are customizable
+    return globalTemplates.value.filter(template => template.is_customizable);
+  }
+});
+
 const templateTypeOptions = computed(() => {
   // Handle API data format: [["greeting", "Greeting"], ["checkin", "Check-in"], ...]
   // Access the .value property since templateTypes is a Vue ref/computed
   const apiData = templateTypes.value?.template_types || [];
-  
+
   if (Array.isArray(apiData) && apiData.length > 0) {
     const convertedOptions = apiData.map((item: any) => {
       if (Array.isArray(item) && item.length >= 2) {
@@ -594,10 +726,10 @@ const templateTypeOptions = computed(() => {
       }
       return null;
     }).filter(Boolean);
-    
+
     return convertedOptions;
   }
-  
+
   // Return empty array if no API data available
   return [];
 });
@@ -606,7 +738,7 @@ const categoryOptions = computed(() => {
   // Handle API data format: [["greeting", "Greeting"], ["checkin", "Check-in"], ...]
   // Access the .value property since templateTypes is a Vue ref/computed
   const apiData = templateTypes.value?.categories || [];
-  
+
   if (Array.isArray(apiData) && apiData.length > 0) {
     const convertedOptions = apiData.map((item: any) => {
       if (Array.isArray(item) && item.length >= 2) {
@@ -618,10 +750,10 @@ const categoryOptions = computed(() => {
       }
       return null;
     }).filter(Boolean);
-    
+
     return convertedOptions;
   }
-  
+
   // Return empty array if no API data available
   return [];
 });
@@ -638,21 +770,58 @@ const currentParams = computed(() => {
 
 // Methods
 const refreshData = () => {
-  refetch();
+  if (activeTab.value === 'custom') {
+    refetchCustom();
+  } else {
+    refetchGlobal();
+  }
   showToast('success', 'Refreshed', 'Templates list has been refreshed');
 };
 
 const handleSearch = () => {
-  refetch(currentParams.value);
+  if (activeTab.value === 'custom') {
+    refetchCustom(currentParams.value);
+  } else {
+    refetchGlobal(currentParams.value);
+  }
 };
 
 const handleFilterChange = () => {
-  refetch(currentParams.value);
+  if (activeTab.value === 'custom') {
+    refetchCustom(currentParams.value);
+  } else {
+    refetchGlobal(currentParams.value);
+  }
 };
 
-const viewTemplate = (template: CustomMessageTemplate) => {
+const switchTab = (tab: 'custom' | 'global') => {
+  activeTab.value = tab;
+  // Reset filters when switching tabs
+  searchQuery.value = '';
+  selectedType.value = '';
+  selectedCategory.value = '';
+  selectedFilter.value = 'all';
+  // Load data for the new tab
+  refreshData();
+};
+
+const viewTemplate = (template: CustomMessageTemplate | GlobalMessageTemplate) => {
   selectedTemplate.value = template;
   showViewModal.value = true;
+};
+
+const createFromGlobal = (template: any) => {
+  // Populate form with global template data
+  formData.name = `${template.name} (Custom)`;
+  formData.template_type = template.template_type;
+  formData.category = template.category || 'general'; // Default category if not provided
+  formData.text_content = template.text_content || template.content || '';
+  formData.variables = template.variables || [];
+  formData.is_active = true;
+  formData.media_url = template.media_url || '';
+  isEditing.value = false;
+  selectedTemplate.value = null;
+  showAddModal.value = true;
 };
 
 const editTemplate = (template: CustomMessageTemplate) => {
@@ -668,7 +837,7 @@ const editTemplate = (template: CustomMessageTemplate) => {
   showAddModal.value = true;
 };
 
-const previewTemplateContent = async (template: CustomMessageTemplate) => {
+const previewTemplateContent = async (template: CustomMessageTemplate | GlobalMessageTemplate) => {
   try {
     const result = await previewTemplate(template.id);
     previewData.value = result;
@@ -757,7 +926,7 @@ const handleMediaUpload = async () => {
 };
 
 const handleSubmit = async () => {
-  if (!formData.content.trim()) {
+  if (!formData.text_content.trim()) {
     showToast('error', 'Error', 'Template content cannot be empty');
     return;
   }
@@ -766,7 +935,7 @@ const handleSubmit = async () => {
   const variableRegex = /\{\{(\w+)\}\}/g;
   const extractedVariables = [];
   let match;
-  while ((match = variableRegex.exec(formData.content)) !== null) {
+  while ((match = variableRegex.exec(formData.text_content)) !== null) {
     extractedVariables.push(match[1]);
   }
 
@@ -778,7 +947,7 @@ const handleSubmit = async () => {
         name: formData.name,
         template_type: formData.template_type,
         category: formData.category,
-        content: formData.content,
+        text_content: formData.text_content,
         variables: extractedVariables,
         is_active: formData.is_active,
         media_url: formData.media_url || undefined
@@ -791,7 +960,7 @@ const handleSubmit = async () => {
         name: formData.name,
         template_type: formData.template_type,
         category: formData.category,
-        content: formData.content,
+        text_content: formData.text_content,
         variables: extractedVariables,
         is_active: formData.is_active,
         media_url: formData.media_url || undefined
@@ -817,13 +986,14 @@ const closeModal = () => {
   formData.name = '';
   formData.template_type = '';
   formData.category = '';
-  formData.content = '';
+  formData.text_content = '';
   formData.variables = [];
   formData.is_active = true;
   formData.media_url = '';
 };
 
-const truncateText = (text: string, maxLength: number) => {
+const truncateText = (text: string | undefined | null, maxLength: number) => {
+  if (!text) return '';
   return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
 };
 
@@ -841,7 +1011,9 @@ const showToast = (severity: 'success' | 'error' | 'info' | 'warn', summary: str
 
 // Lifecycle
 onMounted(() => {
-  refetch();
+  // Load both custom and global templates initially
+  refetchCustom();
+  refetchGlobal();
 });
 </script>
 
@@ -1591,6 +1763,202 @@ header {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* WhatsApp Message Styles */
+.whatsapp-preview {
+  background: #e5ddd5;
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB4PSIwIiB5PSIwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgIDxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjZTVkZGQ1Ii8+CiAgICAgIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQwIiBmaWxsPSIjZTljOGM5IiBmaWxsLW9wYWNpdHk9IjAuMSIvPgogICAgPC9wYXR0ZXJuPgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNwYXR0ZXJuKSIvPgo8L3N2Zz4=');
+  background-size: cover;
+  border-radius: 12px;
+  padding: 20px;
+  max-height: 500px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.whatsapp-chat-container {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.whatsapp-header {
+  background: #075e54;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+.whatsapp-header-avatar {
+  width: 32px;
+  height: 32px;
+  background: #128c7e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.whatsapp-header-info {
+  flex: 1;
+}
+
+.whatsapp-header-name {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.whatsapp-header-status {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.whatsapp-chat-body {
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.whatsapp-message {
+  display: flex;
+  max-width: 80%;
+  margin-bottom: 8px;
+}
+
+.whatsapp-message.received {
+  align-self: flex-start;
+}
+
+.whatsapp-message.sent {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.whatsapp-message-bubble {
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+.whatsapp-message.received .whatsapp-message-bubble {
+  background: white;
+  border-bottom-left-radius: 4px;
+}
+
+.whatsapp-message.sent .whatsapp-message-bubble {
+  background: #dcf8c6;
+  border-bottom-right-radius: 4px;
+}
+
+.whatsapp-message-bubble p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #333;
+  white-space: pre-wrap;
+}
+
+.whatsapp-message-time {
+  font-size: 11px;
+  color: #667781;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.whatsapp-message.sent .whatsapp-message-time {
+  text-align: left;
+  color: #4fc3f7;
+}
+
+.whatsapp-typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+}
+
+.whatsapp-typing-dot {
+  width: 8px;
+  height: 8px;
+  background: #ccc;
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.whatsapp-typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.whatsapp-typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typing {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.whatsapp-message-media {
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.whatsapp-message-media img,
+.whatsapp-message-media video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .whatsapp-preview {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .whatsapp-header {
+    padding: 10px 12px;
+  }
+
+  .whatsapp-message {
+    max-width: 90%;
+  }
+
+  .whatsapp-message-bubble {
+    padding: 10px 12px;
+  }
+
+  .whatsapp-message-bubble p {
+    font-size: 13px;
   }
 }
 </style>
