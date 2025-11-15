@@ -90,7 +90,8 @@ const generateQRCode = async () => {
     qrCodeContainer.value.innerHTML = '';
 
     // Create QR code URL with hotel ID
-    const qrUrl = `https://wa.me/9400408414?text=/checkin-${props.hotel.id}`;
+    const qrUrl = `https://wa.me/919400408414?text=${encodeURIComponent(`/checkin-${props.hotel.id}`)}`;
+
 
     // Create QR code instance with standard size for display
     const qrCodeStyling = new QRCodeStyling({
@@ -139,7 +140,7 @@ const downloadHighQualityQR = async () => {
 
   try {
     // Create a high-quality QR code (1080px)
-    const qrUrl = `https://wa.me/15556637452?text=/checkin-${props.hotel.id}`;
+    const qrUrl = `https://wa.me/919400408414?text=${encodeURIComponent('/checkin-' + props.hotel.id)}`;
 
     // Create a temporary container for the QR code
     const tempContainer = document.createElement('div');
