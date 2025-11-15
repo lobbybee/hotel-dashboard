@@ -139,7 +139,7 @@ const downloadHighQualityQR = async () => {
 
   try {
     // Create a high-quality QR code (1080px)
-    const qrUrl = `https://wa.me/15556637452?text=start${props.hotel.id}`;
+    const qrUrl = `https://wa.me/15556637452?text=/checkin-${props.hotel.id}`;
 
     // Create a temporary container for the QR code
     const tempContainer = document.createElement('div');
