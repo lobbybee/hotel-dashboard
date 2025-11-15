@@ -22,7 +22,7 @@ class WebSocketManager {
     }
 
     // Replace with your actual WebSocket URL
-        const wsUrl = `ws://backend.lobbybee.com/ws/chat/?token=${encodeURIComponent(token)}`;
+        const wsUrl = `wss://backend.lobbybee.com/ws/chat/?token=${encodeURIComponent(token)}`;
         this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
