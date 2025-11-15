@@ -187,7 +187,7 @@ const navigation = computed(() => {
       { name: 'Message Templates', href: '/message_templates', icon: 'prime:comment' },
       { name: 'Payment QR Codes', href: '/paymentQR', icon: 'prime:qrcode' },
       { name: 'Billing', href: '/payments', icon: 'prime:credit-card' },
-      { name: 'Chat', href: '/chat', icon: 'prime:comments' }
+      // { name: 'Chat', href: '/chat', icon: 'prime:comments' }
     ];
   } else if (role === 'manager') {
     return [
