@@ -19,7 +19,7 @@
             <button
               type="button"
               class="btn btn-primary"
-              @click="showAddModal = true"
+              @click="openAddModal"
             >
               <i class="pi pi-plus mr-2"></i>
               Add Template
@@ -677,6 +677,7 @@ const formData = reactive<{
   variables: string[];
   is_active: boolean;
   media_url?: string;
+  base_template?: number;
 }>({
   name: '',
   template_type: '',
@@ -684,7 +685,8 @@ const formData = reactive<{
   text_content: '',
   variables: [],
   is_active: true,
-  media_url: ''
+  media_url: '',
+  base_template: undefined
 });
 
 // Computed
@@ -816,6 +818,7 @@ const createFromGlobal = (template: any) => {
   formData.variables = template.variables || [];
   formData.is_active = true;
   formData.media_url = template.media_url || '';
+  formData.base_template = template.id; // Set the base_template to the global template ID
   isEditing.value = false;
   selectedTemplate.value = null;
   showAddModal.value = true;
@@ -826,11 +829,27 @@ const editTemplate = (template: CustomMessageTemplate) => {
   formData.name = template.name;
   formData.template_type = template.template_type;
   formData.category = template.category;
-  formData.content = template.content;
+  formData.text_content = template.text_content;
   formData.variables = template.variables || [];
   formData.is_active = template.is_active;
   formData.media_url = template.media_url || '';
+  formData.base_template = template.base_template || undefined;
   isEditing.value = true;
+  showAddModal.value = true;
+};
+
+const openAddModal = () => {
+  // Reset form to default values
+  formData.name = '';
+  formData.template_type = '';
+  formData.category = '';
+  formData.text_content = '';
+  formData.variables = [];
+  formData.is_active = true;
+  formData.media_url = '';
+  formData.base_template = undefined;
+  isEditing.value = false;
+  selectedTemplate.value = null;
   showAddModal.value = true;
 };
 
@@ -963,7 +982,8 @@ const handleSubmit = async () => {
         text_content: formData.text_content,
         variables: extractedVariables,
         is_active: formData.is_active,
-        media_url: formData.media_url || undefined
+        media_url: formData.media_url || undefined,
+        base_template: formData.base_template
       };
 
       console.log('Starting template creation...');
@@ -996,6 +1016,7 @@ const closeModal = () => {
   formData.variables = [];
   formData.is_active = true;
   formData.media_url = '';
+  formData.base_template = undefined;
 };
 
 const truncateText = (text: string | undefined | null, maxLength: number) => {

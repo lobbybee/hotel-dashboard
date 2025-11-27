@@ -47,6 +47,7 @@ export interface CustomTemplateCreateData {
   variables: string[];
   is_active?: boolean;
   media_url?: string;
+  base_template?: number;
 }
 
 // Template Update Data
