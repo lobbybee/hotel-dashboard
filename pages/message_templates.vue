@@ -569,22 +569,19 @@
       :dismissableMask="true"
     >
       <div class="space-y-4">
-        <div class="file-upload-container">
-          <input
-            type="file"
-            id="media_file"
-            @change="handleMediaFileChange"
-            accept="image/*"
-            class="file-input"
-            ref="mediaFileInput"
-          />
-          <label for="media_file" class="file-upload-label">
-            <i class="pi pi-upload text-2xl text-gray-400 mb-2"></i>
-            <p class="text-gray-900">
-              {{ mediaFile ? mediaFile.name : 'Choose Media File' }}
-            </p>
-          </label>
-        </div>
+        <FileUpload
+          mode="advanced"
+          :auto="false"
+          accept="image/*"
+          :maxFileSize="5000000"
+          :fileLimit="1"
+          @select="handleMediaFileChange"
+          @remove="clearMediaFile"
+          chooseLabel="Choose Media File"
+          :showUploadButton="false"
+          :multiple="false"
+          class="w-full"
+        />
         <small class="form-help">Upload images (JPEG, PNG, GIF, WebP) up to 5MB</small>
       </div>
 
@@ -858,7 +855,7 @@ const toggleTemplateStatus = async (template: CustomMessageTemplate) => {
       try {
         const updateData: Partial<CustomTemplateUpdateData> = { is_active: !template.is_active };
         await usePartialUpdateCustomTemplate().mutateAsync({ id: template.id, data: updateData });
-        refetch();
+        refetchCustom();
         showToast('success', 'Success', `Template ${action}d successfully`);
       } catch (error) {
         showToast('error', 'Error', `Failed to ${action} template`);
@@ -876,7 +873,7 @@ const deleteTemplate = (template: CustomMessageTemplate) => {
     accept: async () => {
       try {
         await deleteCustomTemplate(template.id);
-        refetch();
+        refetchCustom();
         showToast('success', 'Deleted', 'Template deleted successfully');
       } catch (error) {
         showToast('error', 'Error', 'Failed to delete template');
@@ -890,11 +887,14 @@ const insertVariable = (variableName: string) => {
   formData.content += (formData.content ? ' ' : '') + variableSyntax;
 };
 
-const handleMediaFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  if (target.files && target.files[0]) {
-    mediaFile.value = target.files[0];
+const handleMediaFileChange = (event: any) => {
+  if (event.files && event.files[0]) {
+    mediaFile.value = event.files[0];
   }
+};
+
+const clearMediaFile = () => {
+  mediaFile.value = null;
 };
 
 const triggerMediaFileSelect = () => {
@@ -966,12 +966,16 @@ const handleSubmit = async () => {
         media_url: formData.media_url || undefined
       };
 
-      await createCustomTemplate(createData);
+      console.log('Starting template creation...');
+      const result = await createCustomTemplate(createData);
+      console.log('Template creation completed:', result);
       showToast('success', 'Created', 'Template created successfully');
     }
 
-    refetch();
+    refetchCustom();
+    console.log('About to close modal...');
     closeModal();
+    console.log('Modal close called');
   } catch (error) {
     showToast('error', 'Error', isEditing.value ? 'Failed to update template' : 'Failed to create template');
   } finally {
@@ -980,7 +984,9 @@ const handleSubmit = async () => {
 };
 
 const closeModal = () => {
+  console.log('closeModal called, showAddModal before:', showAddModal.value);
   showAddModal.value = false;
+  console.log('closeModal called, showAddModal after:', showAddModal.value);
   isEditing.value = false;
   selectedTemplate.value = null;
   formData.name = '';
