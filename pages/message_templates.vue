@@ -198,6 +198,16 @@
               {{ template.description }}
             </div>
 
+            <!-- Media Preview -->
+            <div v-if="template.media_url || template.media_file" class="mb-3">
+              <img 
+                :src="template.media_url || template.media_file" 
+                :alt="template.name" 
+                class="w-full h-32 object-cover rounded-lg border border-gray-200"
+                @error="$event.target.style.display='none'"
+              />
+            </div>
+
             <div class="text-sm text-gray-600 mb-4 line-clamp-3">
               {{ truncateText(template.text_content || template.content, 100) }}
             </div>
@@ -331,23 +341,40 @@
         </div>
 
         <div class="form-field">
-          <label for="media_url">Media URL (Optional)</label>
-          <div class="flex gap-2">
-            <input
-              id="media_url"
-              v-model="formData.media_url"
-              type="text"
-              placeholder="Enter media URL or upload file"
-              class="form-input flex-1"
-            />
-            <button
-              type="button"
-              class="btn btn-secondary"
-              @click="showMediaUpload = true"
-            >
-              <i class="pi pi-upload"></i>
-            </button>
-          </div>
+          <label for="description">Description (Optional)</label>
+          <textarea
+            id="description"
+            v-model="formData.description"
+            placeholder="Describe your template purpose and usage"
+            rows="2"
+            class="form-input resize-vertical"
+          ></textarea>
+        </div>
+
+        <div class="form-field">
+          <label for="media_file">Media File (Optional)</label>
+          <FileUpload
+            id="media_file"
+            mode="advanced"
+            :auto="false"
+            accept="image/*,video/*"
+            :maxFileSize="5000000"
+            :fileLimit="1"
+            @select="handleMediaFileSelect"
+            @remove="handleMediaFileRemove"
+            @clear="handleMediaFileClear"
+            chooseLabel="Choose Media File"
+            :showUploadButton="false"
+            :multiple="false"
+            :previewWidth="200"
+            :previewHeight="150"
+            class="w-full"
+            :class="{ 'p-invalid': !formData.media_file && false }"
+            :emptyMessage="'No media file selected'"
+            :invalidFileSizeMessageSummary="'File size exceeds 5MB limit'"
+            :invalidFileTypeMessageSummary="'Only images and videos are allowed'"
+          />
+          <small class="form-help">Images (JPEG, PNG, GIF, WebP) or videos up to 5MB</small>
         </div>
 
         <div class="form-field">
@@ -559,52 +586,6 @@
         <p class="text-gray-500">No preview available</p>
       </div>
     </Dialog>
-
-    <!-- Media Upload Modal -->
-    <Dialog
-      v-model:visible="showMediaUpload"
-      header="Upload Media"
-      :modal="true"
-      :style="{ width: '35rem' }"
-      :dismissableMask="true"
-    >
-      <div class="space-y-4">
-        <FileUpload
-          mode="advanced"
-          :auto="false"
-          accept="image/*"
-          :maxFileSize="5000000"
-          :fileLimit="1"
-          @select="handleMediaFileChange"
-          @remove="clearMediaFile"
-          chooseLabel="Choose Media File"
-          :showUploadButton="false"
-          :multiple="false"
-          class="w-full"
-        />
-        <small class="form-help">Upload images (JPEG, PNG, GIF, WebP) up to 5MB</small>
-      </div>
-
-      <template #footer>
-        <button
-          type="button"
-          class="btn btn-secondary"
-          @click="showMediaUpload = false"
-        >
-          <i class="pi pi-times mr-2"></i>
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          @click="handleMediaUpload"
-          :disabled="isUploadingMedia"
-        >
-          <i class="pi pi-check mr-2"></i>
-          Upload
-        </button>
-      </template>
-    </Dialog>
   </div>
 </template>
 
@@ -615,6 +596,7 @@ import { useConfirm } from 'primevue/useconfirm';
 import Dialog from 'primevue/dialog';
 import Select from 'primevue/select';
 import Button from 'primevue/button';
+import FileUpload from 'primevue/fileupload';
 import Tag from 'primevue/tag';
 import type {
   CustomMessageTemplate,
@@ -637,7 +619,6 @@ const { updateCustomTemplate } = useUpdateCustomTemplate();
 const { partialUpdateCustomTemplate } = usePartialUpdateCustomTemplate();
 const { deleteCustomTemplate } = useDeleteCustomTemplate();
 const { previewTemplate } = usePreviewTemplate();
-const { uploadTemplateMedia } = useUploadTemplateMedia();
 const { templateTypes } = useFetchTemplateTypes();
 const { templateVariables } = useFetchTemplateVariables();
 const authStore = useAuthStore();
@@ -652,14 +633,10 @@ const activeTab = ref('custom'); // 'custom' or 'global'
 const showAddModal = ref(false);
 const showViewModal = ref(false);
 const showPreviewModal = ref(false);
-const showMediaUpload = ref(false);
 const isEditing = ref(false);
 const isSubmitting = ref(false);
-const isUploadingMedia = ref(false);
 const selectedTemplate = ref<CustomMessageTemplate | GlobalMessageTemplate | null>(null);
 const previewData = ref<any>(null);
-const mediaFile = ref<File | null>(null);
-const mediaFileInput = ref<HTMLInputElement>();
 
 // Filter Options
 const filterOptions = [
@@ -676,8 +653,9 @@ const formData = reactive<{
   text_content: string;
   variables: string[];
   is_active: boolean;
-  media_url?: string;
   base_template?: number;
+  description?: string;
+  media_file?: File;
 }>({
   name: '',
   template_type: '',
@@ -685,8 +663,9 @@ const formData = reactive<{
   text_content: '',
   variables: [],
   is_active: true,
-  media_url: '',
-  base_template: undefined
+  base_template: undefined,
+  description: undefined,
+  media_file: undefined
 });
 
 // Computed
@@ -817,7 +796,7 @@ const createFromGlobal = (template: any) => {
   formData.text_content = template.text_content || template.content || '';
   formData.variables = template.variables || [];
   formData.is_active = true;
-  formData.media_url = template.media_url || '';
+  formData.description = template.description;
   formData.base_template = template.id; // Set the base_template to the global template ID
   isEditing.value = false;
   selectedTemplate.value = null;
@@ -832,7 +811,7 @@ const editTemplate = (template: CustomMessageTemplate) => {
   formData.text_content = template.text_content;
   formData.variables = template.variables || [];
   formData.is_active = template.is_active;
-  formData.media_url = template.media_url || '';
+  formData.description = template.description;
   formData.base_template = template.base_template || undefined;
   isEditing.value = true;
   showAddModal.value = true;
@@ -846,8 +825,9 @@ const openAddModal = () => {
   formData.text_content = '';
   formData.variables = [];
   formData.is_active = true;
-  formData.media_url = '';
   formData.base_template = undefined;
+  formData.description = undefined;
+  formData.media_file = undefined;
   isEditing.value = false;
   selectedTemplate.value = null;
   showAddModal.value = true;
@@ -903,45 +883,21 @@ const deleteTemplate = (template: CustomMessageTemplate) => {
 
 const insertVariable = (variableName: string) => {
   const variableSyntax = `{{${variableName}}}`;
-  formData.content += (formData.content ? ' ' : '') + variableSyntax;
+  formData.text_content += (formData.text_content ? ' ' : '') + variableSyntax;
 };
 
-const handleMediaFileChange = (event: any) => {
-  if (event.files && event.files[0]) {
-    mediaFile.value = event.files[0];
+const handleMediaFileSelect = (event: any) => {
+  if (event.files && event.files.length > 0) {
+    formData.media_file = event.files[0];
   }
 };
 
-const clearMediaFile = () => {
-  mediaFile.value = null;
+const handleMediaFileRemove = () => {
+  formData.media_file = undefined;
 };
 
-const triggerMediaFileSelect = () => {
-  mediaFileInput.value?.click();
-};
-
-const handleMediaUpload = async () => {
-  if (!mediaFile.value) {
-    showToast('error', 'Error', 'Please select a media file');
-    return;
-  }
-
-  isUploadingMedia.value = true;
-
-  try {
-    const result = await uploadTemplateMedia(mediaFile.value);
-    formData.media_url = result.file_url;
-    showMediaUpload.value = false;
-    mediaFile.value = null;
-    if (mediaFileInput.value) {
-      mediaFileInput.value.value = '';
-    }
-    showToast('success', 'Uploaded', 'Media uploaded successfully');
-  } catch (error) {
-    showToast('error', 'Error', 'Failed to upload media');
-  } finally {
-    isUploadingMedia.value = false;
-  }
+const handleMediaFileClear = () => {
+  formData.media_file = undefined;
 };
 
 const handleSubmit = async () => {
@@ -969,7 +925,9 @@ const handleSubmit = async () => {
         text_content: formData.text_content,
         variables: extractedVariables,
         is_active: formData.is_active,
-        media_url: formData.media_url || undefined
+        base_template: formData.base_template,
+        description: formData.description,
+        media_file: formData.media_file
       };
 
       await updateCustomTemplate({ id: selectedTemplate.value.id, data: updateData });
@@ -982,8 +940,9 @@ const handleSubmit = async () => {
         text_content: formData.text_content,
         variables: extractedVariables,
         is_active: formData.is_active,
-        media_url: formData.media_url || undefined,
-        base_template: formData.base_template
+        base_template: formData.base_template,
+        description: formData.description,
+        media_file: formData.media_file
       };
 
       console.log('Starting template creation...');
@@ -1015,8 +974,9 @@ const closeModal = () => {
   formData.text_content = '';
   formData.variables = [];
   formData.is_active = true;
-  formData.media_url = '';
   formData.base_template = undefined;
+  formData.description = undefined;
+  formData.media_file = undefined;
 };
 
 const truncateText = (text: string | undefined | null, maxLength: number) => {

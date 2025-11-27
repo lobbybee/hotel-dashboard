@@ -13,6 +13,8 @@ export interface MessageTemplate {
   created_at: string;
   updated_at: string;
   media_url?: string;
+  media_file?: string;
+  description?: string;
 }
 
 // Global Template Interface (matches API response)
@@ -42,12 +44,13 @@ export interface CustomMessageTemplate extends MessageTemplate {}
 export interface CustomTemplateCreateData {
   name: string;
   template_type: string;
-  category: string;
+  category?: string;
   text_content: string;
-  variables: string[];
+  variables?: string[];
   is_active?: boolean;
-  media_url?: string;
   base_template?: number;
+  description?: string;
+  media_file?: File;
 }
 
 // Template Update Data
@@ -58,7 +61,9 @@ export interface CustomTemplateUpdateData {
   text_content?: string;
   variables?: string[];
   is_active?: boolean;
-  media_url?: string;
+  base_template?: number;
+  description?: string;
+  media_file?: File;
 }
 
 // Template List Parameters
@@ -195,9 +200,41 @@ export const useCreateCustomTemplate = () => {
     asyncStatus
   } = useMutation({
     mutation: async (data: CustomTemplateCreateData) => {
+      const formData = new FormData();
+      
+      // Add all text fields to FormData
+      formData.append('name', data.name);
+      formData.append('template_type', data.template_type);
+      
+      if (data.category) {
+        formData.append('category', data.category);
+      }
+      
+      formData.append('text_content', data.text_content);
+      
+      if (data.variables && data.variables.length > 0) {
+        formData.append('variables', JSON.stringify(data.variables));
+      }
+      
+      if (data.is_active !== undefined) {
+        formData.append('is_active', data.is_active.toString());
+      }
+      
+      if (data.base_template) {
+        formData.append('base_template', data.base_template.toString());
+      }
+      
+      if (data.description) {
+        formData.append('description', data.description);
+      }
+      
+      if (data.media_file) {
+        formData.append('media_file', data.media_file);
+      }
+
       const response = await API('/chat/custom-templates/', {
         method: 'POST',
-        body: JSON.stringify(data)
+        body: formData
       });
       return response as CustomMessageTemplate;
     }
@@ -224,9 +261,48 @@ export const useUpdateCustomTemplate = () => {
     asyncStatus
   } = useMutation({
     mutation: async ({ id, data }: { id: string | number; data: CustomTemplateUpdateData }) => {
+      const formData = new FormData();
+      
+      // Add all provided fields to FormData
+      if (data.name) {
+        formData.append('name', data.name);
+      }
+      
+      if (data.template_type) {
+        formData.append('template_type', data.template_type);
+      }
+      
+      if (data.category) {
+        formData.append('category', data.category);
+      }
+      
+      if (data.text_content) {
+        formData.append('text_content', data.text_content);
+      }
+      
+      if (data.variables) {
+        formData.append('variables', JSON.stringify(data.variables));
+      }
+      
+      if (data.is_active !== undefined) {
+        formData.append('is_active', data.is_active.toString());
+      }
+      
+      if (data.base_template) {
+        formData.append('base_template', data.base_template.toString());
+      }
+      
+      if (data.description) {
+        formData.append('description', data.description);
+      }
+      
+      if (data.media_file) {
+        formData.append('media_file', data.media_file);
+      }
+
       const response = await API(`/chat/custom-templates/${id}/`, {
         method: 'PUT',
-        body: JSON.stringify(data)
+        body: formData
       });
       return response as CustomMessageTemplate;
     }
@@ -253,9 +329,48 @@ export const usePartialUpdateCustomTemplate = () => {
     asyncStatus
   } = useMutation({
     mutation: async ({ id, data }: { id: string | number; data: Partial<CustomTemplateUpdateData> }) => {
+      const formData = new FormData();
+      
+      // Add all provided fields to FormData
+      if (data.name) {
+        formData.append('name', data.name);
+      }
+      
+      if (data.template_type) {
+        formData.append('template_type', data.template_type);
+      }
+      
+      if (data.category) {
+        formData.append('category', data.category);
+      }
+      
+      if (data.text_content) {
+        formData.append('text_content', data.text_content);
+      }
+      
+      if (data.variables) {
+        formData.append('variables', JSON.stringify(data.variables));
+      }
+      
+      if (data.is_active !== undefined) {
+        formData.append('is_active', data.is_active.toString());
+      }
+      
+      if (data.base_template) {
+        formData.append('base_template', data.base_template.toString());
+      }
+      
+      if (data.description) {
+        formData.append('description', data.description);
+      }
+      
+      if (data.media_file) {
+        formData.append('media_file', data.media_file);
+      }
+
       const response = await API(`/chat/custom-templates/${id}/`, {
         method: 'PATCH',
-        body: JSON.stringify(data)
+        body: formData
       });
       return response as CustomMessageTemplate;
     }
