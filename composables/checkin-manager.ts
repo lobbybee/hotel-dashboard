@@ -1,4 +1,4 @@
-import { computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useAPI } from './useAPI';
 
 // Type definitions for check-in management
@@ -335,6 +335,40 @@ export const useCheckoutUser = () => {
   };
 };
 
+// Reject Check-in - Rejects a pending check-in and notifies the guest
+export const useRejectCheckin = () => {
+  const { API } = useAPI();
+
+  const {
+    mutateAsync: rejectCheckin,
+    status,
+    error,
+    isLoading,
+    asyncStatus
+  } = useMutation({
+    mutation: async (stayId: string | number) => {
+      console.log('rejectCheckin mutation called with:', { stayId });
+      const endpoint = `/stay-management/${stayId}/reject-checkin/`;
+      console.log('Making request to endpoint:', endpoint);
+
+      const response = await API(endpoint, {
+        method: 'POST',
+        body: {}
+      });
+      console.log('rejectCheckin response:', response);
+      return response;
+    }
+  });
+
+  return {
+    rejectCheckin,
+    status,
+    error,
+    isLoading,
+    asyncStatus
+  };
+};
+
 // Utility composable for managing check-in workflow state
 export const useCheckinWorkflow = () => {
   const checkinOfflineMutation = useCheckinOffline();
@@ -342,6 +376,7 @@ export const useCheckinWorkflow = () => {
   const createGuestMutation = useCreateGuest();
   const checkAvailabilityMutation = useCheckRoomAvailability();
   const checkoutUserMutation = useCheckoutUser();
+  const rejectCheckinMutation = useRejectCheckin();
 
   const workflowStep = ref<'initial' | 'guest-created' | 'rooms-assigned' | 'verified'>('initial');
   const currentBookingId = ref<number | null>(null);
@@ -362,6 +397,7 @@ export const useCheckinWorkflow = () => {
     createGuestMutation,
     checkAvailabilityMutation,
     checkoutUserMutation,
+    rejectCheckinMutation,
 
     // Workflow state
     workflowStep,

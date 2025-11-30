@@ -106,14 +106,23 @@
           </div>
 
           <!-- Card Footer -->
-          <div class="flex gap-3 mt-6">
+          <div class="flex flex-col gap-3 mt-6">
             <button
-              class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               @click="handleDirectCheckin(stay)"
               :disabled="isConfirmingCheckin"
             >
               <i class="pi pi-user-check"></i>
               Check-in
+            </button>
+
+            <button
+              class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="handleRejectCheckin(stay)"
+              :disabled="isConfirmingCheckin"
+            >
+              <i class="pi pi-times-circle"></i>
+              Decline
             </button>
 
           </div>
@@ -139,6 +148,65 @@
       :is-confirming="isConfirmingCheckin"
       @confirmed="handleConfirmCheckin"
     />
+
+    <!-- Reject Check-in Confirmation Dialog -->
+    <Dialog
+      v-model:visible="isRejectDialogVisible"
+      modal
+      header="Reject Check-in Request"
+      :style="{ width: '450px' }"
+      :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
+    >
+      <div class="flex items-center gap-4 mb-4">
+        <div class="flex-shrink-0">
+          <i class="pi pi-exclamation-triangle text-red-500 text-2xl"></i>
+        </div>
+        <div>
+          <p class="font-medium text-gray-900">Reject {{ selectedStayForReject?.guest?.full_name }}'s check-in?</p>
+          <p class="text-sm text-gray-600 mt-1">
+            This will cancel the guest's check-in request and send them a notification.
+            The guest's pending records will be cleaned up.
+          </p>
+        </div>
+      </div>
+
+      <div v-if="selectedStayForReject" class="bg-gray-50 rounded-lg p-3 mb-4">
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-bookmark text-gray-400"></i>
+            <span class="text-gray-600">Room:</span>
+            <strong class="text-gray-900">{{ selectedStayForReject.room_details?.room_number || selectedStayForReject.room }}</strong>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-calendar text-gray-400"></i>
+            <span class="text-gray-600">Check-in:</span>
+            <strong class="text-gray-900">{{ new Date(selectedStayForReject.check_in_date).toLocaleDateString() }}</strong>
+          </div>
+          <div class="flex items-center gap-2">
+            <i class="pi pi-calendar-times text-gray-400"></i>
+            <span class="text-gray-600">Check-out:</span>
+            <strong class="text-gray-900">{{ new Date(selectedStayForReject.check_out_date).toLocaleDateString() }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button
+          label="Cancel"
+          icon="pi pi-times"
+          text
+          @click="isRejectDialogVisible = false"
+          :disabled="isRejectingCheckin"
+        />
+        <Button
+          label="Reject Check-in"
+          icon="pi pi-times-circle"
+          severity="danger"
+          @click="handleConfirmReject"
+          :loading="isRejectingCheckin"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -146,7 +214,7 @@
 import { ref, computed } from 'vue';
 import { useToast } from 'primevue/usetoast';
 
-import { useListPendingStays, useVerifyCheckin } from '~/composables/checkin-manager';
+import { useListPendingStays, useVerifyCheckin, useRejectCheckin } from '~/composables/checkin-manager';
 import { useFetchRooms } from '~/composables/useHotel';
 
 import CheckinConfirmationDialog from './ConfirmationDialog.vue';
@@ -158,15 +226,25 @@ const { pendingStays, isLoading: pendingStaysLoading, error: pendingStaysError, 
 
 const {  verifyCheckin, isLoading: isVerifyingCheckin } = useVerifyCheckin();
 
+const { rejectCheckin, isLoading: isRejectingCheckin } = useRejectCheckin();
+
 const { refetch: refetchRooms } = useFetchRooms(ref({ status: 'available' }));
 
 // --- DIALOG MANAGEMENT ---
 const isCheckinDialogVisible = ref(false);
 const selectedStayForCheckin = ref<any>(null);
 
+const isRejectDialogVisible = ref(false);
+const selectedStayForReject = ref<any>(null);
+
 const handleDirectCheckin = (stay: any) => {
   selectedStayForCheckin.value = stay;
   isCheckinDialogVisible.value = true;
+};
+
+const handleRejectCheckin = (stay: any) => {
+  selectedStayForReject.value = stay;
+  isRejectDialogVisible.value = true;
 };
 
 const isConfirmingCheckin = computed(() => isVerifyingCheckin.value);
@@ -198,6 +276,42 @@ const handleConfirmCheckin = async (verifyData: any) => {
     console.error('verifyCheckin error:', err);
     const errorMessage = err.response?._data?.detail || err.response?._data?.error || 'An unexpected error occurred.';
     toast.add({ severity: 'error', summary: 'Check-in Failed', detail: errorMessage, life: 5000 });
+  }
+};
+
+const handleConfirmReject = async () => {
+  console.log('handleConfirmReject called for:', selectedStayForReject.value);
+
+  if (!selectedStayForReject.value) {
+    console.log('No selected stay for rejection, returning early');
+    return;
+  }
+
+  try {
+    console.log('About to call rejectCheckin...');
+    await rejectCheckin(selectedStayForReject.value.id);
+    console.log('rejectCheckin completed successfully');
+
+    toast.add({
+      severity: 'success',
+      summary: 'Check-in Rejected',
+      detail: `Guest ${selectedStayForReject.value.guest?.full_name}'s check-in request has been rejected and they have been notified.`,
+      life: 3000
+    });
+
+    isRejectDialogVisible.value = false;
+    await pendingStaysRefetch();
+    await refetchRooms();
+
+  } catch (err: any) {
+    console.error('rejectCheckin error:', err);
+    const errorMessage = err.response?._data?.error || err.response?._data?.detail || 'An unexpected error occurred.';
+    toast.add({
+      severity: 'error',
+      summary: 'Rejection Failed',
+      detail: errorMessage,
+      life: 5000
+    });
   }
 };
 

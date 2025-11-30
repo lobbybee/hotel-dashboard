@@ -76,6 +76,42 @@
           </div>
         </header>
 
+        <!-- New Check-in Notification Alert -->
+        <div v-if="hasNewStays && !isCheckinPage" class="mx-4 sm:mx-6 mb-4">
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="flex-shrink-0">
+                  <i class="pi pi-user-plus text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-semibold text-blue-900">New Check-in Request</h3>
+                  <p class="text-sm text-blue-700">
+                    {{ pendingStays?.length || 0 }} pending check-in{{ pendingStays?.length !== 1 ? 's' : '' }} waiting for verification
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <NuxtLink
+                  to="/checkin"
+                  class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-md transition-colors"
+                  @click="clearNotification"
+                >
+                  <i class="pi pi-eye"></i>
+                  View Check-ins
+                </NuxtLink>
+                <button
+                  @click="clearNotification"
+                  class="text-blue-600 hover:text-blue-800 transition-colors"
+                  aria-label="Dismiss notification"
+                >
+                  <i class="pi pi-times text-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Page Content -->
         <main class="flex-1 overflow-y-auto">
           <div class="bg-white/60 backdrop-blur-xl rounded-2xl shadow-lg h-full overflow-y-auto">
@@ -89,6 +125,7 @@
 
 <script setup>
 import { useAuthStore } from '~/stores/auth';
+import { usePendingStaysNotifications } from '~/composables/usePendingStaysNotifications';
 
 const router = useRouter();
 const route = useRoute();
@@ -97,6 +134,12 @@ const authStore = useAuthStore();
 const { user, isAuthenticated, userRole, userInitials } = storeToRefs(authStore);
 
 const userMenu = ref(null);
+
+// Computed property to check if we're on the checkin page
+const isCheckinPage = computed(() => route.path === '/checkin');
+
+// Initialize pending stays notifications
+const { hasNewStays, pendingStays, clearNotification } = usePendingStaysNotifications();
 
 const hotel = ref({ name: 'Loading...' });
 const totalUnreadMessages = ref(0); // Mocked for now
