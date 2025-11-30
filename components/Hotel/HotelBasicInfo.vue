@@ -127,6 +127,19 @@
           <small v-if="errors.email" class="text-red-500 text-sm mt-1 block">{{ errors.email }}</small>
         </div>
       </div>
+
+      <!-- Google Review Link - Full Width -->
+      <div>
+        <label for="google_review_link" class="block text-sm font-medium text-gray-700 mb-2">Google Review Link</label>
+        <InputText
+          id="google_review_link"
+          v-model="hotelForm.google_review_link"
+          class="w-full"
+          :class="{'p-invalid': errors.google_review_link}"
+          placeholder="Enter Google review link (e.g., https://g.page/your-hotel/review)"
+        />
+        <small v-if="errors.google_review_link" class="text-red-500 text-sm mt-1 block">{{ errors.google_review_link }}</small>
+      </div>
     </div>
   </div>
 </template>

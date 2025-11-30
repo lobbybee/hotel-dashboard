@@ -5,9 +5,9 @@
       <div class="alert-content">
         <i class="pi pi-exclamation-triangle alert-icon"></i>
         <span class="alert-text">Connection lost. Messages may not be delivered.</span>
-        <Button 
-          label="Reconnect" 
-          size="small" 
+        <Button
+          label="Reconnect"
+          size="small"
           @click="handleReconnect"
           class="reconnect-btn"
         />
@@ -28,7 +28,7 @@
             @click="chatStore.toggleSidebar"
             class="sidebar-toggle mobile-only"
           />
-          
+
           <div class="contact-info">
             <Avatar
               :label="chatStore.selectedConversation.guest_info.full_name.charAt(0)"
@@ -37,23 +37,25 @@
               class="header-avatar"
             />
             <div class="contact-details">
-              <h2 class="contact-name">{{ chatStore.selectedConversation.guest_info.full_name }}</h2>
-              <span class="contact-status">Room {{ chatStore.selectedConversation.guest_info.room_number }}</span>
+              <h2 class="contact-name">Room {{ chatStore.selectedConversation.guest_info.room_number }}</h2>
+              <span class="contact-status">
+                  {{ chatStore.selectedConversation.guest_info.full_name }}
+              </span>
             </div>
           </div>
         </div>
-        
+
         <div class="header-actions">
           <div :class="['connection-status', { 'connected': chatStore.isConnected, 'disconnected': !chatStore.isConnected }]">
             <i :class="['pi', chatStore.isConnected ? 'pi-check-circle' : 'pi-times-circle']"></i>
             <span>{{ chatStore.isConnected ? 'Connected' : 'Disconnected' }}</span>
           </div>
-          <Button 
-            icon="pi pi-ellipsis-v" 
-            text 
-            rounded 
+          <!-- <Button
+            icon="pi pi-ellipsis-v"
+            text
+            rounded
             @click="toggleMenu"
-          />
+          /> -->
           <Menu ref="menu" :model="menuItems" popup />
         </div>
       </div>
@@ -83,7 +85,7 @@
 
     <!-- Message input -->
     <MessageInput v-if="chatStore.selectedConversation && chatStore.selectedConversation.status !== 'closed'" />
-    
+
     <!-- Conversation closed message -->
     <div v-else-if="chatStore.selectedConversation && chatStore.selectedConversation.status === 'closed'" class="conversation-closed">
       <Card>

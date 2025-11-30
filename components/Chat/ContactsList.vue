@@ -146,6 +146,7 @@ const selectConversation = (conversation: Conversation) => {
 .contact-avatar {
   width: 48px;
   height: 48px;
+  font-size: 14px;
 }
 
 .contact-info {

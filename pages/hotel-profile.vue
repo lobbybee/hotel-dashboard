@@ -113,6 +113,7 @@ const hotelFormSchema = z.object({
   check_in_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)'),
   time_zone: z.string().min(2, 'Time zone is required').max(50),
   wifi_password: z.string().max(100).optional(),
+  google_review_link: z.string().url('Invalid URL format').optional().or(z.literal('')),
 });
 
 const hotelForm = ref({
@@ -127,7 +128,8 @@ const hotelForm = ref({
   email: '',
   check_in_time: '14:00',
   time_zone: 'UTC',
-  wifi_password: ''
+  wifi_password: '',
+  google_review_link: ''
 });
 
 const errors = ref<Record<string, string>>({});
@@ -158,7 +160,8 @@ watch(hotel, (newHotelData) => {
       email: newHotelData.email || '',
       check_in_time: checkInTime,
       time_zone: newHotelData.time_zone || 'UTC',
-      wifi_password: newHotelData.wifi_password || ''
+      wifi_password: newHotelData.wifi_password || '',
+      google_review_link: newHotelData.google_review_link || ''
     };
   }
 }, { immediate: true, deep: true });

@@ -19,24 +19,15 @@
       <!-- Search and Filter Bar -->
     <div class="mb-6 bg-white rounded-lg border border-gray-200 p-4">
       <div class="flex flex-col sm:flex-row gap-4">
-        <div class="flex-1">
-          <span class="p-input-icon-left w-full">
-            <i class="pi pi-search"></i>
-            <InputText
-              v-model="searchQuery"
-              placeholder="Search staff by name or email..."
-              class="w-full"
-            />
-          </span>
-        </div>
-        <Dropdown
+
+        <!-- <Dropdown
           v-model="selectedDepartmentFilter"
           :options="departmentFilterOptions"
           placeholder="All Departments"
           optionLabel="label"
           optionValue="value"
           class="w-full sm:w-56"
-        />
+        /> -->
         <Dropdown
           v-model="selectedRoleFilter"
           :options="roleFilterOptions"
@@ -112,9 +103,9 @@
                     :value="formatRole(member.user_type)"
                     :severity="getRoleSeverity(member.user_type)"
                   />
-                  <div v-if="member.department && member.department.length" class="mt-1">
+                  <div v-if="member.department" class="mt-1">
                     <Tag
-                      v-for="dep in member.department"
+                      v-for="dep in getDepartmentArray(member.department)"
                       :key="dep"
                       :value="dep"
                       severity="secondary"
@@ -377,6 +368,13 @@ const getRoleBgClass = (role: string) => {
     other_staff: 'bg-gray-600'
   }
   return classes[role as keyof typeof classes] || 'bg-gray-600';
+};
+
+const getDepartmentArray = (department: string | string[]) => {
+  if (Array.isArray(department)) {
+    return department;
+  }
+  return [department];
 };
 
 const openAddStaffForm = () => {

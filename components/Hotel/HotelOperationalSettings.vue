@@ -5,33 +5,19 @@
     </div>
 
     <div class="space-y-6">
-      <!-- Check-in and Check-out Time Row -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label for="check_in_time" class="block text-sm font-medium text-gray-700 mb-2">Check-in Time</label>
-          <DatePicker
-            id="check_in_time"
-            v-model="timeValue"
-            time-only
-            hour-format="24"
-            class="w-full"
-            :class="{'p-invalid': errors.check_in_time}"
-            @update:model-value="onTimeChange"
-          />
-          <small v-if="errors.check_in_time" class="text-red-500 text-sm mt-1 block">{{ errors.check_in_time }}</small>
-        </div>
-
-        <!-- Check-out Time (placeholder for future implementation) -->
-        <div>
-          <label for="check_out_time" class="block text-sm font-medium text-gray-700 mb-2">Check-out Time</label>
-          <DatePicker
-            id="check_out_time"
-            v-model="checkOutTimeValue"
-            time-only
-            hour-format="24"
-            class="w-full"
-          />
-        </div>
+      <!-- Check-in Time - Full Width -->
+      <div>
+        <label for="check_in_time" class="block text-sm font-medium text-gray-700 mb-2">Check-in Time</label>
+        <DatePicker
+          id="check_in_time"
+          v-model="timeValue"
+          time-only
+          hour-format="24"
+          class="w-full"
+          :class="{'p-invalid': errors.check_in_time}"
+          @update:model-value="onTimeChange"
+        />
+        <small v-if="errors.check_in_time" class="text-red-500 text-sm mt-1 block">{{ errors.check_in_time }}</small>
       </div>
 
       <!-- Timezone -->
@@ -50,30 +36,15 @@
         <small v-if="errors.time_zone" class="text-red-500 text-sm mt-2 block">{{ errors.time_zone }}</small>
       </div>
 
-      <!-- WiFi Password -->
-      <div>
-        <label for="wifi_password" class="block text-sm font-medium text-gray-700 mb-2">WiFi Password</label>
-        <InputText
-          id="wifi_password"
-          v-model="hotelForm.wifi_password"
-          type="password"
-          class="w-full h-12 rounded-lg px-4 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all duration-200"
-          :class="{'border-red-500 focus:border-red-500 focus:ring-red-100': errors.wifi_password}"
-          placeholder="Enter WiFi password"
-        />
-        <small v-if="errors.wifi_password" class="text-red-500 text-sm mt-2 block">{{ errors.wifi_password }}</small>
-      </div>
+  
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import Panel from 'primevue/panel';
+import { ref, computed } from 'vue';
 import DatePicker from 'primevue/datepicker';
 import Dropdown from 'primevue/dropdown';
-import InputText from 'primevue/inputtext';
-import Button from 'primevue/button';
 
 // Define props
 const props = defineProps({
@@ -153,9 +124,6 @@ const timezones = [
   { label: 'Tokyo', value: 'Asia/Tokyo' },
   { label: 'Sydney', value: 'Australia/Sydney' }
 ];
-
-// Check-out time placeholder value
-const checkOutTimeValue = ref(null);
 
 // Handle time change
 const onTimeChange = (value) => {

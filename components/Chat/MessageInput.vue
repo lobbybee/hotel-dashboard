@@ -9,24 +9,24 @@
             <span>Conversation expired</span>
           </div>
           <div class="expired-actions">
-            <Button 
-              label="Reopen" 
-              icon="pi pi-refresh" 
-              size="small" 
+            <Button
+              label="Reopen"
+              icon="pi pi-refresh"
+              size="small"
               @click="handleReopenConversation"
             />
-            <Button 
-              label="Close" 
-              icon="pi pi-times" 
-              size="small" 
-              severity="secondary" 
+            <!-- <Button
+              label="Close"
+              icon="pi pi-times"
+              size="small"
+              severity="secondary"
               @click="handleCloseConversation"
-            />
+            /> -->
           </div>
         </div>
       </template>
     </Card>
-    
+
     <Card v-else class="message-input-card">
       <template #content>
         <div class="input-wrapper">
@@ -93,11 +93,11 @@ const isConversationExpired = computed(() => {
   if (!chatStore.selectedConversation || !chatStore.selectedConversation.last_message_at) {
     return false;
   }
-  
+
   const lastMessageTime = new Date(chatStore.selectedConversation.last_message_at).getTime();
   const currentTime = new Date().getTime();
   const twoMinutesInMs = 2 * 60 * 1000;
-  
+
   return (currentTime - lastMessageTime) > twoMinutesInMs;
 });
 
