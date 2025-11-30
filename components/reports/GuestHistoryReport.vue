@@ -5,7 +5,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-cyan-50 rounded-lg">
-            <i class="fas fa-users text-cyan-600 text-xl"></i>
+            <Icon name="fa:users" class="text-cyan-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Total Guests</p>
@@ -19,7 +19,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-emerald-50 rounded-lg">
-            <i class="fas fa-bed text-emerald-600 text-xl"></i>
+            <Icon name="fa:bed" class="text-emerald-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Total Stays</p>
@@ -33,7 +33,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-purple-50 rounded-lg">
-            <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+            <Icon name="fa:pie-chart" class="text-purple-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Avg. Stays/Guest</p>
@@ -48,7 +48,7 @@
     <!-- Loading State -->
     <div v-if="isLoading" class="flex items-center justify-center py-12">
       <div class="text-center">
-        <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+        <Icon name="fa:spinner" class="text-4xl text-blue-600 mb-4"/>
         <p class="text-gray-600">Loading guest history...</p>
       </div>
     </div>
@@ -60,8 +60,8 @@
         <div>
           <h3 class="text-red-800 font-semibold">Error Loading Guest History</h3>
           <p class="text-red-700 mt-1">{{ error?.message || 'Failed to load guest history data' }}</p>
-          <button 
-            @click="refetch" 
+          <button
+            @click="refetch"
             class="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
           >
             Try Again
@@ -81,7 +81,7 @@
             placeholder="Search by guest name..."
             class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex-1 min-w-[200px]"
           />
-          
+
           <select
             v-model="nationalityFilter"
             class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -131,19 +131,15 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr 
-                v-for="guest in filteredGuests" 
+              <tr
+                v-for="guest in filteredGuests"
                 :key="guest.id"
                 class="hover:bg-gray-50 transition-colors"
               >
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
-                    <div class="h-10 w-10 flex-shrink-0">
-                      <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                        <i class="fas fa-user text-gray-600"></i>
-                      </div>
-                    </div>
-                    <div class="ml-4">
+
+                    <div >
                       <div class="text-sm font-medium text-gray-900">{{ guest.full_name }}</div>
                       <div class="text-sm text-gray-500">ID: {{ guest.id }}</div>
                     </div>
@@ -262,7 +258,7 @@
                               {{ formatDate(stay.check_out_date) }}
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap">
-                              <span 
+                              <span
                                 :class="getStatusClass(stay.status)"
                                 class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                               >
@@ -336,21 +332,21 @@ watch(guestHistoryData, (newData) => {
 // Computed Properties
 const filteredGuests = computed(() => {
   if (!guestHistoryData.value?.guests) return []
-  
+
   return guestHistoryData.value.guests.filter(guest => {
-    const matchesSearch = !searchTerm.value || 
+    const matchesSearch = !searchTerm.value ||
       guest.full_name.toLowerCase().includes(searchTerm.value.toLowerCase())
-    
-    const matchesNationality = !nationalityFilter.value || 
+
+    const matchesNationality = !nationalityFilter.value ||
       guest.nationality === nationalityFilter.value
-    
+
     return matchesSearch && matchesNationality
   })
 })
 
 const availableNationalities = computed(() => {
   if (!guestHistoryData.value?.guests) return []
-  
+
   const nationalities = new Set(guestHistoryData.value.guests.map(guest => guest.nationality))
   return Array.from(nationalities).sort()
 })
@@ -377,12 +373,12 @@ const getCurrentDate = () => {
 
 const calculateAverageStays = () => {
   if (!guestHistoryData.value?.summary) return '0.0'
-  
+
   const totalGuests = guestHistoryData.value.summary.total_guests
   const totalStays = guestHistoryData.value.summary.total_stays
-  
+
   if (totalGuests === 0) return '0.0'
-  
+
   return (totalStays / totalGuests).toFixed(1)
 }
 

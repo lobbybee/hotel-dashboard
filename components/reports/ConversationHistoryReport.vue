@@ -5,7 +5,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-blue-50 rounded-lg">
-            <i class="fas fa-comments text-blue-600 text-xl"></i>
+              <Icon name="fa:comments" class="text-blue-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Total Conversations</p>
@@ -19,7 +19,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-cyan-50 rounded-lg">
-            <i class="fas fa-message text-cyan-600 text-xl"></i>
+            <Icon name="fa:comments" class="text-cyan-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Total Messages</p>
@@ -33,7 +33,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-emerald-50 rounded-lg">
-            <i class="fas fa-chart-line text-emerald-600 text-xl"></i>
+            <Icon name="fa:pie-chart" class="text-emerald-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Avg Messages</p>
@@ -47,7 +47,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-purple-50 rounded-lg">
-            <i class="fas fa-check-circle text-purple-600 text-xl"></i>
+            <Icon name="fa:check-circle" class="text-purple-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Fulfillment Rate</p>
@@ -74,8 +74,8 @@
         <div>
           <h3 class="text-red-800 font-semibold">Error Loading Conversation History</h3>
           <p class="text-red-700 mt-1">{{ error?.message || 'Failed to load conversation history data' }}</p>
-          <button 
-            @click="refetch" 
+          <button
+            @click="refetch"
             class="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
           >
             Try Again
@@ -95,7 +95,7 @@
             placeholder="Search by guest name or message preview..."
             class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex-1 min-w-[200px]"
           />
-          
+
           <select
             v-model="departmentFilter"
             class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -155,19 +155,15 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr 
-                v-for="conversation in filteredConversations" 
+              <tr
+                v-for="conversation in filteredConversations"
                 :key="conversation.id"
                 class="hover:bg-gray-50 transition-colors"
               >
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
-                    <div class="h-10 w-10 flex-shrink-0">
-                      <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                        <i class="fas fa-user text-gray-600"></i>
-                      </div>
-                    </div>
-                    <div class="ml-4">
+
+                    <div>
                       <div class="text-sm font-medium text-gray-900">{{ conversation.guest?.full_name || 'Unknown' }}</div>
                       <div class="text-sm text-gray-500">
                         {{ conversation.guest?.whatsapp_number || 'No phone' }}
@@ -189,7 +185,7 @@
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span 
+                  <span
                     :class="getStatusClass(conversation.status)"
                     class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                   >
@@ -271,31 +267,31 @@ watch(conversationHistoryData, (newData) => {
 // Computed Properties
 const filteredConversations = computed(() => {
   if (!conversationHistoryData.value?.conversations) return []
-  
+
   return conversationHistoryData.value.conversations.filter(conv => {
-    const matchesSearch = !searchTerm.value || 
+    const matchesSearch = !searchTerm.value ||
       conv.guest?.full_name?.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
       conv.last_message_preview?.toLowerCase().includes(searchTerm.value.toLowerCase())
-    
-    const matchesDepartment = !departmentFilter.value || 
+
+    const matchesDepartment = !departmentFilter.value ||
       conv.department === departmentFilter.value
-    
-    const matchesType = !typeFilter.value || 
+
+    const matchesType = !typeFilter.value ||
       conv.conversation_type === typeFilter.value
-    
+
     return matchesSearch && matchesDepartment && matchesType
   })
 })
 
 const availableDepartments = computed(() => {
   if (!conversationHistoryData.value?.summary?.department_breakdown) return []
-  
+
   return conversationHistoryData.value.summary.department_breakdown.map(dept => dept.department).sort()
 })
 
 const availableTypes = computed(() => {
   if (!conversationHistoryData.value?.summary?.type_breakdown) return []
-  
+
   return conversationHistoryData.value.summary.type_breakdown.map(type => type.conversation_type).sort()
 })
 
@@ -318,12 +314,12 @@ const formatDate = (dateString: string) => {
 
 const calculateFulfillmentRate = () => {
   if (!conversationHistoryData.value?.conversations) return '0%'
-  
+
   const total = conversationHistoryData.value.conversations.length
   const fulfilled = conversationHistoryData.value.conversations.filter(conv => conv.is_fulfilled).length
-  
+
   if (total === 0) return '0%'
-  
+
   return `${Math.round((fulfilled / total) * 100)}%`
 }
 

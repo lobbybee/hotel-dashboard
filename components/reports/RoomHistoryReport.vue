@@ -5,7 +5,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-indigo-50 rounded-lg">
-            <i class="fas fa-bed text-indigo-600 text-xl"></i>
+            <Icon name="fa:bed" class="text-indigo-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Total Rooms</p>
@@ -19,7 +19,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-emerald-50 rounded-lg">
-            <i class="fas fa-check-circle text-emerald-600 text-xl"></i>
+            <Icon name="fa:check-circle" class="text-emerald-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Available</p>
@@ -33,7 +33,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-amber-50 rounded-lg">
-            <i class="fas fa-user-check text-amber-600 text-xl"></i>
+            <Icon name="fa:user" class="text-amber-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Occupied</p>
@@ -47,7 +47,7 @@
       <div class="card p-6">
         <div class="flex items-center">
           <div class="p-3 bg-purple-50 rounded-lg">
-            <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+            <Icon name="fa:hotel" class="text-purple-600 text-xl"/>
           </div>
           <div class="ml-4">
             <p class="text-sm text-gray-600">Total Stays</p>
@@ -74,8 +74,8 @@
         <div>
           <h3 class="text-red-800 font-semibold">Error Loading Room History</h3>
           <p class="text-red-700 mt-1">{{ error?.message || 'Failed to load room history data' }}</p>
-          <button 
-            @click="refetch" 
+          <button
+            @click="refetch"
             class="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
           >
             Try Again
@@ -95,7 +95,7 @@
             placeholder="Search by room number..."
             class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex-1 min-w-[200px]"
           />
-          
+
           <select
             v-model="statusFilter"
             class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -170,19 +170,15 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr 
-                v-for="room in filteredRooms" 
+              <tr
+                v-for="room in filteredRooms"
                 :key="room.id"
                 class="hover:bg-gray-50 transition-colors"
               >
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
-                    <div class="h-10 w-10 flex-shrink-0">
-                      <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <i class="fas fa-door-closed text-indigo-600"></i>
-                      </div>
-                    </div>
-                    <div class="ml-4">
+
+                    <div >
                       <div class="text-sm font-medium text-gray-900">{{ room.room_number }}</div>
                       <div class="text-sm text-gray-500">ID: {{ room.id }}</div>
                     </div>
@@ -197,7 +193,7 @@
                   {{ room.floor }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span 
+                  <span
                     :class="getRoomStatusClass(room.status)"
                     class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                   >
@@ -213,8 +209,8 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                      <div 
-                        class="bg-emerald-500 h-2 rounded-full" 
+                      <div
+                        class="bg-emerald-500 h-2 rounded-full"
                         :style="{ width: `${calculateUtilization(room)}%` }"
                       ></div>
                     </div>
@@ -266,15 +262,15 @@
                   </div>
 
                   <!-- Room Information -->
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
                       <h4 class="font-medium text-gray-900 mb-2">Room Information</h4>
                       <div class="space-y-2 text-sm">
                         <div><strong>Room Number:</strong> {{ selectedRoom.room_number }}</div>
                         <div><strong>Category:</strong> {{ selectedRoom.category }}</div>
                         <div><strong>Floor:</strong> {{ selectedRoom.floor }}</div>
-                        <div><strong>Status:</strong> 
-                          <span 
+                        <div><strong>Status:</strong>
+                          <span
                             :class="getRoomStatusClass(selectedRoom.status)"
                             class="ml-1 px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                           >
@@ -291,7 +287,7 @@
                         <div><strong>Utilization:</strong> {{ calculateUtilization(selectedRoom) }}%</div>
                       </div>
                     </div>
-                    <div>
+                    <!-- <div>
                       <h4 class="font-medium text-gray-900 mb-2">Quick Actions</h4>
                       <div class="space-y-2">
                         <button class="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
@@ -301,7 +297,7 @@
                           <i class="fas fa-calendar-plus mr-1"></i> New Booking
                         </button>
                       </div>
-                    </div>
+                    </div> -->
                   </div>
 
                   <!-- Room Stays -->
@@ -335,7 +331,7 @@
                               {{ formatDate(stay.check_out_date) }}
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap">
-                              <span 
+                              <span
                                 :class="getStatusClass(stay.status)"
                                 class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                               >
@@ -415,34 +411,34 @@ watch(roomHistoryData, (newData) => {
 // Computed Properties
 const filteredRooms = computed(() => {
   if (!roomHistoryData.value?.rooms) return []
-  
+
   return roomHistoryData.value.rooms.filter(room => {
-    const matchesSearch = !searchTerm.value || 
+    const matchesSearch = !searchTerm.value ||
       room.room_number.toLowerCase().includes(searchTerm.value.toLowerCase())
-    
-    const matchesStatus = !statusFilter.value || 
+
+    const matchesStatus = !statusFilter.value ||
       room.status === statusFilter.value
-    
-    const matchesCategory = !categoryFilter.value || 
+
+    const matchesCategory = !categoryFilter.value ||
       room.category === categoryFilter.value
-    
-    const matchesFloor = !floorFilter.value || 
+
+    const matchesFloor = !floorFilter.value ||
       room.floor.toString() === floorFilter.value
-    
+
     return matchesSearch && matchesStatus && matchesCategory && matchesFloor
   })
 })
 
 const availableCategories = computed(() => {
   if (!roomHistoryData.value?.rooms) return []
-  
+
   const categories = new Set(roomHistoryData.value.rooms.map(room => room.category))
   return Array.from(categories).sort()
 })
 
 const availableFloors = computed(() => {
   if (!roomHistoryData.value?.rooms) return []
-  
+
   const floors = new Set(roomHistoryData.value.rooms.map(room => room.floor))
   return Array.from(floors).sort((a, b) => a - b)
 })
@@ -504,10 +500,10 @@ const calculateUtilization = (room: any) => {
   if (!roomHistoryData.value?.summary?.total_stays || room.total_stays === 0) {
     return 0
   }
-  
+
   const totalStays = roomHistoryData.value.summary.total_stays
   const maxUtilization = Math.max(...roomHistoryData.value.rooms.map((r: any) => r.total_stays), 1)
-  
+
   return Math.round((room.total_stays / maxUtilization) * 100)
 }
 
