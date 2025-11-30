@@ -98,8 +98,130 @@
           severity="danger"
           @click="handleCheckout(stay)"
         />
+        <Button
+          label="View Guest"
+          icon="pi pi-user"
+          class="w-full mt-3"
+          severity="info"
+          outlined
+          @click="handleViewGuest(stay)"
+        />
       </div>
     </div>
+
+    <!-- Guest Info Dialog -->
+    <Dialog v-model:visible="isGuestInfoDialogVisible" modal header="Guest Information" :style="{ width: '600px' }">
+      <div v-if="selectedStayForGuestInfo" class="space-y-4">
+        <!-- Guest Details -->
+        <div class="border-b pb-4">
+          <h4 class="font-semibold text-lg mb-3">Guest Details</h4>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Full Name</label>
+              <p class="font-medium text-gray-900">{{ selectedStayForGuestInfo.guest.full_name }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Email</label>
+              <p class="font-medium text-gray-900">{{ selectedStayForGuestInfo.guest.email || 'Not provided' }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">WhatsApp Number</label>
+              <p class="font-medium text-gray-900">{{ selectedStayForGuestInfo.guest.whatsapp_number }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Nationality</label>
+              <p class="font-medium text-gray-900">{{ selectedStayForGuestInfo.guest.nationality || 'Not provided' }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Date of Birth</label>
+              <p class="font-medium text-gray-900">{{ selectedStayForGuestInfo.guest.date_of_birth ? new Date(selectedStayForGuestInfo.guest.date_of_birth).toLocaleDateString() : 'Not provided' }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Preferred Language</label>
+              <p class="font-medium text-gray-900">{{ getLanguageName(selectedStayForGuestInfo.guest.preferred_language) || 'Not specified' }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+              <Badge :value="selectedStayForGuestInfo.guest.status" :severity="getStatusSeverity(selectedStayForGuestInfo.guest.status)" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">WhatsApp Active</label>
+              <Badge :value="selectedStayForGuestInfo.guest.is_whatsapp_active ? 'Active' : 'Inactive'" :severity="selectedStayForGuestInfo.guest.is_whatsapp_active ? 'success' : 'warning'" />
+            </div>
+          </div>
+          <div v-if="selectedStayForGuestInfo.guest.notes" class="mt-3">
+            <label class="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+            <p class="text-sm text-gray-700">{{ selectedStayForGuestInfo.guest.notes }}</p>
+          </div>
+        </div>
+
+        <!-- Identity Documents -->
+        <div class="border-b pb-4">
+          <h4 class="font-semibold text-lg mb-3">Identity Documents</h4>
+          <div v-if="selectedStayForGuestInfo.guest?.documents && selectedStayForGuestInfo.guest.documents.length > 0">
+            <div v-for="doc in selectedStayForGuestInfo.guest.documents" :key="doc.id" class="mb-3">
+              <div class="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-2">
+                    <p class="font-semibold text-gray-900">{{ formatDocumentType(doc.document_type) }}</p>
+                    <span v-if="doc.document_number" class="text-sm text-gray-500">({{ doc.document_number }})</span>
+                  </div>
+                  <div class="flex gap-3">
+                    <a v-if="doc.document_file_url" :href="doc.document_file_url" target="_blank" class="text-sm text-blue-500 hover:underline flex items-center gap-1">
+                      <i class="pi pi-eye"></i>
+                      View Front
+                    </a>
+                    <a v-if="doc.document_file_back_url" :href="doc.document_file_back_url" target="_blank" class="text-sm text-blue-500 hover:underline flex items-center gap-1">
+                      <i class="pi pi-eye"></i>
+                      View Back
+                    </a>
+                  </div>
+                </div>
+                <Badge :value="doc.is_verified ? 'Verified' : 'Not Verified'" :severity="doc.is_verified ? 'success' : 'warning'" />
+              </div>
+            </div>
+          </div>
+          <div v-else>
+            <p class="text-sm text-gray-500">No identity documents uploaded.</p>
+          </div>
+        </div>
+
+        <!-- Stay Details -->
+        <div>
+          <h4 class="font-semibold text-lg mb-3">Stay Details</h4>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Room Number</label>
+              <p class="font-medium text-gray-900">{{ selectedStayForGuestInfo.room_details.room_number }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Room Category</label>
+              <Tag :value="selectedStayForGuestInfo.room_details.category" severity="info" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Check-in Date</label>
+              <p class="font-medium text-gray-900">{{ formatDate(selectedStayForGuestInfo.check_in_date) }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Check-out Date</label>
+              <p class="font-medium text-gray-900">{{ formatDate(selectedStayForGuestInfo.check_out_date) }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Duration</label>
+              <p class="font-medium text-gray-900">{{ getDaysStayed(selectedStayForGuestInfo) }} night(s)</p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Stay ID</label>
+              <p class="font-medium text-gray-900">#{{ selectedStayForGuestInfo.id }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Close" icon="pi pi-times" @click="isGuestInfoDialogVisible = false" class="p-button-text" />
+        <Button label="Extend Stay" icon="pi pi-plus" severity="secondary" @click="handleExtendStay" />
+      </template>
+    </Dialog>
 
     <!-- Check-out Confirmation Dialog -->
     <Dialog v-model:visible="isCheckoutDialogVisible" modal header="Confirm Check-out" :style="{ width: '30rem' }">
@@ -135,6 +257,7 @@
 import { ref, computed } from 'vue';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
+import Badge from 'primevue/badge';
 import ProgressSpinner from 'primevue/progressspinner';
 import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
@@ -165,9 +288,28 @@ const { checkoutUser, isLoading: isCheckingOut } = useCheckoutUser();
 const isCheckoutDialogVisible = ref(false);
 const selectedStayForCheckout = ref<any>(null);
 
+// --- GUEST INFO LOGIC ---
+const isGuestInfoDialogVisible = ref(false);
+const selectedStayForGuestInfo = ref<any>(null);
+
 const handleCheckout = (stay: any) => {
   selectedStayForCheckout.value = stay;
   isCheckoutDialogVisible.value = true;
+};
+
+const handleViewGuest = (stay: any) => {
+  selectedStayForGuestInfo.value = stay;
+  isGuestInfoDialogVisible.value = true;
+};
+
+const handleExtendStay = () => {
+  // Dummy function for now
+  toast.add({
+    severity: 'info',
+    summary: 'Extend Stay',
+    detail: 'Extend stay functionality will be implemented soon.',
+    life: 3000
+  });
 };
 
 const handleConfirmCheckout = async () => {
@@ -176,11 +318,11 @@ const handleConfirmCheckout = async () => {
   try {
     await checkoutUser(selectedStayForCheckout.value.id);
 
-    toast.add({ 
-      severity: 'success', 
-      summary: 'Checked Out', 
-      detail: `${selectedStayForCheckout.value.guest.full_name} has been checked out successfully.`, 
-      life: 4000 
+    toast.add({
+      severity: 'success',
+      summary: 'Checked Out',
+      detail: `${selectedStayForCheckout.value.guest.full_name} has been checked out successfully.`,
+      life: 4000
     });
 
     isCheckoutDialogVisible.value = false;
@@ -206,6 +348,38 @@ const getDaysStayed = (stay: any) => {
   const diff = checkOut.getTime() - checkIn.getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
+
+const formatDocumentType = (type: string) => {
+  if (!type) return '';
+  return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
+const getLanguageName = (code: string) => {
+  const languageOptions = [
+    { name: 'English', code: 'en' },
+    { name: 'Spanish', code: 'es' },
+    { name: 'French', code: 'fr' },
+    { name: 'German', code: 'de' },
+    { name: 'Italian', code: 'it' },
+    { name: 'Portuguese', code: 'pt' },
+    { name: 'Russian', code: 'ru' },
+    { name: 'Chinese', code: 'zh' },
+    { name: 'Japanese', code: 'ja' },
+    { name: 'Arabic', code: 'ar' },
+    { name: 'Hindi', code: 'hi' }
+  ];
+  const language = languageOptions.find(lang => lang.code === code);
+  return language ? language.name : '';
+};
+
+const getStatusSeverity = (status: string) => {
+  switch (status) {
+    case 'pending_verification': return 'warning';
+    case 'verified': return 'success';
+    case 'rejected': return 'danger';
+    default: return 'info';
+  }
+};
 </script>
 
 <style scoped>
