@@ -20,6 +20,7 @@
     "@primeuix/themes": "^1.2.3",
     "@primevue/forms": "^4.3.7",
     "@vueuse/core": "^13.6.0",
+    "jspdf": "^3.0.4",
     "nuxt": "^4.0.3",
     "pinia": "^3.0.3",
     "primeicons": "^7.0.0",
