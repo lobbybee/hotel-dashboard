@@ -28,7 +28,6 @@
           <Avatar
             :label="conversation.guest_info.room_number"
             size="large"
-            shape="circle"
             class="contact-avatar"
           />
         </div>
@@ -147,6 +146,7 @@ const selectConversation = (conversation: Conversation) => {
   width: 48px;
   height: 48px;
   font-size: 14px;
+  border-radius: 4px;
 }
 
 .contact-info {
