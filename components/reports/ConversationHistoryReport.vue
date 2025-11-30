@@ -219,6 +219,138 @@
         </div>
       </div>
     </div>
+
+    <!-- Conversation Details Modal -->
+    <Dialog 
+      v-model:visible="showConversationModal" 
+      :modal="true"
+      :closable="true"
+      :draggable="false"
+      :style="{ width: '90vw', maxWidth: '600px' }"
+      class="conversation-details-dialog"
+      position="center"
+    >
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+            <Icon name="fa:comments" class="text-blue-600 text-lg"/>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Conversation Details</h3>
+            <p class="text-sm text-gray-600">{{ selectedConversation?.guest?.full_name || 'Unknown Guest' }}</p>
+          </div>
+        </div>
+      </template>
+
+      <div v-if="selectedConversation" class="space-y-6">
+        <!-- Guest Information -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Icon name="fa:user" class="text-gray-600"/>
+            Guest Information
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-600">Name</p>
+              <p class="text-sm font-medium text-gray-900">{{ selectedConversation.guest?.full_name || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Phone</p>
+              <p class="text-sm font-medium text-gray-900">{{ selectedConversation.guest?.whatsapp_number || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Room</p>
+              <p class="text-sm font-medium text-gray-900">{{ selectedConversation.guest?.room_number || 'N/A' }}</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Created Date</p>
+              <p class="text-sm font-medium text-gray-900">{{ formatDate(selectedConversation.created_at) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conversation Details -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Icon name="fa:info-circle" class="text-gray-600"/>
+            Conversation Details
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-600">Department</p>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {{ selectedConversation.department || 'N/A' }}
+              </span>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Type</p>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 capitalize">
+                {{ selectedConversation.conversation_type?.replace('_', ' ') || 'Unknown' }}
+              </span>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Status</p>
+              <span
+                :class="getStatusClass(selectedConversation.status)"
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+              >
+                {{ selectedConversation.status || 'N/A' }}
+              </span>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Messages</p>
+              <p class="text-sm font-medium text-gray-900">{{ selectedConversation.message_count || 0 }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Last Message Preview -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Icon name="fa:envelope" class="text-gray-600"/>
+            Last Message
+          </h4>
+          <div class="bg-white rounded-lg p-3 border border-gray-200">
+            <p class="text-sm text-gray-900">
+              {{ selectedConversation.last_message_preview || 'No message preview available' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Fulfillment Status -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <p class="text-sm text-gray-600">Fulfillment Status:</p>
+            <span
+              :class="selectedConversation.is_fulfilled 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-yellow-100 text-yellow-800'"
+              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+            >
+              <Icon 
+                :name="selectedConversation.is_fulfilled ? 'fa:check-circle' : 'fa:clock'" 
+                class="mr-1"
+              />
+              {{ selectedConversation.is_fulfilled ? 'Fulfilled' : 'Pending' }}
+            </span>
+          </div>
+          <div class="text-sm text-gray-500">
+            ID: {{ selectedConversation.id }}
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end">
+          <Button 
+            label="Close" 
+            @click="closeConversationModal"
+            class="p-button-secondary"
+            severity="secondary"
+          />
+        </div>
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -243,6 +375,8 @@ const emit = defineEmits<{
 const searchTerm = ref('')
 const departmentFilter = ref('')
 const typeFilter = ref('')
+const showConversationModal = ref(false)
+const selectedConversation = ref<any>(null)
 
 // Conversation History Data
 const {
@@ -337,8 +471,13 @@ const getStatusClass = (status: string) => {
 }
 
 const viewConversationDetails = (conversation: any) => {
-  // Simple alert for now - can be enhanced with a modal
-  alert(`Conversation Details:\n\nGuest: ${conversation.guest?.full_name || 'Unknown'}\nDepartment: ${conversation.department}\nType: ${conversation.conversation_type?.replace('_', ' ') || 'Unknown'}\nStatus: ${conversation.status}\nMessages: ${conversation.message_count}\nLast Message: ${conversation.last_message_preview || 'N/A'}\nFulfilled: ${conversation.is_fulfilled ? 'Yes' : 'No'}`)
+  selectedConversation.value = conversation
+  showConversationModal.value = true
+}
+
+const closeConversationModal = () => {
+  showConversationModal.value = false
+  selectedConversation.value = null
 }
 
 const clearFilters = () => {

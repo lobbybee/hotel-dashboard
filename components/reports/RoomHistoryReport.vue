@@ -239,125 +239,197 @@
       </div>
 
       <!-- Room Details Modal -->
-      <div v-if="selectedRoom" class="fixed inset-0 overflow-y-auto z-50">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-          <div class="fixed inset-0 transition-opacity" @click="closeRoomDetails">
-            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+      <Dialog 
+        v-model:visible="showRoomModal" 
+        :modal="true"
+        :closable="true"
+        :draggable="false"
+        :style="{ width: '90vw', maxWidth: '900px' }"
+        class="room-details-dialog"
+        position="center"
+      >
+        <template #header>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
+              <Icon name="fa:bed" class="text-indigo-600 text-lg"/>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">Room Details</h3>
+              <p class="text-sm text-gray-600">{{ selectedRoom?.room_number || 'Unknown Room' }}</p>
+            </div>
+          </div>
+        </template>
+
+        <div v-if="selectedRoom" class="space-y-6">
+          <!-- Room Information -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Icon name="fa:info-circle" class="text-gray-600"/>
+              Room Information
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p class="text-sm text-gray-600">Room Number</p>
+                <p class="text-sm font-medium text-gray-900">{{ selectedRoom.room_number || 'N/A' }}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-600">Room ID</p>
+                <p class="text-sm font-medium text-gray-900">{{ selectedRoom.id }}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-600">Category</p>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  {{ selectedRoom.category || 'N/A' }}
+                </span>
+              </div>
+              <div>
+                <p class="text-sm text-gray-600">Floor</p>
+                <p class="text-sm font-medium text-gray-900">{{ selectedRoom.floor }}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-600">Status</p>
+                <span
+                  :class="getRoomStatusClass(selectedRoom.status)"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                >
+                  {{ selectedRoom.status?.replace('_', ' ').toUpperCase() || 'N/A' }}
+                </span>
+              </div>
+              <div>
+                <p class="text-sm text-gray-600">Base Price</p>
+                <p class="text-sm font-medium text-gray-900">{{ formatCurrency(selectedRoom.base_price) }}</p>
+              </div>
+            </div>
           </div>
 
-          <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full">
-            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              <div class="sm:flex sm:items-start">
-                <div class="w-full">
-                  <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-medium text-gray-900">
-                      Room Details: {{ selectedRoom.room_number }}
-                    </h3>
-                    <button
-                      @click="closeRoomDetails"
-                      class="text-gray-400 hover:text-gray-500"
-                    >
-                      <i class="fas fa-times"></i>
-                    </button>
+          <!-- Room Statistics -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Icon name="fa:chart-bar" class="text-gray-600"/>
+              Room Statistics
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p class="text-sm text-gray-600">Total Stays</p>
+                <div class="flex items-center gap-2">
+                  <Icon name="fa:hotel" class="text-purple-500"/>
+                  <span class="text-lg font-semibold text-gray-900">{{ selectedRoom.total_stays }}</span>
+                </div>
+              </div>
+              <div>
+                <p class="text-sm text-gray-600">Utilization Rate</p>
+                <div class="flex items-center gap-2">
+                  <div class="flex-1 bg-gray-200 rounded-full h-2 mr-2 max-w-[60px]">
+                    <div
+                      class="bg-emerald-500 h-2 rounded-full"
+                      :style="{ width: `${calculateUtilization(selectedRoom)}%` }"
+                    ></div>
                   </div>
-
-                  <!-- Room Information -->
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <h4 class="font-medium text-gray-900 mb-2">Room Information</h4>
-                      <div class="space-y-2 text-sm">
-                        <div><strong>Room Number:</strong> {{ selectedRoom.room_number }}</div>
-                        <div><strong>Category:</strong> {{ selectedRoom.category }}</div>
-                        <div><strong>Floor:</strong> {{ selectedRoom.floor }}</div>
-                        <div><strong>Status:</strong>
-                          <span
-                            :class="getRoomStatusClass(selectedRoom.status)"
-                            class="ml-1 px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                          >
-                            {{ selectedRoom.status.replace('_', ' ').toUpperCase() }}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 class="font-medium text-gray-900 mb-2">Pricing & Statistics</h4>
-                      <div class="space-y-2 text-sm">
-                        <div><strong>Base Price:</strong> {{ formatCurrency(selectedRoom.base_price) }}</div>
-                        <div><strong>Total Stays:</strong> {{ selectedRoom.total_stays }}</div>
-                        <div><strong>Utilization:</strong> {{ calculateUtilization(selectedRoom) }}%</div>
-                      </div>
-                    </div>
-                    <!-- <div>
-                      <h4 class="font-medium text-gray-900 mb-2">Quick Actions</h4>
-                      <div class="space-y-2">
-                        <button class="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                          <i class="fas fa-edit mr-1"></i> Edit Room
-                        </button>
-                        <button class="w-full px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
-                          <i class="fas fa-calendar-plus mr-1"></i> New Booking
-                        </button>
-                      </div>
-                    </div> -->
-                  </div>
-
-                  <!-- Room Stays -->
-                  <div>
-                    <h4 class="font-medium text-gray-900 mb-4">Stay History</h4>
-                    <div class="overflow-x-auto">
-                      <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Guest</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Check-in</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Check-out</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Guests</th>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Register</th>
-                          </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                          <tr v-for="stay in selectedRoom.stays" :key="stay.id">
-                            <td class="px-4 py-2 whitespace-nowrap text-sm">
-                              <div>
-                                <div class="font-medium text-gray-900">{{ stay.guest_name }}</div>
-                                <div class="text-gray-500">{{ stay.guest_whatsapp }}</div>
-                              </div>
-                            </td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm">
-                              {{ formatDate(stay.check_in_date) }}
-                            </td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm">
-                              {{ formatDate(stay.check_out_date) }}
-                            </td>
-                            <td class="px-4 py-2 whitespace-nowrap">
-                              <span
-                                :class="getStatusClass(stay.status)"
-                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                              >
-                                {{ stay.status }}
-                              </span>
-                            </td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm">
-                              {{ formatCurrency(stay.total_amount) }}
-                            </td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm">
-                              {{ stay.number_of_guests }}
-                            </td>
-                            <td class="px-4 py-2 whitespace-nowrap text-sm">
-                              {{ stay.register_number }}
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  <span class="text-lg font-semibold text-gray-900">{{ calculateUtilization(selectedRoom) }}%</span>
+                </div>
+              </div>
+              <div>
+                <p class="text-sm text-gray-600">Performance</p>
+                <div class="flex items-center gap-2">
+                  <Icon name="fa:tachometer-alt" class="text-blue-500"/>
+                  <span class="text-lg font-semibold text-gray-900">
+                    {{ selectedRoom.total_stays > 10 ? 'High' : selectedRoom.total_stays > 5 ? 'Medium' : 'Low' }}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Room Stays History -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Icon name="fa:history" class="text-gray-600"/>
+              Stay History
+            </h4>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-white">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Guest</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Check-in</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Check-out</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Guests</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Register</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr v-for="stay in selectedRoom.stays" :key="stay.id" class="hover:bg-gray-50">
+                    <td class="px-4 py-3 whitespace-nowrap text-sm">
+                      <div>
+                        <p class="font-medium text-gray-900">{{ stay.guest_name }}</p>
+                        <p class="text-xs text-gray-500">{{ stay.guest_whatsapp }}</p>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {{ formatDate(stay.check_in_date) }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {{ formatDate(stay.check_out_date) }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span
+                        :class="getStatusClass(stay.status)"
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                      >
+                        {{ stay.status }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {{ formatCurrency(stay.total_amount) }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {{ stay.number_of_guests }}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                      {{ stay.register_number }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-if="!selectedRoom.stays || selectedRoom.stays.length === 0" class="text-center py-6">
+                <Icon name="fa:hotel" class="text-gray-400 text-3xl mb-2"/>
+                <p class="text-sm text-gray-500">No stay history available</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Information -->
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-gray-500">
+              Room ID: {{ selectedRoom.id }}
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-sm text-gray-600">
+                Category: {{ selectedRoom.category }}
+              </div>
+              <div class="flex items-center gap-2">
+                <Icon name="fa:award" class="text-purple-500"/>
+                <span class="text-sm font-medium text-gray-900">
+                  {{ selectedRoom.status?.replace('_', ' ').toUpperCase() }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <template #footer>
+          <div class="flex justify-end">
+            <Button 
+              label="Close" 
+              @click="closeRoomModal"
+              class="p-button-secondary"
+              severity="secondary"
+            />
+          </div>
+        </template>
+      </Dialog>
     </div>
   </div>
 </template>
@@ -385,6 +457,7 @@ const statusFilter = ref('')
 const categoryFilter = ref('')
 const floorFilter = ref('')
 const selectedRoom = ref(null)
+const showRoomModal = ref(false)
 
 // Room History Data
 const {
@@ -509,9 +582,11 @@ const calculateUtilization = (room: any) => {
 
 const viewRoomDetails = (room: any) => {
   selectedRoom.value = room
+  showRoomModal.value = true
 }
 
-const closeRoomDetails = () => {
+const closeRoomModal = () => {
+  showRoomModal.value = false
   selectedRoom.value = null
 }
 

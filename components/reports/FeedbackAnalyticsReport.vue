@@ -274,41 +274,63 @@
     </div>
 
     <!-- Feedback Details Modal -->
-    <Dialog
-      v-model:visible="showFeedbackModal"
+    <Dialog 
+      v-model:visible="showFeedbackModal" 
       :modal="true"
-      :style="{ width: '600px' }"
-      header="Feedback Details"
-      :dismissableMask="true"
+      :closable="true"
+      :draggable="false"
+      :style="{ width: '90vw', maxWidth: '600px' }"
+      class="feedback-details-dialog"
+      position="center"
     >
-      <div v-if="selectedFeedback" class="space-y-4">
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+            <Icon name="fa:star" class="text-amber-600 text-lg"/>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Feedback Details</h3>
+            <p class="text-sm text-gray-600">{{ selectedFeedback?.guest?.full_name || 'Unknown Guest' }}</p>
+          </div>
+        </div>
+      </template>
+
+      <div v-if="selectedFeedback" class="space-y-6">
         <!-- Guest Information -->
-        <div class="border-b pb-4">
-          <h4 class="font-semibold text-gray-900 mb-3">Guest Information</h4>
-          <div class="grid grid-cols-2 gap-4">
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Icon name="fa:user" class="text-gray-600"/>
+            Guest Information
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <span class="text-sm text-gray-500">Name:</span>
-              <p class="font-medium">{{ selectedFeedback.guest?.full_name || 'Unknown' }}</p>
+              <p class="text-sm text-gray-600">Name</p>
+              <p class="text-sm font-medium text-gray-900">{{ selectedFeedback.guest?.full_name || 'N/A' }}</p>
             </div>
             <div>
-              <span class="text-sm text-gray-500">WhatsApp:</span>
-              <p class="font-medium">{{ selectedFeedback.guest?.whatsapp_number || 'N/A' }}</p>
+              <p class="text-sm text-gray-600">WhatsApp</p>
+              <p class="text-sm font-medium text-gray-900">{{ selectedFeedback.guest?.whatsapp_number || 'N/A' }}</p>
             </div>
             <div>
-              <span class="text-sm text-gray-500">Nationality:</span>
-              <p class="font-medium">{{ selectedFeedback.guest?.nationality || 'Unknown' }}</p>
+              <p class="text-sm text-gray-600">Nationality</p>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                {{ selectedFeedback.guest?.nationality || 'Unknown' }}
+              </span>
             </div>
             <div>
-              <span class="text-sm text-gray-500">Feedback Date:</span>
-              <p class="font-medium">{{ formatDate(selectedFeedback.created_at) }}</p>
+              <p class="text-sm text-gray-600">Feedback Date</p>
+              <p class="text-sm font-medium text-gray-900">{{ formatDate(selectedFeedback.created_at) }}</p>
             </div>
           </div>
         </div>
 
         <!-- Rating -->
-        <div class="border-b pb-4">
-          <h4 class="font-semibold text-gray-900 mb-3">Rating</h4>
-          <div class="flex items-center gap-2">
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Icon name="fa:star" class="text-gray-600"/>
+            Rating
+          </h4>
+          <div class="flex items-center gap-3">
             <div class="flex">
               <i
                 v-for="n in 5"
@@ -319,53 +341,83 @@
                 ]"
               ></i>
             </div>
-            <span class="text-lg font-semibold">{{ selectedFeedback.rating }}.0 / 5.0</span>
+            <span class="text-lg font-semibold text-gray-900">{{ selectedFeedback.rating }}.0 / 5.0</span>
           </div>
         </div>
 
         <!-- Stay Information -->
-        <div class="border-b pb-4">
-          <h4 class="font-semibold text-gray-900 mb-3">Stay Information</h4>
-          <div class="grid grid-cols-2 gap-4">
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Icon name="fa:bed" class="text-gray-600"/>
+            Stay Information
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <span class="text-sm text-gray-500">Room Number:</span>
-              <p class="font-medium">{{ selectedFeedback.stay?.room?.room_number || 'N/A' }}</p>
+              <p class="text-sm text-gray-600">Room Number</p>
+              <p class="text-sm font-medium text-gray-900">{{ selectedFeedback.stay?.room?.room_number || 'N/A' }}</p>
             </div>
             <div>
-              <span class="text-sm text-gray-500">Room Category:</span>
-              <p class="font-medium">{{ selectedFeedback.stay?.room?.category || 'N/A' }}</p>
+              <p class="text-sm text-gray-600">Room Category</p>
+              <p class="text-sm font-medium text-gray-900">{{ selectedFeedback.stay?.room?.category || 'N/A' }}</p>
             </div>
             <div>
-              <span class="text-sm text-gray-500">Check-in:</span>
-              <p class="font-medium">{{ formatDate(selectedFeedback.stay?.check_in_date) }}</p>
+              <p class="text-sm text-gray-600">Check-in Date</p>
+              <p class="text-sm font-medium text-gray-900">{{ formatDate(selectedFeedback.stay?.check_in_date) }}</p>
             </div>
             <div>
-              <span class="text-sm text-gray-500">Check-out:</span>
-              <p class="font-medium">{{ formatDate(selectedFeedback.stay?.check_out_date) }}</p>
+              <p class="text-sm text-gray-600">Check-out Date</p>
+              <p class="text-sm font-medium text-gray-900">{{ formatDate(selectedFeedback.stay?.check_out_date) }}</p>
             </div>
-            <div v-if="selectedFeedback.stay?.total_amount" class="col-span-2">
-              <span class="text-sm text-gray-500">Total Amount:</span>
-              <p class="font-medium">{{ formatCurrency(selectedFeedback.stay.total_amount) }}</p>
+            <div v-if="selectedFeedback.stay?.total_amount" class="md:col-span-2">
+              <p class="text-sm text-gray-600">Total Amount</p>
+              <p class="text-sm font-medium text-gray-900">{{ formatCurrency(selectedFeedback.stay.total_amount) }}</p>
             </div>
           </div>
         </div>
 
         <!-- Feedback Comment -->
-        <div>
-          <h4 class="font-semibold text-gray-900 mb-3">Comment</h4>
-          <div class="bg-gray-50 rounded-lg p-4">
-            <p class="text-gray-800">{{ selectedFeedback.note || 'No comment provided' }}</p>
+        <div class="bg-gray-50 rounded-lg p-4">
+          <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Icon name="fa:comment" class="text-gray-600"/>
+            Comment
+          </h4>
+          <div class="bg-white rounded-lg p-3 border border-gray-200">
+            <p class="text-sm text-gray-900">
+              {{ selectedFeedback.note || 'No comment provided' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Footer Information -->
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-500">
+            Feedback ID: {{ selectedFeedback.id }}
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600">Rating:</span>
+            <div class="flex items-center gap-1">
+              <Icon 
+                v-for="n in 5" 
+                :key="n"
+                :name="n <= selectedFeedback.rating ? 'fa:star' : 'fa:star'" 
+                :class="n <= selectedFeedback.rating ? 'text-amber-500' : 'text-gray-300'"
+                class="text-xs"
+              />
+              <span class="text-sm font-medium text-gray-900 ml-1">{{ selectedFeedback.rating }}.0</span>
+            </div>
           </div>
         </div>
       </div>
 
       <template #footer>
-        <Button
-          label="Close"
-          icon="fas fa-times"
-          @click="showFeedbackModal = false"
-          class="p-button-secondary"
-        />
+        <div class="flex justify-end">
+          <Button 
+            label="Close" 
+            @click="showFeedbackModal = false"
+            class="p-button-secondary"
+            severity="secondary"
+          />
+        </div>
       </template>
     </Dialog>
   </div>
