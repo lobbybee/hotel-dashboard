@@ -126,12 +126,14 @@
 <script setup>
 import { useAuthStore } from '~/stores/auth';
 import { usePendingStaysNotifications } from '~/composables/usePendingStaysNotifications';
+import { useFetchHotel, useFetchRooms } from '~/composables/useHotel';
+import { useFetchStaff } from '~/composables/useStaff';
 
 const router = useRouter();
 const route = useRoute();
 const { logout } = useAPI();
 const authStore = useAuthStore();
-const { user, isAuthenticated, userRole, userInitials } = storeToRefs(authStore);
+const { user, isAuthenticated, userRole, userInitials, hotelId } = storeToRefs(authStore);
 
 const userMenu = ref(null);
 
@@ -147,8 +149,9 @@ const sidebarVisible = ref(false);
 
 // Fetch hotel data will be triggered automatically by useQuery
 // when user.value.hotel_id becomes available.
-// const { HotelData, HotelIsLoading, HotelError } = useFetchHotel(computed(() => user.value?.hotel_id));
-const HotelData = ref(null);
+const { data: HotelData } = useFetchHotel(hotelId);
+const { data: RoomsData } = useFetchRooms({ page_size: 1 });
+const { staff: StaffData } = useFetchStaff();
 
 watch(HotelData, (newHotel) => {
   if (newHotel) {
@@ -156,10 +159,147 @@ watch(HotelData, (newHotel) => {
   }
 });
 
+// Onboarding Check Function
+const checkOnboardingStatus = async () => {
+  console.log('🚀 [ONBOARDING] Starting onboarding status check');
+  console.log('📍 [ONBOARDING] Current route:', route.path);
+  console.log('👤 [ONBOARDING] User role:', userRole.value);
+  console.log('🏨 [ONBOARDING] Hotel ID:', hotelId.value);
+
+  // Skip onboarding check if already on onboarding pages
+  if (route.path.startsWith('/onboard/')) {
+    console.log('⏭️ [ONBOARDING] Skipping - already on onboarding pages');
+    return;
+  }
+
+  // Only run onboarding for hotel_admin and manager roles
+  if (!['hotel_admin', 'manager'].includes(userRole.value)) {
+    console.log('⏭️ [ONBOARDING] Skipping - user role not eligible for onboarding:', userRole.value);
+    return;
+  }
+
+  console.log('✅ [ONBOARDING] User eligible for onboarding check');
+
+  try {
+    // Check hotel profile completeness
+    console.log('🏨 [ONBOARDING] Checking hotel profile completeness...');
+    console.log('📋 [ONBOARDING] Hotel profile data:', HotelData.value);
+
+    if (HotelData.value) {
+      const hotel = HotelData.value;
+
+      const requiredFields = ['address', 'city', 'state', 'country', 'pincode', 'phone', 'email'];
+      const missingFields = requiredFields.filter(field => !hotel[field] || hotel[field]?.trim() === '');
+
+      console.log('🔍 [ONBOARDING] Required fields check:');
+      console.log('  - Missing fields:', missingFields);
+      console.log('  - Field values:', {
+        address: hotel.address,
+        city: hotel.city,
+        state: hotel.state,
+        country: hotel.country,
+        pincode: hotel.pincode,
+        phone: hotel.phone,
+        email: hotel.email
+      });
+
+      if (missingFields.length > 0) {
+        console.log('❌ [ONBOARDING] Hotel profile incomplete - redirecting to /onboard/hotel');
+        console.log('📝 [ONBOARDING] Missing fields count:', missingFields.length);
+        await navigateTo('/onboard/hotel');
+        return;
+      }
+
+      console.log('✅ [ONBOARDING] Hotel profile complete');
+    } else {
+      console.log('⚠️ [ONBOARDING] No hotel profile data found - redirecting to /onboard/hotel');
+      await navigateTo('/onboard/hotel');
+      return;
+    }
+
+    // Check if hotel has at least 1 room
+    console.log('🏠 [ONBOARDING] Checking hotel rooms...');
+    console.log('📊 [ONBOARDING] Rooms data:', RoomsData.value);
+
+    if (RoomsData.value && RoomsData.value.results && RoomsData.value.results.length === 0) {
+      console.log('❌ [ONBOARDING] No rooms found - redirecting to /onboard/rooms');
+      console.log('📊 [ONBOARDING] Rooms count:', RoomsData.value.results.length);
+      await navigateTo('/onboard/rooms');
+      return;
+    }
+
+    console.log('✅ [ONBOARDING] Hotel has rooms');
+
+    // Check if hotel has staff members (excluding the current user)
+    console.log('👥 [ONBOARDING] Checking hotel staff...');
+    console.log('👥 [ONBOARDING] Staff data:', StaffData.value);
+    console.log('🔢 [ONBOARDING] Staff count:', StaffData.value?.length || 0);
+
+    if (StaffData.value && StaffData.value.length <= 1) {
+      console.log('❌ [ONBOARDING] Insufficient staff - redirecting to /onboard/staffs');
+      console.log('👤 [ONBOARDING] Current staff count:', StaffData.value.length);
+      await navigateTo('/onboard/staffs');
+      return;
+    }
+
+    console.log('✅ [ONBOARDING] Hotel has sufficient staff');
+    console.log('🎉 [ONBOARDING] Onboarding check passed - user can continue');
+
+  } catch (error) {
+    console.error('💥 [ONBOARDING] Error checking onboarding status:', error);
+    console.error('💥 [ONBOARDING] Error details:', {
+      message: error.message,
+      stack: error.stack
+    });
+  }
+};
+
 // Redirect to login if not authenticated
 watch(isAuthenticated, (isAuth) => {
+  console.log('🔐 [AUTH WATCHER] Authentication state changed:', {
+    isAuth,
+    isClient: process.client,
+    currentRoute: route.path
+  });
+
   if (process.client && !isAuth) {
+    console.log('🚪 [AUTH WATCHER] Not authenticated - redirecting to login');
     navigateTo('/login');
+  } else {
+    console.log('✅ [AUTH WATCHER] User authenticated - can continue');
+  }
+}, { immediate: true });
+
+// Run onboarding check when user, hotel, rooms, and staff data are available
+watch([isAuthenticated, user, hotelId, HotelData, RoomsData, StaffData], async ([isAuth, currentUser, currentHotelId, hotelData, roomsData, staffData]) => {
+  console.log('👀 [ONBOARDING WATCHER] Triggered with:', {
+    isAuth,
+    currentUser: currentUser ? { id: currentUser.id, role: currentUser.role, hotel_id: currentUser.hotel_id } : null,
+    currentHotelId,
+    hotelDataAvailable: !!hotelData,
+    roomsDataAvailable: !!roomsData,
+    staffDataAvailable: !!staffData,
+    isClient: process.client
+  });
+
+  if (process.client && isAuth && currentUser && currentHotelId && hotelData && roomsData && staffData) {
+    console.log('⏰ [ONBOARDING WATCHER] All data available - scheduling onboarding check in 1 second...');
+    // Small delay to ensure all data is loaded
+    await nextTick();
+    setTimeout(() => {
+      console.log('🚀 [ONBOARDING WATCHER] Executing scheduled onboarding check');
+      checkOnboardingStatus();
+    }, 1000);
+  } else {
+    console.log('⏭️ [ONBOARDING WATCHER] Conditions not met - skipping onboarding check');
+    console.log('🔍 [ONBOARDING WATCHER] Missing:', {
+      isAuth,
+      currentUser: !!currentUser,
+      currentHotelId: !!currentHotelId,
+      hotelData: !!hotelData,
+      roomsData: !!roomsData,
+      staffData: !!staffData
+    });
   }
 }, { immediate: true });
 
@@ -216,9 +356,18 @@ const pageTitle = computed(() => {
   return titleMap[route.path] || 'Dashboard';
 });
 
+// Add component mount log
+onMounted(() => {
+  console.log('🏗️ [COMPONENT] Default layout mounted');
+  console.log('👤 [COMPONENT] Current user:', user.value);
+  console.log('🎭 [COMPONENT] User role:', userRole.value);
+  console.log('🏨 [COMPONENT] Hotel ID:', hotelId.value);
+  console.log('📍 [COMPONENT] Current route:', route.path);
+});
+
 const navigation = computed(() => {
   const role = userRole.value;
-  console.log(role)
+  console.log('🧭 [NAVIGATION] Computing navigation for role:', role);
   if (role === 'hotel_admin') {
     return [
       { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
