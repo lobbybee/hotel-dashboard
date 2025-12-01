@@ -31,8 +31,17 @@
         <h2 class="text-2xl font-semibold text-gray-900">{{ hotelName }}</h2>
       </div>
 
-      <!-- Stats grid -->
-      <div v-if="hotelStats && Object.keys(getDisplayStats()).length" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <!-- Stats grid with masonry layout -->
+      <div v-if="hotelStats && Object.keys(getDisplayStats()).length" class="stats-masonry-grid">
+        <!-- QR Code Card - Takes up 2 rows height -->
+        <div v-if="hotelStats.verification_status === 'verified' || hotelStats.is_verified" class="qr-card-masonry">
+          <DashboardQRCode 
+            :hotel-id="hotelStats.hotel_id"
+            :hotel-name="hotelStats.hotel_name"
+          />
+        </div>
+
+        <!-- Regular Stats Cards -->
         <div
           v-for="(value, key) in getDisplayStats()"
           :key="key"
@@ -67,6 +76,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useFetchOverviewStats } from '~/composables/useStats';
+import DashboardQRCode from '~/components/DashboardQRCode.vue';
 
 const { stats, isLoading, error } = useFetchOverviewStats();
 
@@ -203,6 +213,38 @@ const formatValue = (key: string, value: number): string => {
 </script>
 
 <style scoped>
+/* Masonry Grid Layout */
+.stats-masonry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  grid-auto-flow: dense;
+}
+
+/* QR Code card takes up 2 rows */
+.qr-card-masonry {
+  grid-row: span 2;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .stats-masonry-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .stats-masonry-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .stats-masonry-grid {
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  }
+}
+
 /* Modern design following the design system */
 /* No custom styles needed - using Tailwind classes for consistency */
 </style>

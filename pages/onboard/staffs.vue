@@ -585,8 +585,12 @@ const handleContinue = async () => {
 
   // If we're on the staff slide and there's meaningful data in the form, create staff first
   if (currentStep.value === 1 && hasSignificantFormData()) {
-    await saveStaff()
-    return // Don't proceed to next step until user explicitly continues
+    const staffCreated = await saveStaff()
+    // Proceed to next step after successful staff creation
+    if (staffCreated && currentStep.value < totalSteps.value - 1) {
+      currentStep.value++
+    }
+    return
   }
 
   // Proceed to next step if all conditions are met
@@ -669,7 +673,7 @@ const validateStaffForm = () => {
 
 const saveStaff = async () => {
   if (!validateStaffForm()) {
-    return
+    return false
   }
 
   isCreatingStaff.value = true
@@ -709,6 +713,8 @@ const saveStaff = async () => {
     // Refetch staff to update the list
     await refetch()
 
+    return true
+
   } catch (error) {
     console.error('Failed to create staff:', error)
     toast.add({
@@ -717,6 +723,7 @@ const saveStaff = async () => {
       detail: 'Failed to add staff member. Please try again.',
       life: 5000
     })
+    return false
   } finally {
     isCreatingStaff.value = false
   }
