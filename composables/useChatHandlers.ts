@@ -37,13 +37,14 @@ export const handleWebSocketMessage = (data: any) => {
       
       // Add notification for guest messages only
       if (data.data.sender_type === 'guest') {
-        const conversation = chatStore.conversations.find(c => c.id === data.data.conversation_id);
-        if (conversation) {
+        // Use guest info directly from the WebSocket message instead of relying on conversation store
+        const guestInfo = data.data.guest_info;
+        if (guestInfo) {
           notificationStore.addChatNotification(
             data.data.conversation_id,
-            conversation.guest_info.full_name,
+            guestInfo.name,
             data.data.message_type === 'text' ? data.data.content : `New ${data.data.message_type}`,
-            conversation.guest_info.room_number
+            guestInfo.room_number
           );
         }
       }
