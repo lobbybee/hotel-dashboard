@@ -50,12 +50,12 @@
             <i :class="['pi', chatStore.isConnected ? 'pi-check-circle' : 'pi-times-circle']"></i>
             <span>{{ chatStore.isConnected ? 'Connected' : 'Disconnected' }}</span>
           </div>
-          <!-- <Button
+           <Button
             icon="pi pi-ellipsis-v"
             text
             rounded
             @click="toggleMenu"
-          /> -->
+          />
           <Menu ref="menu" :model="menuItems" popup />
         </div>
       </div>
