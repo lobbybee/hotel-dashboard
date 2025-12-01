@@ -4,9 +4,14 @@ import { useChatStore } from '~/stores/chat';
 
 const chatStore = useChatStore();
 
+
+// Only initialize if not already connected
 onMounted(() => {
-  chatStore.initChat();
+  if (!chatStore.isConnected.value) {
+    chatStore.initChat();
+  }
 });
+
 </script>
 
 <template>

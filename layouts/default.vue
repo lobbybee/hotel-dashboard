@@ -219,8 +219,13 @@ const { notifications, unreadCount } = storeToRefs(notificationStore);
 // Track if component is mounted to prevent DOM operations when unmounted
 const isMounted = ref(false);
 
+// Initialize chat store for global WebSocket connection
 onMounted(() => {
   isMounted.value = true;
+  
+  // Initialize chat store globally to establish WebSocket connection
+  // This ensures notifications work even when not on chat page
+  chatStore.initChat();
 });
 
 onUnmounted(() => {
