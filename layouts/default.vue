@@ -401,8 +401,8 @@ const toggleNotifications = (event) => {
 };
 
 // Notification panel functions
-const getNotificationIcon = (type: string) => {
-  const icons = {
+const getNotificationIcon = (type: string): string => {
+  const icons: { [key: string]: string } = {
     chat: 'prime:comment',
     checkin: 'prime:sign-in',
     checkout: 'prime:sign-out',
@@ -414,8 +414,8 @@ const getNotificationIcon = (type: string) => {
   return icons[type] || 'prime:info-circle';
 };
 
-const getNotificationIconClass = (type: string) => {
-  const classes = {
+const getNotificationIconClass = (type: string): string => {
+  const classes: { [key: string]: string } = {
     chat: 'text-blue-500',
     checkin: 'text-green-500',
     checkout: 'text-orange-500',
@@ -427,7 +427,7 @@ const getNotificationIconClass = (type: string) => {
   return classes[type] || 'text-gray-500';
 };
 
-const formatNotificationTime = (timestamp: Date) => {
+const formatNotificationTime = (timestamp: Date): string => {
   const now = new Date();
   const diff = now.getTime() - timestamp.getTime();
   
@@ -437,7 +437,7 @@ const formatNotificationTime = (timestamp: Date) => {
   return `${Math.floor(diff / 86400000)}d ago`;
 };
 
-const handleNotificationClick = (notification: any) => {
+const handleNotificationClick = (notification: any): void => {
   // Mark notification as read
   notificationStore.markAsRead(notification.id);
   
