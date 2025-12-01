@@ -172,8 +172,8 @@ const checkOnboardingStatus = async () => {
     return;
   }
 
-  // Only run onboarding for hotel_admin and manager roles
-  if (!['hotel_admin', 'manager'].includes(userRole.value)) {
+  // Only run onboarding for hotel_admin role
+  if (userRole.value !== 'hotel_admin') {
     console.log('⏭️ [ONBOARDING] Skipping - user role not eligible for onboarding:', userRole.value);
     return;
   }
