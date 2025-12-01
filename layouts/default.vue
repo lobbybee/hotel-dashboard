@@ -86,7 +86,7 @@
                     <div class="flex items-center justify-between mb-3">
                       <h3 class="font-semibold text-gray-900">Notifications</h3>
                       <button 
-                        @click="notificationStore.markAllAsRead(); notificationMenu.value?.hide?.()" 
+                        @click="handleMarkAllAsRead"
                         v-if="unreadCount > 0"
                         class="text-xs text-blue-600 hover:text-blue-800"
                       >
@@ -125,7 +125,7 @@
                             <p class="text-xs text-gray-500 mt-1">{{ formatNotificationTime(notification.timestamp) }}</p>
                           </div>
                           <button 
-                            @click.stop="notificationStore.removeNotification(notification.id)"
+                            @click="handleRemoveNotification(notification.id, $event)"
                             class="flex-shrink-0 text-gray-400 hover:text-gray-600"
                           >
                             <Icon name="prime:times" class="h-3 w-3" />
@@ -394,11 +394,21 @@ const userMenuItems = ref([
 ]);
 
 const toggleUserMenu = (event) => {
-  userMenu.value.toggle(event);
+  try {
+    userMenu.value?.toggle(event);
+  } catch (error) {
+    console.warn('Error toggling user menu:', error);
+    // Graceful fallback - do nothing if menu component is not available
+  }
 };
 
 const toggleNotifications = (event) => {
-  notificationMenu.value.toggle(event);
+  try {
+    notificationMenu.value?.toggle(event);
+  } catch (error) {
+    console.warn('Error toggling notification menu:', error);
+    // Graceful fallback - do nothing if menu component is not available
+  }
 };
 
 // Notification panel functions
@@ -439,17 +449,49 @@ const formatNotificationTime = (timestamp: Date): string => {
 };
 
 const handleNotificationClick = (notification: any): void => {
-  // Mark notification as read
-  notificationStore.markAsRead(notification.id);
-  
-  // Handle chat notifications by navigating to chat
-  if (notification.type === 'chat' && notification.data?.conversationId) {
-    navigateTo('/chat');
-    notificationMenu.value?.hide?.();
+  try {
+    // Mark notification as read
+    notificationStore.markAsRead(notification.id);
+    
+    // Handle chat notifications by navigating to chat
+    if (notification.type === 'chat' && notification.data?.conversationId) {
+      navigateTo('/chat');
+    }
+    
+    // Close notification panel safely
+    if (notificationMenu.value?.hide && typeof notificationMenu.value.hide === 'function') {
+      notificationMenu.value.hide();
+    }
+  } catch (error) {
+    console.warn('Error handling notification click:', error);
+    // Even if something fails, try to mark as read
+    try {
+      notificationStore.markAsRead(notification.id);
+    } catch (markError) {
+      console.warn('Error marking notification as read:', markError);
+    }
   }
-  
-  // Close notification panel
-  notificationMenu.value?.hide?.();
+};
+
+const handleMarkAllAsRead = (): void => {
+  try {
+    notificationStore.markAllAsRead();
+    // Close notification panel safely
+    if (notificationMenu.value?.hide && typeof notificationMenu.value.hide === 'function') {
+      notificationMenu.value.hide();
+    }
+  } catch (error) {
+    console.warn('Error marking all notifications as read:', error);
+  }
+};
+
+const handleRemoveNotification = (notificationId: string, event: Event): void => {
+  try {
+    event?.stopPropagation?.();
+    notificationStore.removeNotification(notificationId);
+  } catch (error) {
+    console.warn('Error removing notification:', error);
+  }
 };
 
 const handleLogout = async () => {
