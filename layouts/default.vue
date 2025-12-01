@@ -82,7 +82,7 @@
               <!-- Notifications Panel -->
               <Menu ref="notificationMenu" :popup="true" class="mt-2 w-80 notification-panel">
                 <template #default>
-                  <div class="p-3">
+                  <div class="p-4">
                     <div class="flex items-center justify-between mb-3">
                       <h3 class="font-semibold text-gray-900">Notifications</h3>
                       <button 
@@ -94,16 +94,17 @@
                       </button>
                     </div>
                     
-                    <div v-if="notifications.length === 0" class="text-center py-4 text-gray-500">
-                      <i class="pi pi-bell text-2xl mb-2"></i>
-                      <p class="text-sm">No notifications</p>
+                    <div v-if="notifications.length === 0" class="text-center py-8 text-gray-500">
+                      <Icon name="prime:bell" class="text-3xl mb-3 text-gray-400" />
+                      <p class="text-sm font-medium">No notifications</p>
+                      <p class="text-xs mt-1">You'll see notifications here</p>
                     </div>
                     
                     <div v-else class="max-h-96 overflow-y-auto">
                       <div 
                         v-for="notification in notifications.slice(0, 10)" 
                         :key="notification.id"
-                        class="mb-2 p-2 rounded-md border cursor-pointer transition-colors"
+                        class="mb-2 p-3 rounded-lg border cursor-pointer transition-colors"
                         :class="[
                           notification.read ? 'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200',
                           'hover:bg-gray-100'
@@ -127,7 +128,7 @@
                             @click.stop="notificationStore.removeNotification(notification.id)"
                             class="flex-shrink-0 text-gray-400 hover:text-gray-600"
                           >
-                            <i class="pi pi-times text-xs"></i>
+                            <Icon name="prime:times" class="h-3 w-3" />
                           </button>
                         </div>
                       </div>
