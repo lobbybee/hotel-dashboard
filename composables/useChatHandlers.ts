@@ -1,12 +1,15 @@
 import { useChatStore } from '~/stores/chat';
+import { useNotificationStore } from '~/stores/notifications';
 import type { Message, Conversation } from '~/types/chat';
 
 export const handleWebSocketMessage = (data: any) => {
   const chatStore = useChatStore();
+  const notificationStore = useNotificationStore();
 
   switch (data.type) {
     case 'message':
       console.log('Received message:', data);
+      
       // Map incoming data to Message type
       const message: Message = {
         id: data.data.id,
@@ -31,6 +34,20 @@ export const handleWebSocketMessage = (data: any) => {
         created_at: data.data.created_at,
         updated_at: data.data.updated_at,
       };
+      
+      // Add notification for guest messages only
+      if (data.data.sender_type === 'guest') {
+        const conversation = chatStore.conversations.find(c => c.id === data.data.conversation_id);
+        if (conversation) {
+          notificationStore.addChatNotification(
+            data.data.conversation_id,
+            conversation.guest_info.full_name,
+            data.data.message_type === 'text' ? data.data.content : `New ${data.data.message_type}`,
+            conversation.guest_info.room_number
+          );
+        }
+      }
+      
       chatStore.handleNewMessage(message);
       break;
     case 'new_conversation':

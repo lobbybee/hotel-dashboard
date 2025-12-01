@@ -29,7 +29,13 @@
           @click="$emit('navigate')"
         >
           <Icon :name="item.icon" class="h-6 w-6" />
-          <span>{{ item.name }}</span>
+          <span class="flex-1">{{ item.name }}</span>
+          <Badge
+            v-if="item.name === 'Chat' && unreadCount > 0"
+            :value="unreadCount"
+            severity="danger"
+            class="ml-auto"
+          />
         </NuxtLink>
       </div>
     </nav>
@@ -45,6 +51,10 @@ const props = defineProps({
   navigation: {
     type: Array,
     default: () => []
+  },
+  unreadCount: {
+    type: Number,
+    default: 0
   }
 })
 

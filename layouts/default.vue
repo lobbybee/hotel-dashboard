@@ -6,13 +6,14 @@
         <MainSideBar
           :user-role="userRole"
           :navigation="navigation"
+          :unread-count="totalUnreadCount"
           @navigate="sidebarVisible = false"
         />
       </Drawer>
 
       <!-- Desktop Sidebar -->
       <aside class="hidden w-72 flex-shrink-0 border-r border-gray-200 bg-white md:flex md:flex-col">
-        <MainSideBar :user-role="userRole" :navigation="navigation" />
+        <MainSideBar :user-role="userRole" :navigation="navigation" :unread-count="totalUnreadCount" />
       </aside>
 
       <!-- Main Content -->
@@ -39,11 +40,16 @@
           <div class="flex items-center gap-2 sm:gap-4">
 
 
-            <Button text rounded aria-label="Notifications">
+            <Button 
+              text 
+              rounded 
+              aria-label="Notifications"
+              @click="toggleNotifications"
+            >
               <template #icon>
                 <Icon name="prime:bell" class="h-5 w-5" />
               </template>
-              <Badge v-if="totalUnreadMessages > 0" :value="totalUnreadMessages" severity="danger" />
+              <Badge v-if="unreadCount > 0" :value="unreadCount" severity="danger" />
             </Button>
 
             <div class="relative">
@@ -70,6 +76,67 @@
                     <Icon :name="item.icon" class="mr-2 h-5 w-5" />
                     <span>{{ item.label }}</span>
                   </a>
+                </template>
+              </Menu>
+
+              <!-- Notifications Panel -->
+              <Menu ref="notificationMenu" :popup="true" class="mt-2 w-80 notification-panel">
+                <template #default>
+                  <div class="p-3">
+                    <div class="flex items-center justify-between mb-3">
+                      <h3 class="font-semibold text-gray-900">Notifications</h3>
+                      <button 
+                        @click="notificationStore.markAllAsRead(); notificationMenu.value?.hide?.()" 
+                        v-if="unreadCount > 0"
+                        class="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Mark all as read
+                      </button>
+                    </div>
+                    
+                    <div v-if="notifications.length === 0" class="text-center py-4 text-gray-500">
+                      <i class="pi pi-bell text-2xl mb-2"></i>
+                      <p class="text-sm">No notifications</p>
+                    </div>
+                    
+                    <div v-else class="max-h-96 overflow-y-auto">
+                      <div 
+                        v-for="notification in notifications.slice(0, 10)" 
+                        :key="notification.id"
+                        class="mb-2 p-2 rounded-md border cursor-pointer transition-colors"
+                        :class="[
+                          notification.read ? 'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200',
+                          'hover:bg-gray-100'
+                        ]"
+                        @click="handleNotificationClick(notification)"
+                      >
+                        <div class="flex items-start gap-3">
+                          <div class="flex-shrink-0 mt-1">
+                            <Icon 
+                              :name="getNotificationIcon(notification.type)" 
+                              :class="getNotificationIconClass(notification.type)"
+                              class="h-4 w-4" 
+                            />
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900">{{ notification.title }}</p>
+                            <p class="text-xs text-gray-600 mt-1">{{ notification.message }}</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ formatNotificationTime(notification.timestamp) }}</p>
+                          </div>
+                          <button 
+                            @click.stop="notificationStore.removeNotification(notification.id)"
+                            class="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                          >
+                            <i class="pi pi-times text-xs"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div v-if="notifications.length > 10" class="mt-3 pt-2 border-t border-gray-200 text-center">
+                      <button class="text-xs text-blue-600 hover:text-blue-800">View all notifications</button>
+                    </div>
+                  </div>
                 </template>
               </Menu>
             </div>
@@ -125,6 +192,8 @@
 
 <script setup>
 import { useAuthStore } from '~/stores/auth';
+import { useChatStore } from '~/stores/chat';
+import { useNotificationStore } from '~/stores/notifications';
 import { usePendingStaysNotifications } from '~/composables/usePendingStaysNotifications';
 import { useFetchHotel, useFetchRooms } from '~/composables/useHotel';
 import { useFetchStaff } from '~/composables/useStaff';
@@ -134,8 +203,13 @@ const route = useRoute();
 const { logout } = useAPI();
 const authStore = useAuthStore();
 const { user, isAuthenticated, userRole, userInitials, hotelId } = storeToRefs(authStore);
+const chatStore = useChatStore();
+const { totalUnreadCount } = storeToRefs(chatStore);
+const notificationStore = useNotificationStore();
+const { notifications, unreadCount } = storeToRefs(notificationStore);
 
 const userMenu = ref(null);
+const notificationMenu = ref(null);
 
 // Computed property to check if we're on the checkin page
 const isCheckinPage = computed(() => route.path === '/checkin');
@@ -144,7 +218,6 @@ const isCheckinPage = computed(() => route.path === '/checkin');
 const { hasNewStays, pendingStays, clearNotification } = usePendingStaysNotifications();
 
 const hotel = ref({ name: 'Loading...' });
-const totalUnreadMessages = ref(0); // Mocked for now
 const sidebarVisible = ref(false);
 
 // Fetch hotel data will be triggered automatically by useQuery
@@ -321,6 +394,61 @@ const userMenuItems = ref([
 
 const toggleUserMenu = (event) => {
   userMenu.value.toggle(event);
+};
+
+const toggleNotifications = (event) => {
+  notificationMenu.value.toggle(event);
+};
+
+// Notification panel functions
+const getNotificationIcon = (type: string) => {
+  const icons = {
+    chat: 'prime:comment',
+    checkin: 'prime:sign-in',
+    checkout: 'prime:sign-out',
+    service_request: 'prime:cog',
+    info: 'prime:info-circle',
+    warning: 'prime:exclamation-triangle',
+    success: 'prime:check-circle'
+  };
+  return icons[type] || 'prime:info-circle';
+};
+
+const getNotificationIconClass = (type: string) => {
+  const classes = {
+    chat: 'text-blue-500',
+    checkin: 'text-green-500',
+    checkout: 'text-orange-500',
+    service_request: 'text-purple-500',
+    info: 'text-blue-500',
+    warning: 'text-yellow-500',
+    success: 'text-green-500'
+  };
+  return classes[type] || 'text-gray-500';
+};
+
+const formatNotificationTime = (timestamp: Date) => {
+  const now = new Date();
+  const diff = now.getTime() - timestamp.getTime();
+  
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return `${Math.floor(diff / 86400000)}d ago`;
+};
+
+const handleNotificationClick = (notification: any) => {
+  // Mark notification as read
+  notificationStore.markAsRead(notification.id);
+  
+  // Handle chat notifications by navigating to chat
+  if (notification.type === 'chat' && notification.data?.conversationId) {
+    navigateTo('/chat');
+    notificationMenu.value?.hide?.();
+  }
+  
+  // Close notification panel
+  notificationMenu.value?.hide?.();
 };
 
 const handleLogout = async () => {

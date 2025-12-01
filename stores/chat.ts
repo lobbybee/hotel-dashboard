@@ -43,6 +43,13 @@ export const useChatStore = defineStore('chat', () => {
     return messages.value.filter(m => m.conversation === selectedConversationId.value);
   });
 
+  // Computed property for total unread messages across all conversations
+  const totalUnreadCount = computed(() => {
+    return conversations.value.reduce((total, conversation) => {
+      return total + (conversation.unread_count || 0);
+    }, 0);
+  });
+
   const toggleSidebar = () => {
     sidebarVisible.value = !sidebarVisible.value;
   };
@@ -453,6 +460,7 @@ export const useChatStore = defineStore('chat', () => {
     isLoadingMessages,
     selectedConversation,
     currentMessages,
+    totalUnreadCount,
     isConnected,
     initChat,
     selectConversation,
