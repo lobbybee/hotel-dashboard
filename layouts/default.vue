@@ -80,7 +80,14 @@
               </Menu>
 
               <!-- Notifications Panel -->
-              <Menu ref="notificationMenu" :popup="true" class="mt-2 w-80 notification-panel">
+              <Menu 
+                ref="notificationMenu" 
+                :popup="true" 
+                :model="[]"
+                :appendTo="body"
+                :autoZIndex="true"
+                class="mt-2 w-80 notification-panel"
+              >
                 <template #default>
                   <div class="p-4">
                     <div class="flex items-center justify-between mb-3">
