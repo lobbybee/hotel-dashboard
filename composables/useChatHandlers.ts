@@ -6,50 +6,65 @@ export const handleWebSocketMessage = (data: any) => {
   const chatStore = useChatStore();
   const notificationStore = useNotificationStore();
 
+  // Only process messages if we have a properly initialized chat system
+  if (!chatStore || !notificationStore) {
+    console.warn('Chat or notification store not initialized, skipping message');
+    return;
+  }
+
   switch (data.type) {
     case 'message':
       console.log('Received message:', data);
       
-      // Map incoming data to Message type
-      const message: Message = {
-        id: data.data.id,
-        conversation: data.data.conversation_id,
-        sender_type: data.data.sender_type,
-        sender: data.data.sender_id,
-        sender_name: data.data.sender_name,
-        message_type: data.data.message_type,
-        content: data.data.content,
-        media_url: data.data.media_url,
-        media_filename: data.data.media_filename,
-        is_read: data.data.is_read,
-        read_at: null,
-        guest_info: {
-          id: data.data.guest_info.id,
-          name: data.data.guest_info.name,
-          whatsapp_number: data.data.guest_info.whatsapp_number,
-          room_number: data.data.guest_info.room_number,
-          floor: 0, // Default floor if not provided
-        },
-        time_ago: '', // Will be computed in UI if needed
-        created_at: data.data.created_at,
-        updated_at: data.data.updated_at,
-      };
-      
-      // Add notification for guest messages only
-      if (data.data.sender_type === 'guest') {
-        // Use guest info directly from the WebSocket message instead of relying on conversation store
-        const guestInfo = data.data.guest_info;
-        if (guestInfo) {
-          notificationStore.addChatNotification(
-            data.data.conversation_id,
-            guestInfo.name,
-            data.data.message_type === 'text' ? data.data.content : `New ${data.data.message_type}`,
-            guestInfo.room_number
-          );
+      // Only process guest messages if both stores are ready
+      try {
+        // Map incoming data to Message type
+        const message: Message = {
+          id: data.data.id,
+          conversation: data.data.conversation_id,
+          sender_type: data.data.sender_type,
+          sender: data.data.sender_id,
+          sender_name: data.data.sender_name,
+          message_type: data.data.message_type,
+          content: data.data.content,
+          media_url: data.data.media_url,
+          media_filename: data.data.media_filename,
+          is_read: data.data.is_read,
+          read_at: null,
+          guest_info: {
+            id: data.data.guest_info.id,
+            name: data.data.guest_info.name,
+            whatsapp_number: data.data.guest_info.whatsapp_number,
+            room_number: data.data.guest_info.room_number,
+            floor: 0, // Default floor if not provided
+          },
+          time_ago: '', // Will be computed in UI if needed
+          created_at: data.data.created_at,
+          updated_at: data.data.updated_at,
+        };
+        
+        // Add notification for guest messages only, but only if we're not on the chat page
+        if (data.data.sender_type === 'guest') {
+          // Only create notification if user is not currently viewing the chat
+          const currentRoute = window.location.pathname;
+          if (currentRoute !== '/chat' && currentRoute !== '/chat/') {
+            // Use guest info directly from the WebSocket message instead of relying on conversation store
+            const guestInfo = data.data.guest_info;
+            if (guestInfo && notificationStore && typeof notificationStore.addChatNotification === 'function') {
+              notificationStore.addChatNotification(
+                data.data.conversation_id,
+                guestInfo.name,
+                data.data.message_type === 'text' ? data.data.content : `New ${data.data.message_type}`,
+                guestInfo.room_number
+              );
+            }
+          }
         }
+        
+        chatStore.handleNewMessage(message);
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error, 'Data:', data);
       }
-      
-      chatStore.handleNewMessage(message);
       break;
     case 'new_conversation':
       console.log('Received new conversation:', data);

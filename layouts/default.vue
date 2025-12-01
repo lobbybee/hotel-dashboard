@@ -209,6 +209,17 @@ const { totalUnreadCount } = storeToRefs(chatStore);
 const notificationStore = useNotificationStore();
 const { notifications, unreadCount } = storeToRefs(notificationStore);
 
+// Track if component is mounted to prevent DOM operations when unmounted
+const isMounted = ref(false);
+
+onMounted(() => {
+  isMounted.value = true;
+});
+
+onUnmounted(() => {
+  isMounted.value = false;
+});
+
 const userMenu = ref(null);
 const notificationMenu = ref(null);
 
@@ -395,7 +406,8 @@ const userMenuItems = ref([
 
 const toggleUserMenu = (event) => {
   try {
-    userMenu.value?.toggle(event);
+    if (!isMounted.value || !userMenu.value?.toggle) return;
+    userMenu.value.toggle(event);
   } catch (error) {
     console.warn('Error toggling user menu:', error);
     // Graceful fallback - do nothing if menu component is not available
@@ -404,7 +416,8 @@ const toggleUserMenu = (event) => {
 
 const toggleNotifications = (event) => {
   try {
-    notificationMenu.value?.toggle(event);
+    if (!isMounted.value || !notificationMenu.value?.toggle) return;
+    notificationMenu.value.toggle(event);
   } catch (error) {
     console.warn('Error toggling notification menu:', error);
     // Graceful fallback - do nothing if menu component is not available
@@ -450,6 +463,8 @@ const formatNotificationTime = (timestamp: Date): string => {
 
 const handleNotificationClick = (notification: any): void => {
   try {
+    if (!isMounted.value) return;
+    
     // Mark notification as read
     notificationStore.markAsRead(notification.id);
     
@@ -475,6 +490,8 @@ const handleNotificationClick = (notification: any): void => {
 
 const handleMarkAllAsRead = (): void => {
   try {
+    if (!isMounted.value) return;
+    
     notificationStore.markAllAsRead();
     // Close notification panel safely
     if (notificationMenu.value?.hide && typeof notificationMenu.value.hide === 'function') {
@@ -487,6 +504,8 @@ const handleMarkAllAsRead = (): void => {
 
 const handleRemoveNotification = (notificationId: string, event: Event): void => {
   try {
+    if (!isMounted.value) return;
+    
     event?.stopPropagation?.();
     notificationStore.removeNotification(notificationId);
   } catch (error) {
