@@ -61,9 +61,18 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   // Mark notification as read
   const markAsRead = (id: string) => {
-    const notification = notifications.value.find(n => n.id === id);
-    if (notification) {
-      notification.read = true;
+    try {
+      if (!id || typeof id !== 'string') {
+        console.warn('Invalid notification ID provided for marking as read:', id);
+        return;
+      }
+      
+      const notification = notifications.value.find(n => n && n.id === id);
+      if (notification) {
+        notification.read = true;
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error, 'ID:', id);
     }
   };
 
@@ -74,9 +83,18 @@ export const useNotificationStore = defineStore('notifications', () => {
 
   // Remove notification
   const removeNotification = (id: string) => {
-    const index = notifications.value.findIndex(n => n.id === id);
-    if (index > -1) {
-      notifications.value.splice(index, 1);
+    try {
+      if (!id || typeof id !== 'string') {
+        console.warn('Invalid notification ID provided:', id);
+        return;
+      }
+      
+      const index = notifications.value.findIndex(n => n && n.id === id);
+      if (index > -1) {
+        notifications.value.splice(index, 1);
+      }
+    } catch (error) {
+      console.error('Error removing notification:', error, 'ID:', id);
     }
   };
 
