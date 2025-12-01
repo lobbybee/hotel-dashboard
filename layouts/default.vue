@@ -190,7 +190,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useAuthStore } from '~/stores/auth';
 import { useChatStore } from '~/stores/chat';
 import { useNotificationStore } from '~/stores/notifications';
