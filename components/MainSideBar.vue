@@ -15,7 +15,7 @@
     <nav class="flex-1 overflow-y-auto px-2">
       <div class="px-4 pb-2">
         <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">
-          {{ userRole === 'manager' || userRole === 'hotel_admin' ? 'Manager' : 'Receptionist' }} Dashboard
+          {{ roleLabel }} Dashboard
         </span>
       </div>
 
@@ -37,9 +37,7 @@
 </template>
 
 <script setup>
-
-
-defineProps({
+const props = defineProps({
   userRole: {
     type: String,
     default: null
@@ -51,4 +49,17 @@ defineProps({
 })
 
 defineEmits(['navigate'])
+
+const getRoleLabel = (role) => {
+  const roleLabels = {
+    'hotel_admin': 'Hotel Admin',
+    'manager': 'Manager',
+    'receptionist': 'Receptionist',
+    'department_staff': 'Department Staff',
+    'other_staff': 'Other Staff'
+  };
+  return roleLabels[role] || role;
+};
+
+const roleLabel = computed(() => getRoleLabel(props.userRole));
 </script>

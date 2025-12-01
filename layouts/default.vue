@@ -54,7 +54,7 @@
                     {{ user?.first_name }} {{ user?.last_name }}
                   </p>
                   <p class="text-xs text-gray-500">
-                    {{ userRole === 'manager' || userRole === 'hotel_admin' ? 'Manager' : 'Receptionist' }}
+                    {{ getRoleLabel(userRole) }}
                   </p>
                 </div>
                 <Icon name="prime:chevron-down" class="hidden h-3 w-3 text-gray-500 xl:block" />
@@ -364,6 +364,17 @@ onMounted(() => {
   console.log('🏨 [COMPONENT] Hotel ID:', hotelId.value);
   console.log('📍 [COMPONENT] Current route:', route.path);
 });
+
+const getRoleLabel = (role) => {
+  const roleLabels = {
+    'hotel_admin': 'Hotel Admin',
+    'manager': 'Manager',
+    'receptionist': 'Receptionist',
+    'department_staff': 'Department Staff',
+    'other_staff': 'Other Staff'
+  };
+  return roleLabels[role] || role;
+};
 
 const navigation = computed(() => {
   const role = userRole.value;
