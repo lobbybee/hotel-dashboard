@@ -400,21 +400,29 @@ watch([isAuthenticated, user, hotelId, HotelData, RoomsData, StaffData], async (
   }
 }, { immediate: true });
 
-const userMenuItems = ref([
-  {
-    label: 'Settings',
-    icon: 'prime:cog',
-    route: '/settings'
-  },
-  {
-    separator: true
-  },
-  {
-    label: 'Sign out',
-    icon: 'prime:sign-out',
-    command: () => handleLogout()
+const userMenuItems = computed(() => {
+  const items = [
+    {
+      separator: true
+    },
+    {
+      label: 'Sign out',
+      icon: 'prime:sign-out',
+      command: () => handleLogout()
+    }
+  ];
+
+  // Only show settings for hotel_admin role
+  if (userRole.value === 'hotel_admin') {
+    items.unshift({
+      label: 'Settings',
+      icon: 'prime:cog',
+      route: '/settings'
+    });
   }
-]);
+
+  return items;
+});
 
 const toggleUserMenu = (event) => {
   try {
