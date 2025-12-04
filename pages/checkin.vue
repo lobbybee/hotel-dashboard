@@ -7,9 +7,9 @@
         <TabPanel header="Pending Stays">
           <CheckinPendingStaysTab />
         </TabPanel>
-        <TabPanel header="Manual Walk-in">
-          <!-- <CheckinManualWalkinTab /> -->
-        </TabPanel>
+         <!-- <TabPanel header="Manual Walk-in">
+           <CheckinManualWalkinTab />
+        </TabPanel>  -->
       </TabView>
     </div>
   </div>
