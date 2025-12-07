@@ -317,10 +317,10 @@ export const useCheckoutUser = () => {
     isLoading,
     asyncStatus
   } = useMutation({
-    mutation: async (stayId: string | number) => {
+    mutation: async ({ stayId, data }: { stayId: string | number; data?: { internal_rating?: number; internal_note?: string } }) => {
       const response = await API(`/stay-management/${stayId}/checkout/`, {
         method: 'POST',
-        body: {}
+        body: data || {}
       });
       return response;
     }

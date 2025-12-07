@@ -244,6 +244,36 @@
             Room {{ selectedStayForCheckout.room_details.room_number }} will be marked as "Cleaning" after checkout.
           </p>
         </div>
+
+        <!-- Internal Rating -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-700">Internal Rating (Optional)</label>
+          <div class="flex items-center gap-4">
+            <Rating 
+              v-model="checkoutData.internal_rating" 
+              :stars="5" 
+              :cancel="false"
+              class="flex"
+            />
+            <span v-if="checkoutData.internal_rating" class="text-sm text-gray-600">
+              {{ checkoutData.internal_rating }}/5
+            </span>
+          </div>
+          <p class="text-xs text-gray-500">Rate the guest's stay quality</p>
+        </div>
+
+        <!-- Internal Note -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-700">Internal Note (Optional)</label>
+          <Textarea 
+            v-model="checkoutData.internal_note"
+            rows="3"
+            cols="30"
+            class="w-full"
+            placeholder="Add any internal notes about the guest's stay..."
+          />
+          <p class="text-xs text-gray-500">These notes are for internal use only</p>
+        </div>
       </div>
       <template #footer>
         <Button label="Cancel" text @click="isCheckoutDialogVisible = false" />
@@ -261,6 +291,8 @@ import Badge from 'primevue/badge';
 import ProgressSpinner from 'primevue/progressspinner';
 import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
+import Rating from 'primevue/rating';
+import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 
 import { useListCheckedInUsers, useCheckoutUser } from '~/composables/checkin-manager';
@@ -287,6 +319,10 @@ const filteredStays = computed(() => {
 const { checkoutUser, isLoading: isCheckingOut } = useCheckoutUser();
 const isCheckoutDialogVisible = ref(false);
 const selectedStayForCheckout = ref<any>(null);
+const checkoutData = ref({
+  internal_rating: null as number | null,
+  internal_note: ''
+});
 
 // --- GUEST INFO LOGIC ---
 const isGuestInfoDialogVisible = ref(false);
@@ -294,6 +330,10 @@ const selectedStayForGuestInfo = ref<any>(null);
 
 const handleCheckout = (stay: any) => {
   selectedStayForCheckout.value = stay;
+  checkoutData.value = {
+    internal_rating: null,
+    internal_note: ''
+  };
   isCheckoutDialogVisible.value = true;
 };
 
@@ -316,7 +356,15 @@ const handleConfirmCheckout = async () => {
   if (!selectedStayForCheckout.value) return;
 
   try {
-    await checkoutUser(selectedStayForCheckout.value.id);
+    const checkoutPayload = {
+      ...(checkoutData.value.internal_rating && { internal_rating: checkoutData.value.internal_rating }),
+      ...(checkoutData.value.internal_note && { internal_note: checkoutData.value.internal_note })
+    };
+
+    await checkoutUser({
+      stayId: selectedStayForCheckout.value.id,
+      data: checkoutPayload
+    });
 
     toast.add({
       severity: 'success',
