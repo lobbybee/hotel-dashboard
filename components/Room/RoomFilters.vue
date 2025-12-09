@@ -25,7 +25,7 @@
                 />
             </div>
         </div>
-        
+
         <div class="flex flex-col sm:flex-row sm:items-center gap-4 mt-4 pt-4 border-t border-gray-200">
             <span class="text-sm font-medium text-gray-700">Floor</span>
             <div class="flex flex-wrap items-center gap-2">
@@ -36,13 +36,13 @@
                     optionValue="value"
                     @update:modelValue="$emit('update:selectedFloor', $event)"
                 />
-                <Button
+                <!-- <Button
                     icon="pi pi-plus"
                     text
                     rounded
                     aria-label="Add floor"
                     @click="$emit('add-floor')"
-                />
+                /> -->
             </div>
         </div>
     </div>

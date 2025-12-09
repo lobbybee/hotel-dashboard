@@ -141,15 +141,15 @@
 
                         <div class="flex items-center gap-2">
                             <Button
-                                icon="pi pi-eye"
-                                @click="togglePasswordVisibility(credential.id)"
+                                icon="pi pi-copy"
+                                @click="copyPassword(credential.password)"
                                 size="small"
                                 text
                                 rounded
-                                :title="passwordVisibility[credential.id] ? 'Hide password' : 'Show password'"
+                                title="Copy password"
                             />
                             <Button
-                                :icon="credential.is_active ? 'pi pi-eye-slash' : 'pi pi-eye'"
+                                :icon="credential.is_active ? 'pi pi-times-circle' : 'pi pi-check-circle'"
                                 @click="toggleActiveStatus(credential.id)"
                                 size="small"
                                 text
@@ -173,11 +173,6 @@
                                 severity="danger"
                             />
                         </div>
-                    </div>
-
-                    <!-- Password visibility toggle -->
-                    <div v-if="passwordVisibility[credential.id]" class="mt-2 p-2 bg-gray-100 rounded">
-                        <span class="text-sm font-mono">{{ credential.password }}</span>
                     </div>
                 </div>
             </div>
@@ -219,22 +214,13 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Password <span class="text-red-500">*</span>
                         </label>
-                        <div class="flex gap-2">
-                            <InputText
-                                v-model="form.password"
-                                :type="showPassword ? 'text' : 'password'"
-                                placeholder="Enter WiFi password"
-                                class="flex-1"
-                                :class="{ 'p-invalid': errors.password }"
-                            />
-                            <Button
-                                :icon="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"
-                                @click="showPassword = !showPassword"
-                                type="button"
-                                text
-                                rounded
-                            />
-                        </div>
+                        <InputText
+                            v-model="form.password"
+                            type="password"
+                            placeholder="Enter WiFi password"
+                            class="w-full"
+                            :class="{ 'p-invalid': errors.password }"
+                        />
                         <small v-if="errors.password" class="p-error">{{ errors.password }}</small>
                     </div>
 
@@ -369,8 +355,6 @@ const toast = useToast();
 
 // State
 const pageSize = ref(10);
-const passwordVisibility = ref<Record<number, boolean>>({});
-const showPassword = ref(false);
 const dialogVisible = ref(false);
 const deleteDialogVisible = ref(false);
 const editingCredential = ref<WifiCredential | null>(null);
@@ -493,7 +477,6 @@ const resetForm = () => {
     form.room_category = undefined;
     form.is_active = true;
     form.id = undefined;
-    showPassword.value = false;
 };
 
 const validateForm = (): boolean => {
@@ -607,10 +590,6 @@ const deleteCredential = async () => {
     } finally {
         isDeleting.value = false;
     }
-};
-
-const togglePasswordVisibility = (credentialId: number) => {
-    passwordVisibility.value[credentialId] = !passwordVisibility.value[credentialId];
 };
 
 const copyPassword = async (password: string) => {

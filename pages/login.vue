@@ -40,7 +40,9 @@
               </NuxtLink>
             </div>
 
-            <Message v-if="error" severity="error" :closable="false" class="w-full" />
+            <Message v-if="error" severity="error" :closable="false" class="w-full">
+              {{ error }}
+            </Message>
 
             <Button
               type="submit"
@@ -69,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { useAPI, APIError } from '~/composables/useAPI';
+import { useAPI, APIError, ForbiddenUserError } from '~/composables/useAPI';
 
 definePageMeta({
   layout: 'auth'
@@ -104,7 +106,9 @@ async function handleLogin() {
       router.push('/') // Fallback
     }
   } catch (err) {
-    if (err instanceof APIError && err.data && err.data.detail) {
+    if (err instanceof ForbiddenUserError) {
+      error.value = err.message
+    } else if (err instanceof APIError && err.data && err.data.detail) {
       error.value = err.data.detail
     } else {
       error.value = err.message || 'Invalid username or password'

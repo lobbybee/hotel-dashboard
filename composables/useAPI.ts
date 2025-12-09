@@ -21,6 +21,13 @@ export class APIError extends Error {
   }
 }
 
+export class ForbiddenUserError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ForbiddenUserError";
+  }
+}
+
 export const useAPI = () => {
   const config = useRuntimeConfig();
   const apiURL = config.public.apiUrl || 'http://localhost:8000/api';
@@ -113,12 +120,26 @@ export const useAPI = () => {
         method: 'POST',
         body: credentials,
       });
+
+      // Check if user type is forbidden before setting any tokens
+      const forbiddenRoles = ['platform_admin', 'platform_staff', 'other_staff'];
+      const userRole = response.user?.user_type;
+      
+      if (forbiddenRoles.includes(userRole)) {
+        // Don't set tokens, throw error immediately
+        throw new ForbiddenUserError("Access denied: Your user type is not allowed to access this application");
+      }
+
+      // Only set tokens and user if role is allowed
       authToken.value = response.access;
       refreshToken.value = response.refresh;
       authStore.setUser(response.user);
       return response;
     } catch (err) {
       clearAuthData();
+      if (err instanceof ForbiddenUserError) {
+        throw err;
+      }
       if (err instanceof APIError) {
         throw err;
       }
