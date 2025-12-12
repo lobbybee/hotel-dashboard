@@ -7,6 +7,7 @@ interface User {
   user_type: 'hotel_admin' | 'manager' | 'receptionist' | 'department_staff';
   phone_number: string;
   hotel_id: string;
+  hotel_name?: string;
   first_name?: string;
   last_name?: string;
 }
@@ -35,8 +36,13 @@ export const useAuthStore = defineStore('auth', {
       if (process.client) {
         if (newUser) {
           localStorage.setItem('auth_user', JSON.stringify(newUser));
+          // Save hotel name separately for easy access
+          if (newUser.hotel_name) {
+            localStorage.setItem('hotel_name', newUser.hotel_name);
+          }
         } else {
           localStorage.removeItem('auth_user');
+          localStorage.removeItem('hotel_name');
         }
       }
     },
@@ -53,6 +59,17 @@ export const useAuthStore = defineStore('auth', {
           }
         }
       }
+    },
+    getHotelName(): string | null {
+      if (process.client) {
+        // First try to get from current user
+        if (this.user?.hotel_name) {
+          return this.user.hotel_name;
+        }
+        // Fallback to localStorage
+        return localStorage.getItem('hotel_name');
+      }
+      return null;
     },
   },
 });

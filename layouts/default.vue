@@ -34,15 +34,16 @@
             </Button>
             <div>
               <h1 class="text-lg font-semibold text-gray-900">{{ pageTitle }}</h1>
+              <p class="text-sm text-gray-500">{{ pageSubtitle }}</p>
             </div>
           </div>
 
           <div class="flex items-center gap-2 sm:gap-4">
 
 
-            <Button 
-              text 
-              rounded 
+            <Button
+              text
+              rounded
               aria-label="Notifications"
               @click="toggleNotifications"
             >
@@ -54,18 +55,40 @@
 
             <div class="relative">
               <Button @click="toggleUserMenu" text class="flex items-center gap-2 rounded-full p-1 text-left">
-                <Avatar :label="userInitials" shape="circle" class="bg-gradient-to-br from-orange-400 to-blue-400 text-white" />
-                <div class="hidden xl:block">
-                  <p class="truncate text-sm font-semibold text-gray-800">
-                    {{ user?.first_name }} {{ user?.last_name }}
-                  </p>
-                  <p class="text-xs text-gray-500">
-                    {{ getRoleLabel(userRole) }}
+                <!-- Smaller avatar for mobile to fit name -->
+                <Avatar :label="userInitials" shape="circle" size="small" class="bg-gradient-to-br from-orange-400 to-blue-400 text-white flex-shrink-0" />
+                
+                <!-- Show name on mobile (md and up), full info on xl -->
+                <div class="hidden md:block xl:hidden">
+                  <p class="truncate text-sm font-medium text-gray-800">
+                    {{ userDisplayName }}
                   </p>
                 </div>
-                <Icon name="prime:chevron-down" class="hidden h-3 w-3 text-gray-500 xl:block" />
+                
+                <!-- Full info on desktop -->
+                <div class="hidden xl:block">
+                  <p class="truncate text-sm font-semibold text-gray-800">
+                    {{ user?.first_name ? `${user.first_name} ${user.last_name || ''}` : user?.username }}
+                  </p>
+                  <p class="text-xs text-gray-500 truncate">
+                    {{ user?.hotel_name || getRoleLabel(userRole) }}
+                  </p>
+                </div>
+                
+                <!-- Chevron icon on md and up -->
+                <Icon name="prime:chevron-down" class="hidden h-3 w-3 text-gray-500 md:block" />
               </Button>
               <Menu ref="userMenu" :model="userMenuItems" :popup="true" class="mt-2 w-60">
+                <template #start>
+                  <div class="px-4 py-3 border-b border-gray-200">
+                    <p class="text-sm font-semibold text-gray-900">
+                      {{ user?.first_name ? `${user.first_name} ${user.last_name || ''}` : user?.username || 'User' }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      {{ getRoleLabel(userRole) }}
+                    </p>
+                  </div>
+                </template>
                 <template #item="{ item, props }">
                   <div v-if="item.separator" class="my-1 border-t border-gray-200" />
                   <NuxtLink v-else-if="item.route" :to="item.route" class="flex cursor-pointer items-center rounded-md p-2 hover:bg-gray-100" v-bind="props.action">
@@ -80,9 +103,9 @@
               </Menu>
 
               <!-- Notifications Panel -->
-              <Menu 
-                ref="notificationMenu" 
-                :popup="true" 
+              <Menu
+                ref="notificationMenu"
+                :popup="true"
                 :model="[]"
                 :appendTo="body"
                 :autoZIndex="true"
@@ -92,7 +115,7 @@
                   <div class="p-4">
                     <div class="flex items-center justify-between mb-3">
                       <h3 class="font-semibold text-gray-900">Notifications</h3>
-                      <button 
+                      <button
                         @click="handleMarkAllAsRead"
                         v-if="unreadCount > 0"
                         class="text-xs text-blue-600 hover:text-blue-800"
@@ -100,16 +123,16 @@
                         Mark all as read
                       </button>
                     </div>
-                    
+
                     <div v-if="notifications.length === 0" class="text-center py-8 text-gray-500">
                       <Icon name="prime:bell" class="text-3xl mb-3 text-gray-400" />
                       <p class="text-sm font-medium">No notifications</p>
                       <p class="text-xs mt-1">You'll see notifications here</p>
                     </div>
-                    
+
                     <div v-else class="max-h-96 overflow-y-auto">
-                      <div 
-                        v-for="notification in notifications.slice(0, 10)" 
+                      <div
+                        v-for="notification in notifications.slice(0, 10)"
                         :key="notification.id"
                         class="mb-2 p-3 rounded-lg border cursor-pointer transition-colors"
                         :class="[
@@ -120,10 +143,10 @@
                       >
                         <div class="flex items-start gap-3">
                           <div class="flex-shrink-0 mt-1">
-                            <Icon 
-                              :name="getNotificationIcon(notification.type)" 
+                            <Icon
+                              :name="getNotificationIcon(notification.type)"
                               :class="getNotificationIconClass(notification.type)"
-                              class="h-4 w-4" 
+                              class="h-4 w-4"
                             />
                           </div>
                           <div class="flex-1 min-w-0">
@@ -131,7 +154,7 @@
                             <p class="text-xs text-gray-600 mt-1">{{ notification.message }}</p>
                             <p class="text-xs text-gray-500 mt-1">{{ formatNotificationTime(notification.timestamp) }}</p>
                           </div>
-                          <button 
+                          <button
                             @click="handleRemoveNotification(notification.id, $event)"
                             class="flex-shrink-0 text-gray-400 hover:text-gray-600"
                           >
@@ -140,7 +163,7 @@
                         </div>
                       </div>
                     </div>
-                    
+
                     <div v-if="notifications.length > 10" class="mt-3 pt-2 border-t border-gray-200 text-center">
                       <button class="text-xs text-blue-600 hover:text-blue-800">View all notifications</button>
                     </div>
@@ -222,7 +245,7 @@ const isMounted = ref(false);
 // Initialize chat store for global WebSocket connection
 onMounted(() => {
   isMounted.value = true;
-  
+
   // Initialize chat store globally to establish WebSocket connection
   // This ensures notifications work even when not on chat page
   chatStore.initChat();
@@ -401,25 +424,22 @@ watch([isAuthenticated, user, hotelId, HotelData, RoomsData, StaffData], async (
 }, { immediate: true });
 
 const userMenuItems = computed(() => {
-  const items = [
-    {
-      separator: true
-    },
-    {
-      label: 'Sign out',
-      icon: 'prime:sign-out',
-      command: () => handleLogout()
-    }
-  ];
+  const items = [];
 
   // Only show settings for hotel_admin role
   if (userRole.value === 'hotel_admin') {
-    items.unshift({
+    items.push({
       label: 'Settings',
       icon: 'prime:cog',
       route: '/settings'
     });
   }
+
+  items.push({
+    label: 'Sign out',
+    icon: 'prime:sign-out',
+    command: () => handleLogout()
+  });
 
   return items;
 });
@@ -474,7 +494,7 @@ const getNotificationIconClass = (type: string): string => {
 const formatNotificationTime = (timestamp: Date): string => {
   const now = new Date();
   const diff = now.getTime() - timestamp.getTime();
-  
+
   if (diff < 60000) return 'Just now';
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
@@ -484,15 +504,15 @@ const formatNotificationTime = (timestamp: Date): string => {
 const handleNotificationClick = (notification: any): void => {
   try {
     if (!isMounted.value) return;
-    
+
     // Mark notification as read
     notificationStore.markAsRead(notification.id);
-    
+
     // Handle chat notifications by navigating to chat
     if (notification.type === 'chat' && notification.data?.conversationId) {
       navigateTo('/chat');
     }
-    
+
     // Close notification panel safely
     if (notificationMenu.value?.hide && typeof notificationMenu.value.hide === 'function') {
       notificationMenu.value.hide();
@@ -511,7 +531,7 @@ const handleNotificationClick = (notification: any): void => {
 const handleMarkAllAsRead = (): void => {
   try {
     if (!isMounted.value) return;
-    
+
     notificationStore.markAllAsRead();
     // Close notification panel safely
     if (notificationMenu.value?.hide && typeof notificationMenu.value.hide === 'function') {
@@ -525,7 +545,7 @@ const handleMarkAllAsRead = (): void => {
 const handleRemoveNotification = (notificationId: string, event: Event): void => {
   try {
     if (!isMounted.value) return;
-    
+
     event?.stopPropagation?.();
     notificationStore.removeNotification(notificationId);
   } catch (error) {
@@ -546,11 +566,17 @@ const handleLogout = async () => {
 };
 
 const pageTitle = computed(() => {
+  // Get hotel name from auth store (which checks localStorage)
+  const hotelName = authStore.getHotelName();
+  return hotelName || 'Hotel Dashboard';
+});
+
+const pageSubtitle = computed(() => {
   const titleMap = {
     '/': 'Dashboard',
     '/checkin': 'Check-in Management',
     '/receptionist/rooms': 'Room Management',
-    '/checkout': 'Check-out Management',
+    '/checkout': 'Guest Management',
     '/receptionist/whatsapp': 'WhatsApp Messages',
     '/receptionist/service-requests': 'Service Requests',
     '/manager/hotel-profile': 'Hotel Profile',
@@ -586,6 +612,12 @@ const getRoleLabel = (role) => {
   return roleLabels[role] || role;
 };
 
+// Create a compact display name for mobile view
+const userDisplayName = computed(() => {
+  const fullName = user.value?.first_name ? `${user.value.first_name} ${user.value.last_name || ''}` : user.value?.username;
+  return fullName && fullName.length > 10 ? fullName.substring(0, 10) + '...' : fullName;
+});
+
 const navigation = computed(() => {
   const role = userRole.value;
   console.log('🧭 [NAVIGATION] Computing navigation for role:', role);
@@ -593,7 +625,7 @@ const navigation = computed(() => {
     return [
       { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
       { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
-      { name: 'Check-out', href: '/checkout', icon: 'prime:sign-out' },
+      { name: 'Guest Management', href: '/checkout', icon: 'prime:sign-out' },
       { name: 'Hotel Profile', href: '/hotel-profile', icon: 'prime:building' },
       { name: 'Staff Management', href: '/staff', icon: 'prime:users' },
       { name: 'Room Management', href: '/rooms', icon: 'prime:home' },
@@ -608,7 +640,7 @@ const navigation = computed(() => {
     return [
       { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
       { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
-      { name: 'Check-out', href: '/checkout', icon: 'prime:sign-out' },
+      { name: 'Guest Management', href: '/checkout', icon: 'prime:sign-out' },
       { name: 'Staff Management', href: '/staff', icon: 'prime:users' },
       { name: 'Room Management', href: '/rooms', icon: 'prime:home' },
       // { name: 'Departments', href: '/departments', icon: 'prime:briefcase' },
@@ -622,7 +654,7 @@ const navigation = computed(() => {
       { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
       { name: 'Room Management', href: '/rooms', icon: 'prime:home' },
       { name: 'Payment QR Codes', href: '/paymentQR', icon: 'prime:qrcode' },
-      { name: 'Check-out', href: '/checkout', icon: 'prime:sign-out' },
+      { name: 'Guest Management', href: '/checkout', icon: 'prime:sign-out' },
       { name: 'Reports', href: '/reports', icon: 'prime:file-pdf' },
       { name: 'Chat', href: '/chat', icon: 'prime:comments' },
     ];
