@@ -31,8 +31,11 @@
                     room.room_number
                 }}</span>
                 <span class="text-xs text-gray-600 truncate">{{
-                    getCategoryName(room.category.id, categories)
+                    getCategoryName(room.category.id, categories)[0]
                 }}</span>
+                <span class="text-xs text-gray-600 truncate"> ₹ {{
+                                   getCategoryName(room.category.id, categories)[1]
+                               }}</span>
                 <Tag
                     :value="
                         room.status.charAt(0).toUpperCase() +
@@ -115,13 +118,13 @@ const emit = defineEmits<{
 
 const getCategoryName = (categoryId: number, categories: Category[]) => {
     const category = categories.find((c) => c.id === categoryId);
-    return category?.name || "Unknown";
+    return [category?.name,category?.base_price] || ["Unknown","Unknown"];
 };
 
 const getStatusSeverity = (status: string) => {
     const severityMap: Record<string, string> = {
         available: "success",
-        occupied: "info", 
+        occupied: "info",
         cleaning: "warning",
         maintenance: "danger",
         out_of_order: "secondary",

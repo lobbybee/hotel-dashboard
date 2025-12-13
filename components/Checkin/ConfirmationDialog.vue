@@ -43,13 +43,7 @@
             <Dropdown v-if="editGuestMode" v-model="guestEdits.preferred_language" :options="languageOptions" optionLabel="name" optionValue="code" class="w-full text-sm" />
             <p v-else><strong>{{ getLanguageName(stay.guest.preferred_language) || 'Not specified' }}</strong></p>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">24 Hours</label>
-            <div class="flex items-center gap-2">
-              <Checkbox inputId="hours_24" v-model="guestEdits.hours_24" binary />
-              <label for="hours_24" class="text-sm cursor-pointer">24 hours</label>
-            </div>
-          </div>
+
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
             <Badge :value="stay.guest.status" :severity="getStatusSeverity(stay.guest.status)" />
@@ -171,6 +165,13 @@
                 <label for="register_number" class="block text-sm font-medium text-gray-700 mb-1">Register Number</label>
                 <InputText id="register_number" v-model="registerNumber" class="w-full" />
             </div>
+            <div>
+                     <label class="block text-xs font-medium text-gray-500 mb-1">12hrs or 24 hrs</label>
+                     <div class="flex items-center gap-2">
+                       <Checkbox inputId="hours_24" v-model="guestEdits.hours_24" binary />
+                       <label for="hours_24" class="text-sm cursor-pointer font-bold">24 hours</label>
+                     </div>
+                   </div>
         </div>
       </div>
     </div>

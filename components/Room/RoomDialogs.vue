@@ -143,28 +143,28 @@
             <!-- Room Number Prefix and Suffix -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <FloatLabel>
-                        <InputText
-                            id="room_prefix"
-                            v-model="bulkAddForm.roomPrefix"
-                            class="w-full"
-                            placeholder="e.g., A, B, Room"
-                        />
-                        <label for="room_prefix">Room Number Prefix (Optional)</label>
-                    </FloatLabel>
+                    <label for="room_prefix" class="block text-sm font-medium text-gray-700 mb-2">
+                        Room Number Prefix (Optional)
+                    </label>
+                    <InputText
+                        id="room_prefix"
+                        v-model="bulkAddForm.roomPrefix"
+                        class="w-full"
+                        placeholder="e.g., A, B, Room"
+                    />
                     <small class="text-gray-500">Prefix added before room number</small>
                 </div>
                 
                 <div>
-                    <FloatLabel>
-                        <InputText
-                            id="room_suffix"
-                            v-model="bulkAddForm.roomSuffix"
-                            class="w-full"
-                            placeholder="e.g., A, B, Room"
-                        />
-                        <label for="room_suffix">Room Number Suffix (Optional)</label>
-                    </FloatLabel>
+                    <label for="room_suffix" class="block text-sm font-medium text-gray-700 mb-2">
+                        Room Number Suffix (Optional)
+                    </label>
+                    <InputText
+                        id="room_suffix"
+                        v-model="bulkAddForm.roomSuffix"
+                        class="w-full"
+                        placeholder="e.g., A, B, Room"
+                    />
                     <small class="text-gray-500">Suffix added after room number</small>
                 </div>
             </div>
@@ -175,19 +175,19 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <FloatLabel>
-                        <InputNumber
-                            id="start_room_number"
-                            v-model="bulkAddForm.startRoomNumber"
-                            class="w-full"
-                            :class="{
-                                'p-invalid': bulkAddErrors.startRoomNumber,
-                            }"
-                            :min="1"
-                            :useGrouping="false"
-                        />
-                        <label for="start_room_number">Start Room Number</label>
-                    </FloatLabel>
+                    <label for="start_room_number" class="block text-sm font-medium text-gray-700 mb-2">
+                        Start Room Number
+                    </label>
+                    <InputNumber
+                        id="start_room_number"
+                        v-model="bulkAddForm.startRoomNumber"
+                        class="w-full"
+                        :class="{
+                            'p-invalid': bulkAddErrors.startRoomNumber,
+                        }"
+                        :min="1"
+                        :useGrouping="false"
+                    />
                     <small
                         v-if="bulkAddErrors.startRoomNumber"
                         class="p-error"
@@ -196,19 +196,19 @@
                 </div>
 
                 <div>
-                    <FloatLabel>
-                        <InputNumber
-                            id="end_room_number"
-                            v-model="bulkAddForm.endRoomNumber"
-                            class="w-full"
-                            :class="{
-                                'p-invalid': bulkAddErrors.endRoomNumber,
-                            }"
-                            :min="bulkAddForm.startRoomNumber"
-                            :useGrouping="false"
-                        />
-                        <label for="end_room_number">End Room Number</label>
-                    </FloatLabel>
+                    <label for="end_room_number" class="block text-sm font-medium text-gray-700 mb-2">
+                        End Room Number
+                    </label>
+                    <InputNumber
+                        id="end_room_number"
+                        v-model="bulkAddForm.endRoomNumber"
+                        class="w-full"
+                        :class="{
+                            'p-invalid': bulkAddErrors.endRoomNumber,
+                        }"
+                        :min="bulkAddForm.startRoomNumber"
+                        :useGrouping="false"
+                    />
                     <small v-if="bulkAddErrors.endRoomNumber" class="p-error">{{
                         bulkAddErrors.endRoomNumber
                     }}</small>
@@ -217,38 +217,38 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <FloatLabel>
-                        <Dropdown
-                            id="floor"
-                            v-model="bulkAddForm.floor"
-                            :options="floorOptions"
-                            optionLabel="label"
-                            optionValue="value"
-                            class="w-full"
-                            :class="{ 'p-invalid': bulkAddErrors.floor }"
-                            placeholder="Select Floor"
-                        />
-                        <label for="floor">Floor</label>
-                    </FloatLabel>
+                    <label for="floor" class="block text-sm font-medium text-gray-700 mb-2">
+                        Floor
+                    </label>
+                    <Dropdown
+                        id="floor"
+                        v-model="bulkAddForm.floor"
+                        :options="floorOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        class="w-full"
+                        :class="{ 'p-invalid': bulkAddErrors.floor }"
+                        placeholder="Select Floor"
+                    />
                     <small v-if="bulkAddErrors.floor" class="p-error">{{
                         bulkAddErrors.floor
                     }}</small>
                 </div>
 
                 <div>
-                    <FloatLabel>
-                        <Dropdown
-                            id="category_id"
-                            v-model="bulkAddForm.categoryId"
-                            :options="categories"
-                            optionLabel="name"
-                            optionValue="id"
-                            class="w-full"
-                            :class="{ 'p-invalid': bulkAddErrors.categoryId }"
-                            placeholder="Select Category"
-                        />
-                        <label for="category_id">Room Category</label>
-                    </FloatLabel>
+                    <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Room Category
+                    </label>
+                    <Dropdown
+                        id="category_id"
+                        v-model="bulkAddForm.categoryId"
+                        :options="categoriesWithPrice"
+                        optionLabel="displayName"
+                        optionValue="id"
+                        class="w-full"
+                        :class="{ 'p-invalid': bulkAddErrors.categoryId }"
+                        placeholder="Select Category"
+                    />
                     <small v-if="bulkAddErrors.categoryId" class="p-error">{{
                         bulkAddErrors.categoryId
                     }}</small>
@@ -492,7 +492,6 @@ import InputNumber from "primevue/inputnumber";
 import Textarea from "primevue/textarea";
 import Dropdown from "primevue/dropdown";
 import Checkbox from "primevue/checkbox";
-import FloatLabel from "primevue/floatlabel";
 
 interface Category {
     id: number;
@@ -592,6 +591,14 @@ const floorOptions = computed(() => {
     return Array.from({ length: 100 }, (_, i) => ({
         label: `Floor ${i + 1}`,
         value: i + 1
+    }));
+});
+
+// Categories with price for dropdown display
+const categoriesWithPrice = computed(() => {
+    return props.categories.map(category => ({
+        ...category,
+        displayName: `${category.name} - ₹${category.base_price.toLocaleString('en-IN')}`
     }));
 });
 
