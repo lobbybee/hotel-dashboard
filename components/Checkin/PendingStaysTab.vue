@@ -146,6 +146,7 @@
       v-model:visible="isCheckinDialogVisible"
       :stay="selectedStayForCheckin"
       :is-confirming="isConfirmingCheckin"
+      :flag-summary="selectedStayForCheckin?.flag_summary"
       @confirmed="handleConfirmCheckin"
     />
 

@@ -264,15 +264,39 @@
 
         <!-- Internal Note -->
         <div class="space-y-2">
-          <label class="block text-sm font-medium text-gray-700">Internal Note (Optional)</label>
+          <label class="block text-sm font-medium text-gray-700">
+            Internal Note 
+            <span v-if="checkoutData.flag_user" class="text-red-600 font-medium">*</span>
+            <span v-else class="text-gray-400">(Optional)</span>
+          </label>
           <Textarea 
             v-model="checkoutData.internal_note"
             rows="3"
             cols="30"
             class="w-full"
+            :class="{ 'p-invalid': checkoutData.flag_user && !checkoutData.internal_note.trim() }"
             placeholder="Add any internal notes about the guest's stay..."
           />
           <p class="text-xs text-gray-500">These notes are for internal use only</p>
+        </div>
+
+        <!-- Flag User -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <Checkbox 
+              inputId="flag_user" 
+              v-model="checkoutData.flag_user" 
+              binary 
+            />
+            <label for="flag_user" class="text-sm font-medium text-gray-700 cursor-pointer">
+              Flag this user
+            </label>
+          </div>
+          <p v-if="checkoutData.flag_user" class="text-xs text-amber-600 flex items-start gap-1">
+            <i class="pi pi-info-circle mt-0.5"></i>
+            <span>Flagging this user will alert hotels on future check-in. Internal note is required when flagging.</span>
+          </p>
+          <p v-else class="text-xs text-gray-500">Flag guests who may need special attention in future stays</p>
         </div>
       </div>
       <template #footer>
@@ -321,7 +345,8 @@ const isCheckoutDialogVisible = ref(false);
 const selectedStayForCheckout = ref<any>(null);
 const checkoutData = ref({
   internal_rating: null as number | null,
-  internal_note: ''
+  internal_note: '',
+  flag_user: false
 });
 
 // --- GUEST INFO LOGIC ---
@@ -332,7 +357,8 @@ const handleCheckout = (stay: any) => {
   selectedStayForCheckout.value = stay;
   checkoutData.value = {
     internal_rating: null,
-    internal_note: ''
+    internal_note: '',
+    flag_user: false
   };
   isCheckoutDialogVisible.value = true;
 };
@@ -355,11 +381,27 @@ const handleExtendStay = () => {
 const handleConfirmCheckout = async () => {
   if (!selectedStayForCheckout.value) return;
 
+  // Validation: internal note is required when flag_user is true
+  if (checkoutData.value.flag_user && !checkoutData.value.internal_note.trim()) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Validation Error',
+      detail: 'Internal note is required when flagging a user. Please add a note explaining the reason for flagging.',
+      life: 5000
+    });
+    return;
+  }
+
   try {
-    const checkoutPayload = {
+    const checkoutPayload: any = {
       ...(checkoutData.value.internal_rating && { internal_rating: checkoutData.value.internal_rating }),
       ...(checkoutData.value.internal_note && { internal_note: checkoutData.value.internal_note })
     };
+
+    // Include flag_user if it's true
+    if (checkoutData.value.flag_user) {
+      checkoutPayload.flag_user = true;
+    }
 
     await checkoutUser({
       stayId: selectedStayForCheckout.value.id,
@@ -369,7 +411,7 @@ const handleConfirmCheckout = async () => {
     toast.add({
       severity: 'success',
       summary: 'Checked Out',
-      detail: `${selectedStayForCheckout.value.guest.full_name} has been checked out successfully.`,
+      detail: `${selectedStayForCheckout.value.guest.full_name} has been checked out successfully${checkoutData.value.flag_user ? ' and flagged for future attention.' : '.'}`,
       life: 4000
     });
 

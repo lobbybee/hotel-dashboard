@@ -1,7 +1,9 @@
 <template>
   <Dialog :visible="visible" @update:visible="emit('update:visible', $event)" modal header="Confirm Guest Check-in" :style="{ width: '550px' }">
     <div v-if="stay" class="space-y-4">
-      
+
+
+
       <!-- Guest Details -->
       <div class="border-b pb-4">
         <div class="flex items-center justify-between mb-2">
@@ -40,6 +42,13 @@
             <label class="block text-xs font-medium text-gray-500 mb-1">Preferred Language</label>
             <Dropdown v-if="editGuestMode" v-model="guestEdits.preferred_language" :options="languageOptions" optionLabel="name" optionValue="code" class="w-full text-sm" />
             <p v-else><strong>{{ getLanguageName(stay.guest.preferred_language) || 'Not specified' }}</strong></p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">24 Hours</label>
+            <div class="flex items-center gap-2">
+              <Checkbox inputId="hours_24" v-model="guestEdits.hours_24" binary />
+              <label for="hours_24" class="text-sm cursor-pointer">24 hours</label>
+            </div>
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
@@ -122,6 +131,8 @@
       <!-- Stay Selection -->
       <div>
         <h4 class="font-semibold text-lg mb-2">Stay Details</h4>
+        <!-- Flag Warnings - Top Priority -->
+            <FlagWarningAccordion v-if="flagSummary" :flagSummary="flagSummary" class="mb-4" />
         <div class="pt-4 space-y-4">
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -139,15 +150,15 @@
                     {{ stay.room ? 'Room' : 'Assign Room' }}
                     <span v-if="stay.room && selectedRoom !== stay.room.id" class="text-amber-500 text-xs ml-2">(Change Room)</span>
                 </label>
-                <Dropdown 
-                    id="room" 
-                    v-model="selectedRoom" 
-                    :options="rooms" 
-                    optionLabel="room_number" 
-                    optionValue="id" 
-                    :placeholder="stay.room ? stay.room.room_number + ' (Current)' : 'Select a Room'" 
-                    class="w-full" 
-                    :loading="isRoomsLoading" 
+                <Dropdown
+                    id="room"
+                    v-model="selectedRoom"
+                    :options="rooms"
+                    optionLabel="room_number"
+                    optionValue="id"
+                    :placeholder="stay.room ? stay.room.room_number + ' (Current)' : 'Select a Room'"
+                    class="w-full"
+                    :loading="isRoomsLoading"
                 />
             </div>
 
@@ -183,11 +194,13 @@ import Textarea from 'primevue/textarea';
 import { useFetchRooms, useFetchRoomCategories, useFetchHotelRoomFloors } from '~/composables/useHotel';
 
 import InputText from 'primevue/inputtext';
+import FlagWarningAccordion from './FlagWarningAccordion.vue';
 
 const props = defineProps({
   visible: Boolean,
   stay: Object as () => any,
   isConfirming: Boolean,
+  flagSummary: Object as () => any,
 });
 
 const emit = defineEmits(['update:visible', 'confirmed']);
@@ -206,7 +219,8 @@ const guestEdits = ref({
   nationality: '',
   date_of_birth: null as Date | null,
   preferred_language: '',
-  notes: ''
+  notes: '',
+  hours_24: false
 });
 
 // Language options
@@ -274,15 +288,15 @@ const getBookingStatusSeverity = (status: string) => {
 };
 
 const confirmAndCheckin = () => {
-  console.log('confirmAndCheckin called', { 
-    selectedRoom: selectedRoom.value, 
+  console.log('confirmAndCheckin called', {
+    selectedRoom: selectedRoom.value,
     stayRoom: props.stay?.room?.id,
     hasRoom: !!props.stay?.room,
     checkOutDate: checkOutDate.value,
     editGuestMode: editGuestMode.value,
     guestEdits: guestEdits.value
   });
-  
+
   const verifyData: any = {
     register_number: registerNumber.value
   };
@@ -300,7 +314,7 @@ const confirmAndCheckin = () => {
   // Include guest updates if edit mode is enabled and there are changes
   if (editGuestMode.value) {
     const guestUpdates: any = {};
-    
+
     // Only include fields that have changed
     if (guestEdits.value.full_name && guestEdits.value.full_name !== props.stay?.guest?.full_name) {
       guestUpdates.full_name = guestEdits.value.full_name;
@@ -319,6 +333,10 @@ const confirmAndCheckin = () => {
     }
     if (guestEdits.value.notes !== props.stay?.guest?.notes) {
       guestUpdates.notes = guestEdits.value.notes;
+    }
+    // Always check hours_24 since it's always editable
+    if (guestEdits.value.hours_24 !== props.stay?.guest?.hours_24) {
+      guestUpdates.hours_24 = guestEdits.value.hours_24;
     }
 
     if (Object.keys(guestUpdates).length > 0) {
@@ -344,17 +362,17 @@ watch(() => props.visible, async (newValue) => {
       selectedCategory.value = null;
       selectedFloor.value = null;
     }
-    
+
     // Initialize check-out date for stays without rooms
     if (!props.stay?.room && props.stay?.check_out_date) {
       checkOutDate.value = new Date(props.stay.check_out_date);
     } else {
       checkOutDate.value = null;
     }
-    
+
     // Initialize register number
     registerNumber.value = props.stay?.register_number || '';
-    
+
     // Initialize guest edits with current guest data
     if (props.stay?.guest) {
       guestEdits.value = {
@@ -363,13 +381,14 @@ watch(() => props.visible, async (newValue) => {
         nationality: props.stay.guest.nationality || '',
         date_of_birth: props.stay.guest.date_of_birth ? new Date(props.stay.guest.date_of_birth) : null,
         preferred_language: props.stay.guest.preferred_language || '',
-        notes: props.stay.guest.notes || ''
+        notes: props.stay.guest.notes || '',
+        hours_24: props.stay.guest.hours_24 || false
       };
     }
-    
+
     // Reset edit mode
     editGuestMode.value = false;
-    
+
     await refetchRooms();
   }
 });
