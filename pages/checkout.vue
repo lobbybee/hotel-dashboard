@@ -74,6 +74,13 @@
             </span>
             <span class="font-medium text-gray-900">{{ stay.guest.whatsapp_number || 'N/A' }}</span>
           </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600 flex items-center gap-2">
+              <i class="pi pi-clock"></i>
+              Billing Cycle
+            </span>
+            <Badge :value="stay.billing?.hours_24 ? '24 Hour' : '12 Hour'" :severity="stay.billing?.hours_24 ? 'info' : 'secondary'" />
+          </div>
         </div>
 
         <div class="space-y-2 mb-4">
@@ -224,7 +231,7 @@
     </Dialog>
 
     <!-- Check-out Confirmation Dialog -->
-    <Dialog v-model:visible="isCheckoutDialogVisible" modal header="Confirm Check-out" :style="{ width: '30rem' }">
+    <Dialog v-model:visible="isCheckoutDialogVisible" modal header="Confirm Check-out" :style="{ width: '35rem' }">
       <div v-if="selectedStayForCheckout" class="space-y-4">
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p class="text-sm text-blue-900 mb-2">
@@ -235,6 +242,34 @@
             <p><strong>Guest:</strong> {{ selectedStayForCheckout.guest.full_name }}</p>
             <p><strong>Room:</strong> {{ selectedStayForCheckout.room_details.room_number }}</p>
             <p><strong>Duration:</strong> {{ getDaysStayed(selectedStayForCheckout) }} night(s)</p>
+          </div>
+        </div>
+
+        <!-- Billing Information -->
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <i class="pi pi-file-text"></i>
+            Billing Summary
+          </h4>
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Billing Cycle:</span>
+              <Badge :value="selectedStayForCheckout.billing?.hours_24 ? '24 Hour' : '12 Hour'" :severity="selectedStayForCheckout.billing?.hours_24 ? 'info' : 'secondary'" />
+            </div>
+            <div>
+              <label for="final_charge" class="block text-sm font-medium text-gray-700 mb-2">
+                Final Charge
+              </label>
+              <InputNumber 
+                id="final_charge"
+                v-model="checkoutData.final_charge"
+                mode="currency"
+                currency="INR"
+                locale="en-IN"
+                class="w-full"
+                placeholder="Enter final charge"
+              />
+            </div>
           </div>
         </div>
 
@@ -301,6 +336,13 @@
       </div>
       <template #footer>
         <Button label="Cancel" text @click="isCheckoutDialogVisible = false" />
+        <Button 
+          label="Print Summary" 
+          icon="pi pi-print" 
+          severity="secondary" 
+          @click="printCheckoutSummary"
+          class="p-button-outlined"
+        />
         <Button label="Confirm Check-out" severity="danger" @click="handleConfirmCheckout" :loading="isCheckingOut" />
       </template>
     </Dialog>
@@ -309,6 +351,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import jsPDF from 'jspdf';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import Badge from 'primevue/badge';
@@ -317,6 +360,8 @@ import InputText from 'primevue/inputtext';
 import Dialog from 'primevue/dialog';
 import Rating from 'primevue/rating';
 import Textarea from 'primevue/textarea';
+import Checkbox from 'primevue/checkbox';
+import InputNumber from 'primevue/inputnumber';
 import { useToast } from 'primevue/usetoast';
 
 import { useListCheckedInUsers, useCheckoutUser } from '~/composables/checkin-manager';
@@ -346,7 +391,8 @@ const selectedStayForCheckout = ref<any>(null);
 const checkoutData = ref({
   internal_rating: null as number | null,
   internal_note: '',
-  flag_user: false
+  flag_user: false,
+  final_charge: 0 as number
 });
 
 // --- GUEST INFO LOGIC ---
@@ -358,7 +404,8 @@ const handleCheckout = (stay: any) => {
   checkoutData.value = {
     internal_rating: null,
     internal_note: '',
-    flag_user: false
+    flag_user: false,
+    final_charge: stay.billing?.current_bill || 0
   };
   isCheckoutDialogVisible.value = true;
 };
@@ -376,6 +423,138 @@ const handleExtendStay = () => {
     detail: 'Extend stay functionality will be implemented soon.',
     life: 3000
   });
+};
+
+const printCheckoutSummary = () => {
+  if (!selectedStayForCheckout.value) return;
+
+  try {
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    let yPosition = 20;
+
+    // Title
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('CHECK-OUT SUMMARY', pageWidth / 2, yPosition, { align: 'center' });
+
+    // Date
+    yPosition += 15;
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Date: ${new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })}`, pageWidth / 2, yPosition, { align: 'center' });
+
+    // Guest Information
+    yPosition += 20;
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Guest Information', 20, yPosition);
+    
+    yPosition += 10;
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Name: ${selectedStayForCheckout.value.guest.full_name}`, 20, yPosition);
+    
+    yPosition += 7;
+    pdf.text(`WhatsApp: ${selectedStayForCheckout.value.guest.whatsapp_number || 'N/A'}`, 20, yPosition);
+    
+    yPosition += 7;
+    pdf.text(`Email: ${selectedStayForCheckout.value.guest.email || 'Not provided'}`, 20, yPosition);
+
+    // Stay Information
+    yPosition += 15;
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Stay Details', 20, yPosition);
+    
+    yPosition += 10;
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Room Number: ${selectedStayForCheckout.value.room_details.room_number}`, 20, yPosition);
+    
+    yPosition += 7;
+    pdf.text(`Room Category: ${selectedStayForCheckout.value.room_details.category}`, 20, yPosition);
+    
+    yPosition += 7;
+    pdf.text(`Check-in Date: ${formatDate(selectedStayForCheckout.value.check_in_date)}`, 20, yPosition);
+    
+    yPosition += 7;
+    pdf.text(`Check-out Date: ${formatDate(selectedStayForCheckout.value.check_out_date)}`, 20, yPosition);
+    
+    yPosition += 7;
+    pdf.text(`Duration: ${getDaysStayed(selectedStayForCheckout.value)} night(s)`, 20, yPosition);
+
+    // Billing Information
+    yPosition += 15;
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Bill Details', 20, yPosition);
+    
+    yPosition += 12;
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'normal');
+    
+    // Bill items
+    pdf.text(`${selectedStayForCheckout.value.room_details.category} Room - ${selectedStayForCheckout.value.room_details.room_number}`, 20, yPosition);
+    yPosition += 7;
+    pdf.text(`${selectedStayForCheckout.value.billing?.hours_24 ? '24 Hour' : '12 Hour'} Billing Cycle`, 20, yPosition);
+    
+    // Add some space
+    yPosition += 10;
+    
+    // Draw line before total
+    pdf.setLineWidth(0.5);
+    pdf.line(20, yPosition, pageWidth - 20, yPosition);
+    
+    yPosition += 10;
+    
+    // Total on the right
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Total:', pageWidth - 60, yPosition);
+    pdf.text(`Rs ${checkoutData.value.final_charge.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+
+    // Payment Status
+    yPosition += 15;
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'italic');
+    pdf.text(`Payment Status: PENDING (Rs ${checkoutData.value.final_charge.toFixed(2)})`, 20, yPosition);
+
+    // Footer
+    yPosition = pageHeight - 30;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Thank you for your stay!', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 7;
+    pdf.text('Please settle the payment at the front desk', pageWidth / 2, yPosition, { align: 'center' });
+
+    // Save the PDF
+    const fileName = `checkout-summary-${selectedStayForCheckout.value.room_details.room_number}-${new Date().toISOString().split('T')[0]}.pdf`;
+    pdf.save(fileName);
+
+    toast.add({
+      severity: 'success',
+      summary: 'Print Success',
+      detail: 'Checkout summary has been generated and downloaded.',
+      life: 3000
+    });
+
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Print Failed',
+      detail: 'Failed to generate checkout summary. Please try again.',
+      life: 3000
+    });
+  }
 };
 
 const handleConfirmCheckout = async () => {
