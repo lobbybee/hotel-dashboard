@@ -1,0 +1,54 @@
+import { computed } from 'vue';
+import { useAPI } from './useAPI';
+
+// Fetch all notifications
+export const useFetchNotifications = () => {
+  const { API } = useAPI();
+  const {
+    data,
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    key: ['notifications'],
+    query: async () => {
+      const response = await API('/notifications/');
+      return response.results; // API returns array directly
+    }
+  });
+
+  return {
+    notifications: data,
+    isLoading,
+    error,
+    refetch
+  };
+};
+
+// Mark notification as read
+export const useMarkNotificationRead = () => {
+  const { API } = useAPI();
+
+  const {
+    mutateAsync: markNotificationRead,
+    status,
+    error,
+    isLoading,
+    asyncStatus
+  } = useMutation({
+    mutation: async ({ id }: { id: string | number }) => {
+      const response = await API(`/notifications/${id}/mark-read/`, {
+        method: 'POST'
+      });
+      return response;
+    }
+  });
+
+  return {
+    markNotificationRead,
+    status,
+    error,
+    isLoading,
+    asyncStatus
+  };
+};
