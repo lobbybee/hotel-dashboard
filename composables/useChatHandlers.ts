@@ -105,6 +105,24 @@ export const handleWebSocketMessage = (data: any) => {
       }
       break;
 
+    case 'new_checkin':
+      console.log('Received new check-in message:', data);
+      // Add notification for new check-in
+      if (notificationStore && typeof notificationStore.addNotification === 'function' && data.data) {
+        notificationStore.addNotification({
+          type: 'checkin',
+          title: 'New Check-in Request',
+          message: data.data.message || `New check-in request from ${data.data.guest_name}`,
+          data: data.data
+        });
+        
+        // Emit custom event for components to listen to
+        window.dispatchEvent(new CustomEvent('new-checkin-received', { 
+          detail: data.data 
+        }));
+      }
+      break;
+
     default:
       console.log('Unknown WebSocket message type:', data.type);
       console.warn('Unknown WebSocket message type:', data.type);

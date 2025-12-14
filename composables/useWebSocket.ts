@@ -70,4 +70,33 @@ class WebSocketManager {
   }
 }
 
+// Type definitions for WebSocket messages
+export interface NewCheckinData {
+  conversation_id: string;
+  booking_id: string;
+  stay_id: string;
+  guest_id: string;
+  guest_name: string;
+  hotel_id: string;
+  hotel_name: string;
+  check_in_date: string;
+  check_out_date: string;
+  guest_whatsapp: string;
+  status: string;
+  created_at: string;
+  message: string;
+  link: string;
+  link_label: string;
+}
+
+export interface WebSocketMessage {
+  type: string;
+  data?: any;
+}
+
+export type NewCheckinMessage = WebSocketMessage & {
+  type: 'new_checkin';
+  data: NewCheckinData;
+};
+
 export const useWebSocket = () => WebSocketManager.getInstance();

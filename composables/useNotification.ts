@@ -52,3 +52,31 @@ export const useMarkNotificationRead = () => {
     asyncStatus
   };
 };
+
+// Mark all notifications as read
+export const useMarkAllNotificationsRead = () => {
+  const { API } = useAPI();
+
+  const {
+    mutateAsync: markAllNotificationsRead,
+    status,
+    error,
+    isLoading,
+    asyncStatus
+  } = useMutation({
+    mutation: async () => {
+      const response = await API('/notifications/mark-all-read/', {
+        method: 'POST'
+      });
+      return response;
+    }
+  });
+
+  return {
+    markAllNotificationsRead,
+    status,
+    error,
+    isLoading,
+    asyncStatus
+  };
+};

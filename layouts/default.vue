@@ -46,11 +46,17 @@
               rounded
               aria-label="Notifications"
               @click="toggleNotifications"
+              class="relative"
             >
               <template #icon>
                 <Icon name="prime:bell" class="h-5 w-5" />
               </template>
-              <Badge v-if="totalNotificationCount > 0" :value="totalNotificationCount" severity="danger" />
+              <Badge 
+                v-if="totalNotificationCount > 0" 
+                :value="totalNotificationCount" 
+                severity="danger"
+                class="absolute -top-2 -right-2"
+              />
             </Button>
 
             <div class="relative">
@@ -146,7 +152,7 @@
                             : 'border-transparent text-gray-500 hover:text-gray-700'
                         ]"
                       >
-                        System ({{ apiNotifications?.length || 0 }})
+                        System ({{ unreadApiNotificationsCount }})
                       </button>
                     </div>
 
@@ -210,7 +216,18 @@
                         <p class="text-xs mt-1">System notifications from database will appear here</p>
                       </div>
 
-                      <div v-else class="max-h-80 overflow-y-auto">
+                      <div v-else>
+                        <!-- Mark all as read button for system notifications -->
+                        <div v-if="unreadApiNotificationsCount > 0" class="mb-3 flex justify-end">
+                          <button
+                            @click="handleMarkAllApiNotificationsRead"
+                            class="text-xs text-purple-600 hover:text-purple-800"
+                          >
+                            Mark all system as read
+                          </button>
+                        </div>
+
+                        <div class="max-h-80 overflow-y-auto">
                         <div
                           v-for="notification in apiNotifications.slice(0, 10)"
                           :key="notification.id"
@@ -256,6 +273,7 @@
                       <div v-if="apiNotifications && apiNotifications.length > 10" class="mt-3 pt-2 border-t border-gray-200 text-center">
                         <button class="text-xs text-blue-600 hover:text-blue-800">View all system notifications</button>
                       </div>
+                      </div>
                     </div>
                   </div>
                 </template>
@@ -275,18 +293,23 @@
                 <div>
                   <h3 class="text-sm font-semibold text-blue-900">New Check-in Request</h3>
                   <p class="text-sm text-blue-700">
-                    {{ pendingStays?.length || 0 }} pending check-in{{ pendingStays?.length !== 1 ? 's' : '' }} waiting for verification
+                    <span v-if="newCheckinNotification">
+                      New check-in request from {{ newCheckinNotification.guest_name }}
+                    </span>
+                    <span v-else>
+                      {{ pendingStays?.length || 0 }} pending check-in{{ pendingStays?.length !== 1 ? 's' : '' }} waiting for verification
+                    </span>
                   </p>
                 </div>
               </div>
               <div class="flex items-center gap-2">
                 <NuxtLink
-                  to="/checkin"
+                  :to="newCheckinNotification?.link || '/checkin'"
                   class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-md transition-colors"
                   @click="clearNotification"
                 >
                   <i class="pi pi-eye"></i>
-                  View Check-ins
+                  {{ newCheckinNotification?.link_label || 'View Check-ins' }}
                 </NuxtLink>
                 <button
                   @click="clearNotification"
@@ -315,10 +338,10 @@
 import { useAuthStore } from '~/stores/auth';
 import { useChatStore } from '~/stores/chat';
 import { useNotificationStore } from '~/stores/notifications';
-import { usePendingStaysNotifications } from '~/composables/usePendingStaysNotifications';
 import { useFetchHotel, useFetchRooms } from '~/composables/useHotel';
 import { useFetchStaff } from '~/composables/useStaff';
-import { useFetchNotifications, useMarkNotificationRead } from '~/composables/useNotification';
+import { useFetchNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from '~/composables/useNotification';
+import { useWebSocket, type NewCheckinMessage } from '~/composables/useWebSocket';
 
 const router = useRouter();
 const route = useRoute();
@@ -331,30 +354,27 @@ const notificationStore = useNotificationStore();
 const { notifications, unreadCount } = storeToRefs(notificationStore);
 
 // API notifications
-const { notifications: apiNotifications, isLoading: apiNotificationsLoading } = useFetchNotifications();
+const { notifications: apiNotifications, isLoading: apiNotificationsLoading, refetch: refetchApiNotifications } = useFetchNotifications();
 const { markNotificationRead: markApiNotificationRead } = useMarkNotificationRead();
+const { markAllNotificationsRead } = useMarkAllNotificationsRead();
 
 // Active notification tab
 const activeNotificationTab = ref('realtime');
 
+// Unread API notifications count
+const unreadApiNotificationsCount = computed(() => {
+  return apiNotifications.value?.filter(n => !n.is_read).length || 0;
+});
+
 // Total notification count combining both sources
 const totalNotificationCount = computed(() => {
   const realtimeUnread = unreadCount.value || 0;
-  const apiUnread = apiNotifications.value?.filter(n => !n.is_read).length || 0;
+  const apiUnread = unreadApiNotificationsCount.value;
   return realtimeUnread + apiUnread;
 });
 
 // Track if component is mounted to prevent DOM operations when unmounted
 const isMounted = ref(false);
-
-// Initialize chat store for global WebSocket connection
-onMounted(() => {
-  isMounted.value = true;
-
-  // Initialize chat store globally to establish WebSocket connection
-  // This ensures notifications work even when not on chat page
-  chatStore.initChat();
-});
 
 onUnmounted(() => {
   isMounted.value = false;
@@ -366,8 +386,53 @@ const notificationMenu = ref(null);
 // Computed property to check if we're on the checkin page
 const isCheckinPage = computed(() => route.path === '/checkin');
 
-// Initialize pending stays notifications
-const { hasNewStays, pendingStays, clearNotification } = usePendingStaysNotifications();
+// WebSocket connection for new check-in notifications
+const webSocketManager = useWebSocket();
+const hasNewStays = ref(false);
+const pendingStays = ref<any[]>([]);
+const newCheckinNotification = ref<any>(null);
+
+// Clear notification flag when user acknowledges it
+const clearNotification = () => {
+  hasNewStays.value = false;
+  newCheckinNotification.value = null;
+};
+
+// Handle WebSocket messages for new check-ins
+const handleWebSocketMessage = (message: any) => {
+  if (message.type === 'new_checkin') {
+    const checkinMessage = message as NewCheckinMessage;
+    hasNewStays.value = true;
+    newCheckinNotification.value = checkinMessage.data;
+    
+    // Add to notification store with type 'checkin' (not 'new_checkin')
+    notificationStore.addNotification({
+      id: checkinMessage.data.conversation_id,
+      type: 'checkin', // Store expects 'checkin', not 'new_checkin'
+      title: 'New Check-in Request',
+      message: checkinMessage.data.message || `New check-in request from ${checkinMessage.data.guest_name}`,
+      timestamp: new Date(checkinMessage.data.created_at),
+      read: false,
+      data: checkinMessage.data
+    });
+    
+    // Emit custom event for components to listen to
+    window.dispatchEvent(new CustomEvent('new-checkin-received', { 
+      detail: checkinMessage.data 
+    }));
+  }
+};
+
+// Set up WebSocket message handler
+onMounted(() => {
+  isMounted.value = true;
+  
+  // Initialize chat store globally to establish WebSocket connection
+  chatStore.initChat();
+  
+  // Set up WebSocket message listener for new check-ins
+  webSocketManager.onMessage(handleWebSocketMessage);
+});
 
 const hotel = ref({ name: 'Loading...' });
 const sidebarVisible = ref(false);
@@ -640,11 +705,8 @@ const handleApiNotificationClick = async (notification: any): Promise<void> => {
     // Mark API notification as read if it's unread
     if (!notification.is_read) {
       await markApiNotificationRead({ id: notification.id });
-      // Update the local notification to reflect the read status
-      const index = apiNotifications.value?.findIndex(n => n.id === notification.id);
-      if (index !== undefined && index !== -1 && apiNotifications.value) {
-        apiNotifications.value[index].is_read = true;
-      }
+      // Refetch notifications to get updated read status
+      await refetchApiNotifications();
     }
 
     // Navigate to the link if provided
@@ -672,6 +734,18 @@ const handleMarkAllAsRead = (): void => {
     }
   } catch (error) {
     console.warn('Error marking all notifications as read:', error);
+  }
+};
+
+const handleMarkAllApiNotificationsRead = async (): Promise<void> => {
+  try {
+    if (!isMounted.value) return;
+
+    await markAllNotificationsRead();
+    // Refetch notifications to get updated read status
+    await refetchApiNotifications();
+  } catch (error) {
+    console.warn('Error marking all system notifications as read:', error);
   }
 };
 

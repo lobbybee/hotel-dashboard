@@ -212,7 +212,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
 
 import { useListPendingStays, useVerifyCheckin, useRejectCheckin } from '~/composables/checkin-manager';
@@ -221,6 +221,12 @@ import { useFetchRooms } from '~/composables/useHotel';
 import CheckinConfirmationDialog from './ConfirmationDialog.vue';
 
 const toast = useToast();
+
+// --- EVENT LISTENERS ---
+const handleNewCheckinEvent = () => {
+  // Refetch pending stays when a new check-in event is received
+  pendingStaysRefetch();
+};
 
 // --- DATA: PENDING STAYS ---
 const { pendingStays, isLoading: pendingStaysLoading, error: pendingStaysError, refetch: pendingStaysRefetch } = useListPendingStays();
@@ -341,4 +347,15 @@ const formatDocumentType = (documentType: string): string => {
   };
   return typeMap[documentType] || documentType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
+
+// Lifecycle hooks
+onMounted(() => {
+  // Add event listener for new check-in events
+  window.addEventListener('new-checkin-received', handleNewCheckinEvent);
+});
+
+onUnmounted(() => {
+  // Remove event listener when component is unmounted
+  window.removeEventListener('new-checkin-received', handleNewCheckinEvent);
+});
 </script>
