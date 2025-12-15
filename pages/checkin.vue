@@ -7,9 +7,9 @@
         <TabPanel header="Pending Stays">
           <CheckinPendingStaysTab />
         </TabPanel>
-         <!-- <TabPanel header="Manual Walk-in">
-           <CheckinManualWalkinTab />
-        </TabPanel>  -->
+        <TabPanel header="Manual Walk-in">
+          <CheckinManualWalkinTab />
+        </TabPanel>
       </TabView>
     </div>
   </div>
@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
+import CheckinManualWalkinTab from '~/components/Checkin/ManualWalkinTab.vue';
 
 // The logic has been moved to the child components.
 // This parent component now only serves as a layout container.

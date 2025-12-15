@@ -1,209 +1,710 @@
 <template>
-  <div class="pt-4">
-    <CheckinGuestSearch @guest-selected="selectGuest" />
+  <div class="manual-walkin-tab space-y-6">
+    <!-- Progress Indicator -->
+    <div class="flex items-center justify-center space-x-4 p-4 bg-gray-50 rounded-lg">
+      <div class="flex items-center">
+        <div class="w-8 h-8 rounded-full" :class="step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'">1</div>
+        <span class="ml-2">Guest Details</span>
+      </div>
+      <div class="w-16 h-1 bg-gray-300"></div>
+      <div class="flex items-center">
+        <div class="w-8 h-8 rounded-full" :class="step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'">2</div>
+        <span class="ml-2">Rooms</span>
+      </div>
+      <div class="w-16 h-1 bg-gray-300"></div>
+      <div class="flex items-center">
+        <div class="w-8 h-8 rounded-full" :class="step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'">3</div>
+        <span class="ml-2">Documents</span>
+      </div>
+    </div>
 
-    <Card class="shadow-sm border border-gray-200 mt-6">
-      <template #content>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <CheckinGuestForm
-        :guest-form="manualGuestForm"
-        @update-guest-field="onUpdateGuestField"
-        @accompanying-guest-doc-select="onAccompanyingGuestDocSelect"
-      />
-          <CheckinStayForm
-            :stay-form="manualStayForm"
-            :doc-form="manualDocForm"
-            @file-select="onFileSelect"
-            @update-stay-field="onUpdateStayField"
-            @update-doc-field="onUpdateDocField"
-            ref="stayFormRef"
-          />
+    <!-- Step 1: Guest Details -->
+    <div v-if="step === 1" class="bg-white p-6 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-4">Primary Guest Information</h3>
+
+      <div class="space-y-4">
+        <!-- Guest Search -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Search Existing Guest</label>
+          <div class="flex gap-2">
+            <AutoComplete
+              v-model="searchInputValue"
+              :suggestions="filteredGuests"
+              @complete="searchGuests"
+              @focus="onInputFocus"
+              placeholder="Search by name or phone..."
+              class="flex-1"
+              :loading="guestsLoading"
+              :minLength="0"
+              @item-select="onGuestSelect"
+              :optionLabel="'full_name'"
+              forceSelection
+            >
+              <template #option="slotProps">
+                <div>
+                  <div class="font-medium">{{ slotProps.option.full_name }}</div>
+                  <div class="text-xs text-gray-500">{{ slotProps.option.whatsapp_number }}</div>
+                </div>
+              </template>
+            </AutoComplete>
+            <Button
+              v-if="selectedGuest"
+              label="Clear"
+              severity="secondary"
+              @click="clearGuestSelection"
+            />
+          </div>
+          <small v-if="isGuestSelected" class="text-green-600">Guest selected: {{ selectedGuest?.full_name }}</small>
         </div>
-      </template>
-      <template #footer>
-        <div class="flex justify-end">
-          <Button label="Create & Check-in" icon="pi pi-check" @click="handleManualWalkInCheckin" :loading="isManualCheckingIn" />
+
+        <div class="border-t pt-4">
+          <p class="text-sm text-gray-600 mb-3">
+            {{ isGuestSelected ? 'Review guest details' : 'Or enter new guest details' }}
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Full Name *</label>
+              <InputText
+                v-model="guestData.primary_guest.full_name"
+                placeholder="Enter full name"
+                class="w-full"
+                :disabled="isGuestSelected"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">WhatsApp Number *</label>
+              <InputText
+                v-model="guestData.primary_guest.whatsapp_number"
+                placeholder="+1234567890"
+                class="w-full"
+                :disabled="isGuestSelected"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Email</label>
+              <InputText
+                v-model="guestData.primary_guest.email"
+                placeholder="guest@example.com"
+                class="w-full"
+                :disabled="isGuestSelected"
+              />
+            </div>
+          </div>
         </div>
-      </template>
-    </Card>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Check-in Date *</label>
+            <Calendar v-model="checkinDates.check_in" showTime class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Check-out Date *</label>
+            <Calendar v-model="checkinDates.check_out" showTime class="w-full" />
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <label class="block text-sm font-medium">Accompanying Guests</label>
+            <Button label="Add Guest" icon="pi pi-plus" size="small" @click="addAccompanyingGuest" />
+          </div>
+
+          <div v-for="(guest, index) in guestData.accompanying_guests" :key="index" class="border rounded p-3 mb-2">
+            <div class="grid grid-cols-2 gap-2">
+              <InputText v-model="guest.full_name" placeholder="Guest name" />
+              <Button icon="pi pi-trash" severity="danger" size="small" @click="removeAccompanyingGuest(index)" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end mt-6">
+        <Button label="Next" @click="step = 2" :disabled="!isGuestDetailsValid" />
+      </div>
+    </div>
+
+    <!-- Step 2: Room Selection -->
+    <div v-if="step === 2" class="bg-white p-6 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-4">Select Rooms</h3>
+
+      <div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Room Category Filter</label>
+            <Dropdown
+              v-model="selectedRoomCategory"
+              :options="roomCategories"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select Category to Filter"
+              class="w-full"
+              @change="refetchRooms"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Floor</label>
+            <Dropdown
+              v-model="selectedFloor"
+              :options="floorOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select Floor"
+              class="w-full"
+              @change="refetchRooms"
+              :loading="floorsLoading"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Rooms</label>
+            <MultiSelect
+              v-model="stayForm.rooms"
+              :options="availableRooms"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select Rooms"
+              class="w-full"
+              :loading="roomsLoading"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Check-out Date</label>
+            <Calendar
+              v-model="stayForm.check_out_date"
+              class="w-full"
+              showIcon
+              :minDate="new Date()"
+            />
+          </div>
+        </div>
+
+        <div v-if="selectedRoomsDisplay.length > 0" class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <h5 class="font-semibold text-blue-800 mb-3 text-sm">
+            Selected Rooms ({{ selectedRoomsDisplay.length }})
+          </h5>
+          <div class="flex flex-wrap gap-2">
+            <Badge
+              v-for="room in selectedRoomsDisplay"
+              :key="room?.value"
+              :value="`${room?.number} - ${room?.category || ''}`"
+              severity="info"
+              class="text-xs"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between mt-6">
+        <Button label="Previous" severity="secondary" @click="step = 1" />
+        <Button label="Next" @click="step = 3" :disabled="!isRoomSelectionValid" />
+      </div>
+    </div>
+
+    <!-- Step 3: Documents -->
+    <div v-if="step === 3" class="bg-white p-6 rounded-lg shadow">
+      <h3 class="text-lg font-semibold mb-4">Upload Documents</h3>
+
+      <div class="space-y-6">
+        <!-- Primary Guest Documents -->
+        <div class="border rounded-lg p-4">
+          <h4 class="font-medium mb-3">Primary Guest: {{ guestData.primary_guest.full_name }}</h4>
+
+          <div class="space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium mb-1">Document Type</label>
+                <Dropdown
+                  v-model="guestData.primary_guest.document_type"
+                  :options="documentTypes"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Select document type"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Document Number</label>
+                <InputText
+                  v-model="guestData.primary_guest.document_number"
+                  placeholder="Document number"
+                  class="w-full"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2">Document (Front) *</label>
+              <FileUpload
+                mode="basic"
+                accept="image/*,.pdf"
+                :maxFileSize="2000000"
+                @select="handlePrimaryDocumentSelect"
+                chooseLabel="Select Front Document"
+                class="w-full"
+              />
+            </div>
+
+            <div>
+              <div class="flex items-center mb-2">
+                <Checkbox v-model="uploadBackSide" :binary="true" inputId="backSide" />
+                <label for="backSide" class="ml-2">Upload back side of document</label>
+              </div>
+              <FileUpload
+                v-if="uploadBackSide"
+                mode="basic"
+                accept="image/*,.pdf"
+                :maxFileSize="2000000"
+                @select="handlePrimaryDocumentBackSelect"
+                chooseLabel="Select Back Document"
+                class="w-full"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Accompanying Guests Documents -->
+        <div v-if="guestData.accompanying_guests?.length" class="border rounded-lg p-4">
+          <h4 class="font-medium mb-3">Accompanying Guests Documents</h4>
+
+          <div v-for="(guest, index) in guestData.accompanying_guests" :key="index" class="mb-4 last:mb-0">
+            <p class="text-sm font-medium mb-2">{{ guest.full_name || `Guest ${index + 1}` }}</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+              <div>
+                <label class="block text-sm font-medium mb-1">Document Type</label>
+                <Dropdown
+                  v-model="guest.document_type"
+                  :options="documentTypes"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Select document type"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Document Number</label>
+                <InputText
+                  v-model="guest.document_number"
+                  placeholder="Document number"
+                  class="w-full"
+                />
+              </div>
+            </div>
+
+            <FileUpload
+              mode="basic"
+              accept="image/*,.pdf"
+              :maxFileSize="2000000"
+              @select="(e) => handleAccompanyingDocumentSelect(e, index)"
+              chooseLabel="Select Document"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between mt-6">
+        <Button label="Previous" severity="secondary" @click="step = 2" />
+        <Button
+          label="Complete Check-in"
+          @click="completeCheckin"
+          :loading="isProcessing"
+          :disabled="!primaryDocument"
+        />
+      </div>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <Message v-if="errorMessage" severity="error" :closable="false">{{ errorMessage }}</Message>
+    <Message v-if="successMessage" severity="success" :closable="false">{{ successMessage }}</Message>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
-import Card from 'primevue/card';
-import Button from 'primevue/button';
+import { ref, computed, onMounted } from 'vue';
+import { useDebounceFn } from "@vueuse/core";
 import { useToast } from 'primevue/usetoast';
-
-// import { useCreateGuest, useUploadIdentityDocument, useCreateStay, useVerifyAndCheckIn, useCreateBooking } from '~/composables/useGuest';
-import { useFetchRooms } from '~/composables/useHotel';
+import { useCheckinWorkflow, prepareGuestFormData } from '~/composables/checkin-manager';
+import { useAPI } from '~/composables/useAPI';
+import {
+    useFetchRooms,
+    useFetchRoomCategories,
+    useFetchHotelRoomFloors,
+} from "~/composables/useHotel";
+import type { CreateGuestData, AccompanyingGuestData } from '~/composables/checkin-manager';
 
 const toast = useToast();
-const stayFormRef = ref();
+const { createGuestMutation, checkinOfflineMutation, verifyCheckinMutation } = useCheckinWorkflow();
 
-// --- DATA & FORMS ---
-const manualGuestForm = reactive<{id: string | null; full_name: string; whatsapp_number: string; email: string; date_of_birth: Date | null; nationality: string; number_of_guests: number; guest_names: string[]}>({ id: null, full_name: '', whatsapp_number: '', email: '', date_of_birth: null, nationality: '', number_of_guests: 1, guest_names: [] });
-const manualStayForm = reactive<{rooms: number[]; check_out_date: Date | null}>({ rooms: [], check_out_date: null });
-const manualDocForm = reactive<{document_type: string | null; file: File | null}>({ document_type: null, file: null });
-const accompanyingGuestDocs = reactive<{[key: number]: {document_type: string | null; file: File | null}}>({});
+// Guest search
+const searchTerm = ref('');
+const searchInputValue = ref('');
+const selectedGuest = ref<any>(null);
+const filteredGuests = ref([]);
+const guestsData = ref(null);
+const guestsLoading = ref(false);
+const lastSearchResults = ref([]); // Store last search results
 
-// --- COMPOSABLES ---
-const { mutateAsync: createGuest, isLoading: isCreatingGuest } = useCreateGuest();
-const { mutateAsync: uploadDocument, isLoading: isUploadingDoc } = useUploadIdentityDocument();
-const { mutateAsync: createStayForManual, isLoading: isCreatingStay } = useCreateStay();
-const { mutateAsync: createBooking, isLoading: isCreatingBooking } = useCreateBooking();
-const { mutateAsync: verifyAndCheckIn, isLoading: isVerifyingAndCheckingIn } = useVerifyAndCheckIn();
-const { refetch: refetchRooms, data: roomsData } = useFetchRooms(ref({ status: 'available' }));
+// Debounced search function
+const debouncedSearch = useDebounceFn((searchValue: string) => {
+  searchAPI(searchValue);
+}, 300);
 
-const isManualCheckingIn = computed(() => isCreatingGuest.value || isUploadingDoc.value || isCreatingStay.value || isCreatingBooking.value || isVerifyingAndCheckingIn.value);
+// Separate function to make the API call
+const searchAPI = async (searchValue: string) => {
+  if (searchValue && searchValue.trim() && !selectedGuest.value) {
+    guestsLoading.value = true;
+    try {
+      const { API } = useAPI();
+      const response = await API(`/guest-management/guests/?search=${encodeURIComponent(searchValue)}`);
 
-// --- METHODS ---
-const onUpdateGuestField = ({ field, value }: { field: string, value: any }) => {
-  // Handle dynamic fields like accompanying guest document types
-  if (field.startsWith('accompanying_guest_')) {
-    // We'll store these in a separate structure
-    const parts = field.split('_');
-    const index = parseInt(parts[2]);
-    if (!accompanyingGuestDocs[index]) {
-      accompanyingGuestDocs[index] = { document_type: null, file: null };
+      // Check if response is an array directly or has results property
+      let results = [];
+      if (Array.isArray(response)) {
+        results = response;
+      } else if (response && response.results) {
+        results = response.results;
+      }
+
+      filteredGuests.value = results;
+      lastSearchResults.value = results; // Store the results
+    } catch (error) {
+      console.error('Error fetching guests:', error);
+      filteredGuests.value = [];
+      lastSearchResults.value = [];
+    } finally {
+      guestsLoading.value = false;
     }
-    accompanyingGuestDocs[index].document_type = value;
   } else {
-    // Handle regular fields
-    (manualGuestForm as any)[field] = value;
+    filteredGuests.value = [];
   }
 };
 
-const selectGuest = (guest: any) => {
-    manualGuestForm.id = guest.id;
-    manualGuestForm.full_name = guest.full_name;
-    manualGuestForm.whatsapp_number = guest.whatsapp_number;
-    manualGuestForm.email = guest.email;
-    manualGuestForm.date_of_birth = guest.date_of_birth ? new Date(guest.date_of_birth) : null;
-    manualGuestForm.nationality = guest.nationality;
-    manualGuestForm.number_of_guests = guest.number_of_guests || 1;
-    manualGuestForm.guest_names = guest.guest_names || [];
-    // Reset accompanying guest documents when selecting a guest
-    Object.keys(accompanyingGuestDocs).forEach(key => {
-      delete accompanyingGuestDocs[key];
-    });
-};
+// State
+const step = ref(1);
+const isProcessing = ref(false);
+const errorMessage = ref('');
+const successMessage = ref('');
+const uploadBackSide = ref(false);
 
-const onFileSelect = (event: any) => { manualDocForm.file = event.files[0]; };
+// Documents
+const primaryDocument = ref<File | null>(null);
+const primaryDocumentBack = ref<File | null>(null);
+const accompanyingDocuments = ref<File[][]>([]);
 
-const onAccompanyingGuestDocSelect = ({ index, files }: { index: number; files: File[] }) => {
-  if (!accompanyingGuestDocs[index]) {
-    accompanyingGuestDocs[index] = { document_type: null, file: null };
+// Guest data
+const guestData = ref<CreateGuestData>({
+  primary_guest: {
+    full_name: '',
+    whatsapp_number: '',
+    email: '',
+    document_type: '',
+    document_number: ''
+  },
+  accompanying_guests: []
+});
+
+// Check-in dates
+const checkinDates = ref({
+  check_in: new Date(),
+  check_out: new Date(Date.now() + 24 * 60 * 60 * 1000) // Tomorrow
+});
+
+// Room selection form
+const stayForm = ref({
+  rooms: [],
+  check_out_date: checkinDates.value.check_out
+});
+
+// Room data
+const selectedRoomCategory = ref(null);
+const selectedFloor = ref(null);
+const { data: roomCategoriesData, isLoading: categoriesLoading } = useFetchRoomCategories();
+const { data: floorsData, isLoading: floorsLoading } = useFetchHotelRoomFloors();
+const {
+  data: roomsData,
+  isLoading: roomsLoading,
+  refetch: refetchRooms,
+} = useFetchRooms(
+  computed(() => ({
+    status: "available",
+    category: selectedRoomCategory.value,
+    floor: selectedFloor.value,
+    page_size: 30,
+  })),
+);
+
+const roomCategories = computed(() => {
+  const categories =
+    roomCategoriesData.value?.results.map((category: any) => ({
+      label: `${category.name}`,
+      value: category.id,
+    })) || [];
+  return [{ label: "All Categories", value: null }, ...categories];
+});
+
+const floorOptions = computed(() => {
+  if (!floorsData.value?.floors) return [];
+  const floors = floorsData.value.floors.map((floor: number) => ({
+    label: `Floor ${floor}`,
+    value: floor,
+  }));
+  return [{ label: "All Floors", value: null }, ...floors];
+});
+
+const availableRooms = computed(() => {
+  if (!roomsData.value?.results) return [];
+  return roomsData.value.results.map((room: any) => ({
+    label: selectedRoomCategory.value && selectedRoomCategory.value !== null
+      ? `Room ${room.room_number}`
+      : `Room ${room.room_number} - ${room.category.name}`,
+    value: room.id,
+    category: room.category?.name || "",
+    number: room.room_number,
+  }));
+});
+
+const selectedRoomsDisplay = computed(() => {
+  if (!stayForm.value.rooms.length || !roomsData.value?.results) return [];
+  return stayForm.value.rooms
+    .map((roomId: any) => {
+      const room = roomsData.value.results.find(
+        (r: any) => r.id === roomId,
+      );
+      return room
+        ? {
+            value: roomId,
+            number: room.room_number,
+            category: room.category?.name || "N/A",
+          }
+        : null;
+    })
+    .filter(Boolean);
+});
+
+const documentTypes = [
+  { label: 'AADHAR ID', value: 'aadhar_id' },
+  { label: 'Driving License', value: 'driving_license' },
+  { label: 'National ID', value: 'national_id' },
+  { label: 'Voter ID', value: 'voter_id' },
+  { label: 'Passport', value: 'passport' },
+  { label: 'Other', value: 'other' }
+];
+
+// Validation
+const isGuestDetailsValid = computed(() => {
+  return guestData.value.primary_guest.full_name &&
+         guestData.value.primary_guest.whatsapp_number &&
+         checkinDates.value.check_in &&
+         checkinDates.value.check_out;
+});
+
+const isRoomSelectionValid = computed(() => {
+  return stayForm.value.rooms.length > 0;
+});
+
+// Computed
+const isGuestSelected = computed(() => !!selectedGuest.value);
+
+// Methods
+const searchGuests = (event: any) => {
+  // Clear selected guest if user is typing something different
+  if (selectedGuest.value && event.query !== selectedGuest.value.full_name) {
+    selectedGuest.value = null;
   }
-  accompanyingGuestDocs[index].file = files[0];
-};
 
-const onUpdateStayField = ({ field, value }: { field: keyof typeof manualStayForm, value: any }) => {
-  manualStayForm[field] = value;
-};
-
-const onUpdateDocField = ({ field, value }: { field: keyof typeof manualDocForm, value: any }) => {
-  manualDocForm[field] = value;
-};
-
-const onUpdateAccompanyingGuestDocField = (index: number, field: string, value: any) => {
-  if (!accompanyingGuestDocs[index]) {
-    accompanyingGuestDocs[index] = { document_type: null, file: null };
-  }
-  accompanyingGuestDocs[index][field] = value;
-};
-
-const handleManualWalkInCheckin = async () => {
-  if (!manualGuestForm.full_name || !manualGuestForm.whatsapp_number || !manualStayForm.rooms.length || !manualStayForm.check_out_date) {
-    toast.add({ severity: 'warn', summary: 'Missing Information', detail: 'Please fill all required guest and stay fields.', life: 3000 });
+  // Handle different event structures
+  let query;
+  if (event && event.query) {
+    query = event.query;
+  } else if (event && typeof event === 'string') {
+    query = event;
+  } else {
     return;
   }
 
-  if (!manualDocForm.file || !manualDocForm.document_type) {
-      toast.add({ severity: 'warn', summary: 'Identity Document Required', detail: 'Please upload an identity document for walk-in guests.', life: 4000 });
-      return;
+  searchTerm.value = query;
+  debouncedSearch(query);
+};
+
+const onGuestSelect = (event: any) => {
+  const guest = event.value;
+  selectedGuest.value = guest;
+  searchInputValue.value = guest.full_name; // Set the input to show selected guest's name
+  filteredGuests.value = [guest]; // Keep selected guest in filtered results for display
+  guestData.value.primary_guest = {
+    full_name: guest.full_name,
+    whatsapp_number: guest.whatsapp_number,
+    email: guest.email || '',
+    document_type: guest.documents?.[0]?.document_type || '',
+    document_number: guest.documents?.[0]?.document_number || ''
+  };
+};
+
+const onInputFocus = () => {
+  // If we have a selected guest, show it in the dropdown
+  if (selectedGuest.value) {
+    filteredGuests.value = [selectedGuest.value];
   }
-
-  try {
-    let guestId = manualGuestForm.id;
-
-    if (!guestId) {
-        const newGuest = await createGuest({
-            full_name: manualGuestForm.full_name,
-            whatsapp_number: manualGuestForm.whatsapp_number,
-            email: manualGuestForm.email,
-            date_of_birth: manualGuestForm.date_of_birth?.toISOString().split('T')[0],
-            nationality: manualGuestForm.nationality
-        });
-        guestId = newGuest.id;
-    }
-
-    // Upload primary guest document
-    if (manualDocForm.file && manualDocForm.document_type) {
-        await uploadDocument({
-            guest: guestId,
-            document_type: manualDocForm.document_type,
-            document_file: manualDocForm.file
-        });
-    } else if (!manualGuestForm.id) { // Only require doc for new guests, existing might be verified
-        toast.add({ severity: 'warn', summary: 'Identity Document Required', detail: 'Please upload an identity document for new walk-in guests.', life: 4000 });
-        return;
-    }
-
-    // Upload documents for accompanying guests
-    for (const index in accompanyingGuestDocs) {
-      const docData = accompanyingGuestDocs[index];
-      if (docData.file && docData.document_type) {
-        await uploadDocument({
-          guest: guestId,
-          document_type: docData.document_type,
-          document_file: docData.file,
-          is_accompanying_guest: true
-        });
-      }
-    }
-
-    // Prepare guest names array with primary guest first
-    const guestNames = [manualGuestForm.full_name];
-    if (manualGuestForm.guest_names && manualGuestForm.guest_names.length > 0) {
-        guestNames.push(...manualGuestForm.guest_names.filter((name: string) => name.trim() !== ''));
-    }
-
-    // Create booking with multiple guests
-    const bookingData = {
-        primary_guest: guestId,
-        check_in_date: new Date().toISOString(),
-        check_out_date: manualStayForm.check_out_date.toISOString(),
-        guest_names: guestNames,
-        number_of_guests: manualGuestForm.number_of_guests,
-        room_ids: manualStayForm.rooms
-    };
-
-    // Use the booking endpoint instead of creating individual stays
-    await createBooking(bookingData);
-
-    const selectedRoomsDisplay = manualStayForm.rooms.map(roomId => {
-      const room = roomsData.value.results.find((r: any) => r.id === roomId);
-      return room ? { number: room.room_number } : null;
-    });
-    const roomNumbers = selectedRoomsDisplay.map(room => room?.number).filter(Boolean).join(', ');
-    toast.add({ severity: 'success', summary: 'Success', detail: `Guest ${manualGuestForm.full_name} checked in to rooms: ${roomNumbers}`, life: 3000 });
-
-    // Reset forms
-    Object.assign(manualGuestForm, { id: null, full_name: '', whatsapp_number: '', email: '', date_of_birth: null, nationality: '', number_of_guests: 1, guest_names: [] });
-    Object.assign(manualStayForm, { rooms: [], check_out_date: null });
-    Object.assign(manualDocForm, { document_type: null, file: null });
-    // Reset accompanying guest documents
-    Object.keys(accompanyingGuestDocs).forEach(key => {
-      delete accompanyingGuestDocs[key];
-    });
-    stayFormRef.value?.clearUploader();
-
-    await refetchRooms();
-
-  } catch (err: any) {
-    const errorMessage = err.response?._data?.detail || 'An unexpected error occurred.';
-    toast.add({ severity: 'error', summary: 'Manual Check-in Failed', detail: errorMessage, life: 5000 });
+  // If we have last search results but no current results, show them
+  else if (filteredGuests.value.length === 0 && lastSearchResults.value.length > 0) {
+    filteredGuests.value = lastSearchResults.value;
   }
 };
+
+const clearGuestSelection = () => {
+  selectedGuest.value = null;
+  searchInputValue.value = '';
+  guestData.value.primary_guest = {
+    full_name: '',
+    whatsapp_number: '',
+    email: '',
+    document_type: '',
+    document_number: ''
+  };
+  searchTerm.value = '';
+  filteredGuests.value = lastSearchResults.value; // Restore last search results
+};
+
+
+
+const addAccompanyingGuest = () => {
+  if (!guestData.value.accompanying_guests) {
+    guestData.value.accompanying_guests = [];
+  }
+  guestData.value.accompanying_guests.push({
+    full_name: '',
+    document_type: '',
+    document_number: ''
+  });
+  accompanyingDocuments.value.push([]);
+};
+
+const removeAccompanyingGuest = (index: number) => {
+  guestData.value.accompanying_guests?.splice(index, 1);
+  accompanyingDocuments.value.splice(index, 1);
+};
+
+const updateStayField = ({ field, value }: any) => {
+  stayForm.value[field] = value;
+  if (field === 'check_out_date') {
+    checkinDates.value.check_out = value;
+  }
+};
+
+const handlePrimaryDocumentSelect = (event: any) => {
+  primaryDocument.value = event.files[0];
+};
+
+const handlePrimaryDocumentBackSelect = (event: any) => {
+  primaryDocumentBack.value = event.files[0];
+};
+
+const handleAccompanyingDocumentSelect = (event: any, guestIndex: number) => {
+  accompanyingDocuments.value[guestIndex] = event.files;
+};
+
+const completeCheckin = async () => {
+  try {
+    isProcessing.value = true;
+    errorMessage.value = '';
+
+    // 1. Create guest with documents
+    const formData = prepareGuestFormData(guestData.value, {
+      primaryDocuments: primaryDocument.value ? [primaryDocument.value] : [],
+      primaryDocumentsBack: primaryDocumentBack.value ? [primaryDocumentBack.value] : [],
+      accompanyingDocuments: accompanyingDocuments.value
+    });
+
+    const guestResult = await createGuestMutation.mutateAsync(formData);
+
+    // 2. Check-in offline
+    const checkinData = {
+      primary_guest_id: guestResult.primary_guest.id,
+      room_ids: stayForm.value.rooms,
+      check_in_date: checkinDates.value.check_in.toISOString(),
+      check_out_date: checkinDates.value.check_out.toISOString(),
+      guest_names: guestData.value.accompanying_guests?.map(g => g.full_name).filter(Boolean)
+    };
+
+    const checkinResult = await checkinOfflineMutation.mutateAsync(checkinData);
+
+    // 3. Verify check-in for each stay
+    for (const stay of checkinResult.stays) {
+      await verifyCheckinMutation.mutateAsync({
+        stayId: stay.id,
+        data: {
+          guest_updates: {
+            hours_24: false,
+            breakfast_reminder: true,
+            dinner_reminder: false
+          }
+        }
+      });
+    }
+
+    successMessage.value = 'Check-in completed successfully!';
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Guest checked in successfully!'
+    });
+
+    // Reset form after delay
+    setTimeout(() => {
+      resetForm();
+    }, 2000);
+
+  } catch (error: any) {
+    errorMessage.value = error.message || 'Failed to complete check-in';
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: errorMessage.value
+    });
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+const resetForm = () => {
+  step.value = 1;
+  guestData.value = {
+    primary_guest: {
+      full_name: '',
+      whatsapp_number: '',
+      email: '',
+      document_type: '',
+      document_number: ''
+    },
+    accompanying_guests: []
+  };
+  stayForm.value = {
+    rooms: [],
+    check_out_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+  };
+  checkinDates.value = {
+    check_in: new Date(),
+    check_out: new Date(Date.now() + 24 * 60 * 60 * 1000)
+  };
+  primaryDocument.value = null;
+  primaryDocumentBack.value = null;
+  accompanyingDocuments.value = [];
+  uploadBackSide.value = false;
+  errorMessage.value = '';
+  successMessage.value = '';
+};
+
+onMounted(() => {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  checkinDates.value = {
+    check_in: now,
+    check_out: tomorrow
+  };
+
+  refetchRooms();
+});
 </script>
