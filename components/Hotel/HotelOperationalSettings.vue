@@ -36,7 +36,31 @@
         <small v-if="errors.time_zone" class="text-red-500 text-sm mt-2 block">{{ errors.time_zone }}</small>
       </div>
 
-  
+      <!-- Breakfast Reminder Toggle -->
+      <div>
+        <label for="breakfast_reminder" class="block text-sm font-medium text-gray-700 mb-2">Breakfast Reminder</label>
+        <div class="flex items-center">
+          <ToggleSwitch
+            id="breakfast_reminder"
+            v-model="hotelForm.breakfast_reminder"
+            @update:model-value="onBreakfastReminderChange"
+          />
+          <span class="ml-3 text-sm text-gray-600">Enable breakfast reminders</span>
+        </div>
+      </div>
+
+      <!-- Dinner Reminder Toggle -->
+      <div>
+        <label for="dinner_reminder" class="block text-sm font-medium text-gray-700 mb-2">Dinner Reminder</label>
+        <div class="flex items-center">
+          <ToggleSwitch
+            id="dinner_reminder"
+            v-model="hotelForm.dinner_reminder"
+            @update:model-value="onDinnerReminderChange"
+          />
+          <span class="ml-3 text-sm text-gray-600">Enable dinner reminders</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -45,6 +69,7 @@
 import { ref, computed } from 'vue';
 import DatePicker from 'primevue/datepicker';
 import Dropdown from 'primevue/dropdown';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 // Define props
 const props = defineProps({
@@ -143,6 +168,24 @@ const onTimezoneChange = (value) => {
   const updatedForm = {
     ...props.hotelForm,
     time_zone: value
+  };
+  emit('update:hotelForm', updatedForm);
+};
+
+// Handle breakfast reminder change
+const onBreakfastReminderChange = (value) => {
+  const updatedForm = {
+    ...props.hotelForm,
+    breakfast_reminder: value
+  };
+  emit('update:hotelForm', updatedForm);
+};
+
+// Handle dinner reminder change
+const onDinnerReminderChange = (value) => {
+  const updatedForm = {
+    ...props.hotelForm,
+    dinner_reminder: value
   };
   emit('update:hotelForm', updatedForm);
 };
