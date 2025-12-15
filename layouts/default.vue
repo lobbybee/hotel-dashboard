@@ -286,7 +286,7 @@
         </header>
 
         <!-- New Check-in Notification Alert -->
-        <div v-if="hasNewStays && !isCheckinPage" class="mx-4 sm:mx-6 mb-4">
+        <div v-if="latestCheckinNotification && !isCheckinPage" class="mx-4 sm:mx-6 mb-4">
           <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 shadow-sm">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -296,23 +296,23 @@
                 <div>
                   <h3 class="text-sm font-semibold text-blue-900">New Check-in Request</h3>
                   <p class="text-sm text-blue-700">
-                    <span v-if="newCheckinNotification">
-                      New check-in request from {{ newCheckinNotification.guest_name }}
+                    <span v-if="latestCheckinNotification.data?.guest_name">
+                      New check-in request from {{ latestCheckinNotification.data.guest_name }}
                     </span>
                     <span v-else>
-                      {{ pendingStays?.length || 0 }} pending check-in{{ pendingStays?.length !== 1 ? 's' : '' }} waiting for verification
+                      {{ latestCheckinNotification.message }}
                     </span>
                   </p>
                 </div>
               </div>
               <div class="flex items-center gap-2">
                 <NuxtLink
-                  :to="newCheckinNotification?.link || '/checkin'"
+                  to="/checkin"
                   class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-md transition-colors"
                   @click="clearNotification"
                 >
                   <i class="pi pi-eye"></i>
-                  {{ newCheckinNotification?.link_label || 'View Check-ins' }}
+                  View Check-ins
                 </NuxtLink>
                 <button
                   @click="clearNotification"
@@ -376,6 +376,11 @@ const totalNotificationCount = computed(() => {
   return realtimeUnread + apiUnread;
 });
 
+// Get the latest unread check-in notification
+const latestCheckinNotification = computed(() => {
+  return notifications.value.find(n => n.type === 'checkin' && !n.read);
+});
+
 // Track if component is mounted to prevent DOM operations when unmounted
 const isMounted = ref(false);
 
@@ -391,31 +396,25 @@ const isCheckinPage = computed(() => route.path === '/checkin');
 
 // WebSocket connection for new check-in notifications
 const webSocketManager = useWebSocket();
-const hasNewStays = ref(false);
-const pendingStays = ref<any[]>([]);
-const newCheckinNotification = ref<any>(null);
 
 // Clear notification flag when user acknowledges it
 const clearNotification = () => {
-  hasNewStays.value = false;
-  newCheckinNotification.value = null;
+  // Mark the latest check-in notification as read
+  if (latestCheckinNotification.value) {
+    notificationStore.markAsRead(latestCheckinNotification.value.id);
+  }
 };
 
 // Handle WebSocket messages for new check-ins
 const handleWebSocketMessage = (message: any) => {
   if (message.type === 'new_checkin') {
     const checkinMessage = message as NewCheckinMessage;
-    hasNewStays.value = true;
-    newCheckinNotification.value = checkinMessage.data;
-
+    
     // Add to notification store with type 'checkin' (not 'new_checkin')
     notificationStore.addNotification({
-      id: checkinMessage.data.conversation_id,
       type: 'checkin', // Store expects 'checkin', not 'new_checkin'
       title: 'New Check-in Request',
       message: checkinMessage.data.message || `New check-in request from ${checkinMessage.data.guest_name}`,
-      timestamp: new Date(checkinMessage.data.created_at),
-      read: false,
       data: checkinMessage.data
     });
 
