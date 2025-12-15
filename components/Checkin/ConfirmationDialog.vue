@@ -172,6 +172,22 @@
                        <label for="hours_24" class="text-sm cursor-pointer font-bold">24 hours</label>
                      </div>
                    </div>
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Breakfast Reminder</label>
+                    <div class="flex items-center gap-2">
+                        <Checkbox inputId="breakfast_reminder" v-model="guestEdits.breakfast_reminder" binary />
+                        <label for="breakfast_reminder" class="text-sm cursor-pointer">Enable</label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Dinner Reminder</label>
+                    <div class="flex items-center gap-2">
+                        <Checkbox inputId="dinner_reminder" v-model="guestEdits.dinner_reminder" binary />
+                        <label for="dinner_reminder" class="text-sm cursor-pointer">Enable</label>
+                    </div>
+                </div>
+            </div>
         </div>
       </div>
     </div>
@@ -221,7 +237,9 @@ const guestEdits = ref({
   date_of_birth: null as Date | null,
   preferred_language: '',
   notes: '',
-  hours_24: false
+  hours_24: false,
+  breakfast_reminder: false,
+  dinner_reminder: false
 });
 
 // Language options
@@ -335,9 +353,15 @@ const confirmAndCheckin = () => {
     if (guestEdits.value.notes !== props.stay?.guest?.notes) {
       guestUpdates.notes = guestEdits.value.notes;
     }
-    // Always check hours_24 since it's always editable
+    // Always check these fields since they're always editable
     if (guestEdits.value.hours_24 !== props.stay?.guest?.hours_24) {
       guestUpdates.hours_24 = guestEdits.value.hours_24;
+    }
+    if (guestEdits.value.breakfast_reminder !== props.stay?.guest?.breakfast_reminder) {
+      guestUpdates.breakfast_reminder = guestEdits.value.breakfast_reminder;
+    }
+    if (guestEdits.value.dinner_reminder !== props.stay?.guest?.dinner_reminder) {
+      guestUpdates.dinner_reminder = guestEdits.value.dinner_reminder;
     }
 
     if (Object.keys(guestUpdates).length > 0) {
@@ -383,7 +407,9 @@ watch(() => props.visible, async (newValue) => {
         date_of_birth: props.stay.guest.date_of_birth ? new Date(props.stay.guest.date_of_birth) : null,
         preferred_language: props.stay.guest.preferred_language || '',
         notes: props.stay.guest.notes || '',
-        hours_24: props.stay.guest.hours_24 || false
+        hours_24: props.stay.guest.hours_24 || false,
+        breakfast_reminder: props.stay.guest.breakfast_reminder || false,
+        dinner_reminder: props.stay.guest.dinner_reminder || false
       };
     }
 
