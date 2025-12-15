@@ -471,6 +471,11 @@ import FlagWarningAccordion from './FlagWarningAccordion.vue';
 import Badge from 'primevue/badge';
 import type { CreateGuestData, AccompanyingGuestData } from '~/composables/checkin-manager';
 
+// Define emits
+const emit = defineEmits<{
+  'checkin-success': []
+}>();
+
 const toast = useToast();
 const { createGuestMutation, checkinOfflineMutation, verifyCheckinMutation } = useCheckinWorkflow();
 
@@ -801,7 +806,7 @@ const completeCheckin = async () => {
       guestId = guestResult.primary_guest.id;
     }
 
-    // 2. Check-in offline with guest ID
+    // 2. Check-in offline with guest ID using the workflow mutation
     const checkinData = {
       primary_guest_id: guestId,
       room_ids: stayForm.value.rooms,
@@ -810,10 +815,10 @@ const completeCheckin = async () => {
       guest_names: guestData.value.accompanying_guests?.map(g => g.full_name).filter(Boolean)
     };
 
-    const checkinResult = await checkinOfflineMutation.mutateAsync(checkinData);
+    const checkinResult = await checkinOfflineMutation.checkinOffline(checkinData);
 
-    // 3. Verify check-in for each stay with any modifications
-    for (const stay of checkinResult.stays) {
+    // 3. Verify check-in for each stay with any modifications using the workflow mutation
+    for (const stayId of checkinResult.stay_ids) {
       const verifyRequestData: any = {
         guest_updates: {
           hours_24: verifyData.value.hours_24 || false,
@@ -823,8 +828,8 @@ const completeCheckin = async () => {
         }
       };
 
-      await verifyCheckinMutation.mutateAsync({
-        stayId: stay.id,
+      await verifyCheckinMutation.verifyCheckin({
+        stayId: stayId,
         data: verifyRequestData
       });
     }
@@ -835,6 +840,9 @@ const completeCheckin = async () => {
       summary: 'Success',
       detail: `Guest checked in successfully! ${selectedGuest.value ? '(Existing Guest)' : '(New Guest)'}`
     });
+
+    // Emit event to switch tab to pending stays
+    emit('checkin-success');
 
     // Reset form after delay
     setTimeout(() => {

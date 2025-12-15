@@ -3,12 +3,12 @@
     <div class="max-w-7xl mx-auto space-y-8">
       <CheckinHeader />
 
-      <TabView class="w-full">
+      <TabView v-model:activeIndex="activeTabIndex" class="w-full">
         <TabPanel header="Pending Stays">
           <CheckinPendingStaysTab />
         </TabPanel>
         <TabPanel header="Manual Walk-in">
-          <CheckinManualWalkinTab />
+          <CheckinManualWalkinTab @checkin-success="handleCheckinSuccess" />
         </TabPanel>
       </TabView>
     </div>
@@ -16,10 +16,16 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
 import CheckinManualWalkinTab from '~/components/Checkin/ManualWalkinTab.vue';
 
-// The logic has been moved to the child components.
-// This parent component now only serves as a layout container.
+// Tab state management
+const activeTabIndex = ref(0); // 0 = Pending Stays, 1 = Manual Walk-in
+
+// Handle successful check-in by switching to Pending Stays tab
+const handleCheckinSuccess = () => {
+  activeTabIndex.value = 0; // Switch to Pending Stays tab
+};
 </script>
