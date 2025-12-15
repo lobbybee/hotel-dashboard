@@ -256,9 +256,91 @@
 
     <!-- Step 3: Documents -->
     <div v-if="step === 3" class="bg-white p-6 rounded-lg shadow">
-      <h3 class="text-lg font-semibold mb-4">Upload Documents</h3>
+      <h3 class="text-lg font-semibold mb-4">Documents</h3>
 
-      <div class="space-y-6">
+      <!-- Existing Guest - Show Document Status -->
+      <div v-if="selectedGuest" class="space-y-6">
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="pi pi-check-circle text-green-600"></i>
+            <span class="font-medium text-green-800">Documents Already on File</span>
+          </div>
+          <p class="text-sm text-green-700 mb-3">
+            Guest documents are already uploaded and verified in the system.
+          </p>
+
+          <!-- Show existing documents if available -->
+          <div v-if="selectedGuest.documents && selectedGuest.documents.length > 0" class="space-y-2">
+            <h5 class="font-medium text-sm">Existing Documents:</h5>
+            <div v-for="doc in selectedGuest.documents" :key="doc.id" class="flex items-center justify-between bg-white p-2 rounded border">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-medium">{{ formatDocumentType(doc.document_type) }}</span>
+                <span v-if="doc.document_number" class="text-xs text-gray-500">({{ doc.document_number }})</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <Badge :value="doc.is_verified ? 'Verified' : 'Pending'" :severity="doc.is_verified ? 'success' : 'warning'" />
+                <a v-if="doc.document_file_url" :href="doc.document_file_url" target="_blank" class="text-blue-500 hover:text-blue-700 text-sm">
+                  <i class="pi pi-eye"></i> View
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accompanying Guests Documents (still needed) -->
+        <div v-if="guestData.accompanying_guests?.length" class="border rounded-lg p-4">
+          <h4 class="font-medium mb-3">Accompanying Guests Documents</h4>
+          <p class="text-sm text-gray-600 mb-3">Documents are required for accompanying guests</p>
+
+          <div v-for="(guest, index) in guestData.accompanying_guests" :key="index" class="mb-4 last:mb-0">
+            <p class="text-sm font-medium mb-2">{{ guest.full_name || `Guest ${index + 1}` }}</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+              <div>
+                <label class="block text-sm font-medium mb-1">Document Type</label>
+                <Dropdown
+                  v-model="guest.document_type"
+                  :options="documentTypes"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Select document type"
+                  class="w-full"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Document Number</label>
+                <InputText
+                  v-model="guest.document_number"
+                  placeholder="Document number"
+                  class="w-full"
+                />
+              </div>
+            </div>
+
+            <FileUpload
+              mode="basic"
+              accept="image/*,.pdf"
+              :maxFileSize="2000000"
+              @select="(e) => handleAccompanyingDocumentSelect(e, index)"
+              chooseLabel="Select Document"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- New Guest - Document Upload Required -->
+      <div v-else class="space-y-6">
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="pi pi-info-circle text-amber-600"></i>
+            <span class="font-medium text-amber-800">Documents Required</span>
+          </div>
+          <p class="text-sm text-amber-700">
+            Identity documents are required for all new guests. Please upload clear photos of valid ID.
+          </p>
+        </div>
+
         <!-- Primary Guest Documents -->
         <div class="border rounded-lg p-4">
           <h4 class="font-medium mb-3">Primary Guest: {{ guestData.primary_guest.full_name }}</h4>
@@ -363,7 +445,7 @@
           label="Complete Check-in"
           @click="completeCheckin"
           :loading="isProcessing"
-          :disabled="!primaryDocument"
+          :disabled="!selectedGuest && !primaryDocument"
         />
       </div>
     </div>
@@ -386,6 +468,7 @@ import {
     useFetchHotelRoomFloors,
 } from "~/composables/useHotel";
 import FlagWarningAccordion from './FlagWarningAccordion.vue';
+import Badge from 'primevue/badge';
 import type { CreateGuestData, AccompanyingGuestData } from '~/composables/checkin-manager';
 
 const toast = useToast();
@@ -554,6 +637,11 @@ const documentTypes = [
   { label: 'Passport', value: 'passport' },
   { label: 'Other', value: 'other' }
 ];
+
+const formatDocumentType = (type: string) => {
+  if (!type) return '';
+  return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
 
 // Validation
 const isGuestDetailsValid = computed(() => {
