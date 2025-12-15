@@ -41,36 +41,39 @@
           <div class="flex items-center gap-2 sm:gap-4">
 
 
-            <Button
-              text
-              rounded
-              aria-label="Notifications"
-              @click="toggleNotifications"
-              class="relative"
-            >
-              <template #icon>
-                <Icon name="prime:bell" class="h-5 w-5" />
-              </template>
-              <Badge 
-                v-if="totalNotificationCount > 0" 
-                :value="totalNotificationCount" 
-                severity="danger"
-                class="absolute -top-2 -right-2"
-              />
-            </Button>
+      <div class="relative">
+          <Button
+                  text
+                  rounded
+                  aria-label="Notifications"
+                  @click="toggleNotifications"
+                  class="relative"
+                >
+                  <template #icon>
+                    <Icon name="prime:bell" class="h-5" />
+                  </template>
+
+                </Button>
+                <Badge
+                          v-if="totalNotificationCount > 0"
+                          :value="totalNotificationCount"
+                          severity="danger"
+                          class="absolute -top-2 -right-2 z-10"
+                        />
+      </div>
 
             <div class="relative">
               <Button @click="toggleUserMenu" text class="flex items-center gap-2 rounded-full p-1 text-left">
                 <!-- Smaller avatar for mobile to fit name -->
                 <Avatar :label="userInitials" shape="circle" size="small" class="bg-gradient-to-br from-orange-400 to-blue-400 text-white flex-shrink-0" />
-                
+
                 <!-- Show name on mobile (md and up), full info on xl -->
                 <div class="hidden md:block xl:hidden">
                   <p class="truncate text-sm font-medium text-gray-800">
                     {{ userDisplayName }}
                   </p>
                 </div>
-                
+
                 <!-- Full info on desktop -->
                 <div class="hidden xl:block">
                   <p class="truncate text-sm font-semibold text-gray-800">
@@ -80,7 +83,7 @@
                     {{ user?.hotel_name || getRoleLabel(userRole) }}
                   </p>
                 </div>
-                
+
                 <!-- Chevron icon on md and up -->
                 <Icon name="prime:chevron-down" class="hidden h-3 w-3 text-gray-500 md:block" />
               </Button>
@@ -404,7 +407,7 @@ const handleWebSocketMessage = (message: any) => {
     const checkinMessage = message as NewCheckinMessage;
     hasNewStays.value = true;
     newCheckinNotification.value = checkinMessage.data;
-    
+
     // Add to notification store with type 'checkin' (not 'new_checkin')
     notificationStore.addNotification({
       id: checkinMessage.data.conversation_id,
@@ -415,10 +418,10 @@ const handleWebSocketMessage = (message: any) => {
       read: false,
       data: checkinMessage.data
     });
-    
+
     // Emit custom event for components to listen to
-    window.dispatchEvent(new CustomEvent('new-checkin-received', { 
-      detail: checkinMessage.data 
+    window.dispatchEvent(new CustomEvent('new-checkin-received', {
+      detail: checkinMessage.data
     }));
   }
 };
@@ -426,10 +429,10 @@ const handleWebSocketMessage = (message: any) => {
 // Set up WebSocket message handler
 onMounted(() => {
   isMounted.value = true;
-  
+
   // Initialize chat store globally to establish WebSocket connection
   chatStore.initChat();
-  
+
   // Set up WebSocket message listener for new check-ins
   webSocketManager.onMessage(handleWebSocketMessage);
 });
