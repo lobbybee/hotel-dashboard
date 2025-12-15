@@ -3,17 +3,17 @@
     <!-- Progress Indicator -->
     <div class="flex items-center justify-center space-x-4 p-4 bg-gray-50 rounded-lg">
       <div class="flex items-center">
-        <div class="w-8 h-8 rounded-full" :class="step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'">1</div>
+        <div class="w-8 h-8 rounded-full flex justify-center items-center" :class="step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'">1</div>
         <span class="ml-2">Guest Details</span>
       </div>
       <div class="w-16 h-1 bg-gray-300"></div>
       <div class="flex items-center">
-        <div class="w-8 h-8 rounded-full" :class="step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'">2</div>
-        <span class="ml-2">Rooms</span>
+        <div class="w-8 h-8 rounded-full flex justify-center items-center" :class="step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'">2</div>
+        <span class="ml-2">Rooms & Preferences</span>
       </div>
       <div class="w-16 h-1 bg-gray-300"></div>
       <div class="flex items-center">
-        <div class="w-8 h-8 rounded-full" :class="step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'">3</div>
+        <div class="w-8 h-8 rounded-full flex justify-center items-center" :class="step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'">3</div>
         <span class="ml-2">Documents</span>
       </div>
     </div>
@@ -129,6 +129,9 @@
       <h3 class="text-lg font-semibold mb-4">Select Rooms</h3>
 
       <div class="space-y-6">
+        <!-- Flag Warnings - Show if guest is flagged -->
+        <FlagWarningAccordion v-if="flagSummary && selectedGuest" :flagSummary="flagSummary" class="mb-4" />
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium mb-1">Room Category Filter</label>
@@ -189,6 +192,57 @@
               :value="`${room?.number} - ${room?.category || ''}`"
               severity="info"
               class="text-xs"
+            />
+          </div>
+        </div>
+
+        <!-- Guest Preferences -->
+        <div class="border-t pt-4">
+          <h4 class="font-medium mb-3">Guest Preferences</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <Checkbox
+                  inputId="hours_24"
+                  v-model="verifyData.hours_24"
+                  binary
+                />
+                <label for="hours_24" class="text-sm cursor-pointer font-medium">24 hours stay</label>
+              </div>
+              <small class="text-xs text-gray-500 mt-1 block">Full 24-hour stay instead of 12 hours</small>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <Checkbox
+                  inputId="breakfast_reminder"
+                  v-model="verifyData.breakfast_reminder"
+                  binary
+                />
+                <label for="breakfast_reminder" class="text-sm cursor-pointer font-medium">Breakfast Reminder</label>
+              </div>
+              <small class="text-xs text-gray-500 mt-1 block">Send breakfast reminder notification</small>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <Checkbox
+                  inputId="dinner_reminder"
+                  v-model="verifyData.dinner_reminder"
+                  binary
+                />
+                <label for="dinner_reminder" class="text-sm cursor-pointer font-medium">Dinner Reminder</label>
+              </div>
+              <small class="text-xs text-gray-500 mt-1 block">Send dinner reminder notification</small>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <label for="notes" class="block text-sm font-medium mb-1">Additional Notes</label>
+            <Textarea
+              id="notes"
+              v-model="verifyData.notes"
+              rows="3"
+              class="w-full"
+              placeholder="Any special requests or notes for the stay..."
             />
           </div>
         </div>
@@ -331,6 +385,7 @@ import {
     useFetchRoomCategories,
     useFetchHotelRoomFloors,
 } from "~/composables/useHotel";
+import FlagWarningAccordion from './FlagWarningAccordion.vue';
 import type { CreateGuestData, AccompanyingGuestData } from '~/composables/checkin-manager';
 
 const toast = useToast();
@@ -386,6 +441,15 @@ const isProcessing = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
 const uploadBackSide = ref(false);
+const flagSummary = ref<any>(null);
+
+// Verification data for guest preferences
+const verifyData = ref({
+  hours_24: false,
+  breakfast_reminder: true,
+  dinner_reminder: false,
+  notes: ''
+});
 
 // Documents
 const primaryDocument = ref<File | null>(null);
@@ -539,6 +603,9 @@ const onGuestSelect = (event: any) => {
     document_type: guest.documents?.[0]?.document_type || '',
     document_number: guest.documents?.[0]?.document_number || ''
   };
+
+  // Fetch flag summary for the selected guest
+  fetchGuestFlags(guest.id);
 };
 
 const onInputFocus = () => {
@@ -549,6 +616,17 @@ const onInputFocus = () => {
   // If we have last search results but no current results, show them
   else if (filteredGuests.value.length === 0 && lastSearchResults.value.length > 0) {
     filteredGuests.value = lastSearchResults.value;
+  }
+};
+
+const fetchGuestFlags = async (guestId: number) => {
+  try {
+    const { API } = useAPI();
+    const response = await API(`/guest-management/guests/${guestId}/flags/`);
+    flagSummary.value = response;
+  } catch (error) {
+    console.error('Error fetching guest flags:', error);
+    flagSummary.value = null;
   }
 };
 
@@ -564,6 +642,7 @@ const clearGuestSelection = () => {
   };
   searchTerm.value = '';
   filteredGuests.value = lastSearchResults.value; // Restore last search results
+  flagSummary.value = null; // Clear flag summary
 };
 
 
@@ -608,19 +687,35 @@ const completeCheckin = async () => {
   try {
     isProcessing.value = true;
     errorMessage.value = '';
+    successMessage.value = '';
 
-    // 1. Create guest with documents
-    const formData = prepareGuestFormData(guestData.value, {
-      primaryDocuments: primaryDocument.value ? [primaryDocument.value] : [],
-      primaryDocumentsBack: primaryDocumentBack.value ? [primaryDocumentBack.value] : [],
-      accompanyingDocuments: accompanyingDocuments.value
-    });
+    let guestId: number;
 
-    const guestResult = await createGuestMutation.mutateAsync(formData);
+    // 1. Check if it's an existing guest or new guest
+    if (selectedGuest.value) {
+      // Existing guest - use existing guest ID
+      guestId = selectedGuest.value.id;
 
-    // 2. Check-in offline
+      // If documents are uploaded for existing guest, handle document updates if needed
+      if (primaryDocument.value) {
+        // TODO: Handle document updates for existing guests if needed
+        // This might be a separate API call to update guest documents
+      }
+    } else {
+      // New guest - create guest with documents
+      const formData = prepareGuestFormData(guestData.value, {
+        primaryDocuments: primaryDocument.value ? [primaryDocument.value] : [],
+        primaryDocumentsBack: primaryDocumentBack.value ? [primaryDocumentBack.value] : [],
+        accompanyingDocuments: accompanyingDocuments.value
+      });
+
+      const guestResult = await createGuestMutation.mutateAsync(formData);
+      guestId = guestResult.primary_guest.id;
+    }
+
+    // 2. Check-in offline with guest ID
     const checkinData = {
-      primary_guest_id: guestResult.primary_guest.id,
+      primary_guest_id: guestId,
       room_ids: stayForm.value.rooms,
       check_in_date: checkinDates.value.check_in.toISOString(),
       check_out_date: checkinDates.value.check_out.toISOString(),
@@ -629,17 +724,20 @@ const completeCheckin = async () => {
 
     const checkinResult = await checkinOfflineMutation.mutateAsync(checkinData);
 
-    // 3. Verify check-in for each stay
+    // 3. Verify check-in for each stay with any modifications
     for (const stay of checkinResult.stays) {
+      const verifyRequestData: any = {
+        guest_updates: {
+          hours_24: verifyData.value.hours_24 || false,
+          breakfast_reminder: verifyData.value.breakfast_reminder !== undefined ? verifyData.value.breakfast_reminder : true,
+          dinner_reminder: verifyData.value.dinner_reminder || false,
+          notes: verifyData.value.notes || ''
+        }
+      };
+
       await verifyCheckinMutation.mutateAsync({
         stayId: stay.id,
-        data: {
-          guest_updates: {
-            hours_24: false,
-            breakfast_reminder: true,
-            dinner_reminder: false
-          }
-        }
+        data: verifyRequestData
       });
     }
 
@@ -647,7 +745,7 @@ const completeCheckin = async () => {
     toast.add({
       severity: 'success',
       summary: 'Success',
-      detail: 'Guest checked in successfully!'
+      detail: `Guest checked in successfully! ${selectedGuest.value ? '(Existing Guest)' : '(New Guest)'}`
     });
 
     // Reset form after delay
@@ -691,6 +789,13 @@ const resetForm = () => {
   primaryDocumentBack.value = null;
   accompanyingDocuments.value = [];
   uploadBackSide.value = false;
+  verifyData.value = {
+    hours_24: false,
+    breakfast_reminder: true,
+    dinner_reminder: false,
+    notes: ''
+  };
+  flagSummary.value = null;
   errorMessage.value = '';
   successMessage.value = '';
 };
