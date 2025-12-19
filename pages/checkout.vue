@@ -211,7 +211,48 @@
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-500 mb-1">Check-out Date</label>
-              <p class="font-medium text-gray-900">{{ formatDate(selectedStayForGuestInfo.check_out_date) }}</p>
+              <div class="flex items-center gap-2">
+                <p v-if="!isEditingCheckoutDate" class="font-medium text-gray-900">{{ formatDate(selectedStayForGuestInfo.check_out_date) }}</p>
+                <Calendar
+                  v-else
+                  v-model="editedCheckoutDate"
+                  showTime
+                  hourFormat="24"
+                  dateFormat="dd/mm/yy"
+                  class="flex-1"
+                />
+                <Button
+                  v-if="!isEditingCheckoutDate"
+                  icon="pi pi-sign-out"
+                  size="small"
+
+                  rounded
+                  severity="primary"
+                  @click="startEditingCheckoutDate"
+                  v-tooltip="'Extend checkout date'"
+                />
+                <div v-else class="flex items-center gap-1">
+                  <Button
+                    icon="pi pi-check"
+                    size="small"
+                    text
+                    rounded
+                    severity="success"
+                    @click="saveCheckoutDate"
+                    :loading="isExtendingStay"
+                    v-tooltip="'Save new checkout date'"
+                  />
+                  <Button
+                    icon="pi pi-times"
+                    size="small"
+                    text
+                    rounded
+                    severity="danger"
+                    @click="cancelEditingCheckoutDate"
+                    v-tooltip="'Cancel edit'"
+                  />
+                </div>
+              </div>
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-500 mb-1">Duration</label>
@@ -226,7 +267,6 @@
       </div>
       <template #footer>
         <Button label="Close" icon="pi pi-times" @click="isGuestInfoDialogVisible = false" class="p-button-text" />
-        <Button label="Extend Stay" icon="pi pi-plus" severity="secondary" @click="handleExtendStay" />
       </template>
     </Dialog>
 
@@ -260,7 +300,7 @@
               <label for="final_charge" class="block text-sm font-medium text-gray-700 mb-2">
                 Final Charge
               </label>
-              <InputNumber 
+              <InputNumber
                 id="final_charge"
                 v-model="checkoutData.final_charge"
                 mode="currency"
@@ -284,9 +324,9 @@
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">Internal Rating (Optional)</label>
           <div class="flex items-center gap-4">
-            <Rating 
-              v-model="checkoutData.internal_rating" 
-              :stars="5" 
+            <Rating
+              v-model="checkoutData.internal_rating"
+              :stars="5"
               :cancel="false"
               class="flex"
             />
@@ -300,11 +340,11 @@
         <!-- Internal Note -->
         <div class="space-y-2">
           <label class="block text-sm font-medium text-gray-700">
-            Internal Note 
+            Internal Note
             <span v-if="checkoutData.flag_user" class="text-red-600 font-medium">*</span>
             <span v-else class="text-gray-400">(Optional)</span>
           </label>
-          <Textarea 
+          <Textarea
             v-model="checkoutData.internal_note"
             rows="3"
             cols="30"
@@ -318,10 +358,10 @@
         <!-- Flag User -->
         <div class="space-y-2">
           <div class="flex items-center gap-2">
-            <Checkbox 
-              inputId="flag_user" 
-              v-model="checkoutData.flag_user" 
-              binary 
+            <Checkbox
+              inputId="flag_user"
+              v-model="checkoutData.flag_user"
+              binary
             />
             <label for="flag_user" class="text-sm font-medium text-gray-700 cursor-pointer">
               Flag this user
@@ -336,10 +376,10 @@
       </div>
       <template #footer>
         <Button label="Cancel" text @click="isCheckoutDialogVisible = false" />
-        <Button 
-          label="Print Summary" 
-          icon="pi pi-print" 
-          severity="secondary" 
+        <Button
+          label="Print Summary"
+          icon="pi pi-print"
+          severity="secondary"
           @click="printCheckoutSummary"
           class="p-button-outlined"
         />
@@ -362,9 +402,10 @@ import Rating from 'primevue/rating';
 import Textarea from 'primevue/textarea';
 import Checkbox from 'primevue/checkbox';
 import InputNumber from 'primevue/inputnumber';
+import Calendar from 'primevue/calendar';
 import { useToast } from 'primevue/usetoast';
 
-import { useListCheckedInUsers, useCheckoutUser } from '~/composables/checkin-manager';
+import { useListCheckedInUsers, useCheckoutUser, useExtendGuestStay } from '~/composables/checkin-manager';
 
 const toast = useToast();
 
@@ -398,6 +439,9 @@ const checkoutData = ref({
 // --- GUEST INFO LOGIC ---
 const isGuestInfoDialogVisible = ref(false);
 const selectedStayForGuestInfo = ref<any>(null);
+const isEditingCheckoutDate = ref(false);
+const editedCheckoutDate = ref('');
+const { extendGuestStay, isLoading: isExtendingStay } = useExtendGuestStay();
 
 const handleCheckout = (stay: any) => {
   selectedStayForCheckout.value = stay;
@@ -415,14 +459,63 @@ const handleViewGuest = (stay: any) => {
   isGuestInfoDialogVisible.value = true;
 };
 
+const startEditingCheckoutDate = () => {
+  isEditingCheckoutDate.value = true;
+  editedCheckoutDate.value = new Date(selectedStayForGuestInfo.value.check_out_date);
+};
+
+const cancelEditingCheckoutDate = () => {
+  isEditingCheckoutDate.value = false;
+  editedCheckoutDate.value = '';
+};
+
+const saveCheckoutDate = async () => {
+  if (!selectedStayForGuestInfo.value || !editedCheckoutDate.value) return;
+
+  try {
+    // Format the date to ISO string
+    const newCheckoutDate = new Date(editedCheckoutDate.value).toISOString();
+
+    await extendGuestStay({
+      stayId: selectedStayForGuestInfo.value.id,
+      checkOutDate: newCheckoutDate
+    });
+
+    // Update the local data with the new checkout date
+    selectedStayForGuestInfo.value.check_out_date = newCheckoutDate;
+
+    // Find and update the stay in the main checkedInUsers array
+    const stayIndex = (checkedInUsers.value || []).findIndex(
+      stay => stay.id === selectedStayForGuestInfo.value.id
+    );
+    if (stayIndex !== -1) {
+      checkedInUsers.value[stayIndex].check_out_date = newCheckoutDate;
+    }
+
+    toast.add({
+      severity: 'success',
+      summary: 'Stay Extended',
+      detail: `Checkout date extended to ${formatDate(newCheckoutDate)}`,
+      life: 4000
+    });
+
+    isEditingCheckoutDate.value = false;
+    editedCheckoutDate.value = '';
+
+  } catch (err: any) {
+    const errorMessage = err.error || err.response?._data?.detail || 'Failed to extend stay.';
+    toast.add({
+      severity: 'error',
+      summary: 'Extension Failed',
+      detail: errorMessage,
+      life: 5000
+    });
+  }
+};
+
 const handleExtendStay = () => {
-  // Dummy function for now
-  toast.add({
-    severity: 'info',
-    summary: 'Extend Stay',
-    detail: 'Extend stay functionality will be implemented soon.',
-    life: 3000
-  });
+  // This function can still be used for the original extend button if needed
+  // or can be removed since we now have inline editing
 };
 
 const printCheckoutSummary = () => {
@@ -443,11 +536,11 @@ const printCheckoutSummary = () => {
     yPosition += 15;
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`Date: ${new Date().toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    pdf.text(`Date: ${new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     })}`, pageWidth / 2, yPosition, { align: 'center' });
 
     // Guest Information
@@ -455,15 +548,15 @@ const printCheckoutSummary = () => {
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Guest Information', 20, yPosition);
-    
+
     yPosition += 10;
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'normal');
     pdf.text(`Name: ${selectedStayForCheckout.value.guest.full_name}`, 20, yPosition);
-    
+
     yPosition += 7;
     pdf.text(`WhatsApp: ${selectedStayForCheckout.value.guest.whatsapp_number || 'N/A'}`, 20, yPosition);
-    
+
     yPosition += 7;
     pdf.text(`Email: ${selectedStayForCheckout.value.guest.email || 'Not provided'}`, 20, yPosition);
 
@@ -472,21 +565,21 @@ const printCheckoutSummary = () => {
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Stay Details', 20, yPosition);
-    
+
     yPosition += 10;
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'normal');
     pdf.text(`Room Number: ${selectedStayForCheckout.value.room_details.room_number}`, 20, yPosition);
-    
+
     yPosition += 7;
     pdf.text(`Room Category: ${selectedStayForCheckout.value.room_details.category}`, 20, yPosition);
-    
+
     yPosition += 7;
     pdf.text(`Check-in Date: ${formatDate(selectedStayForCheckout.value.check_in_date)}`, 20, yPosition);
-    
+
     yPosition += 7;
     pdf.text(`Check-out Date: ${formatDate(selectedStayForCheckout.value.check_out_date)}`, 20, yPosition);
-    
+
     yPosition += 7;
     pdf.text(`Duration: ${getDaysStayed(selectedStayForCheckout.value)} night(s)`, 20, yPosition);
 
@@ -495,25 +588,25 @@ const printCheckoutSummary = () => {
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Bill Details', 20, yPosition);
-    
+
     yPosition += 12;
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'normal');
-    
+
     // Bill items
     pdf.text(`${selectedStayForCheckout.value.room_details.category} Room - ${selectedStayForCheckout.value.room_details.room_number}`, 20, yPosition);
     yPosition += 7;
     pdf.text(`${selectedStayForCheckout.value.billing?.hours_24 ? '24 Hour' : '12 Hour'} Billing Cycle`, 20, yPosition);
-    
+
     // Add some space
     yPosition += 10;
-    
+
     // Draw line before total
     pdf.setLineWidth(0.5);
     pdf.line(20, yPosition, pageWidth - 20, yPosition);
-    
+
     yPosition += 10;
-    
+
     // Total on the right
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
@@ -531,7 +624,7 @@ const printCheckoutSummary = () => {
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.text('Thank you for your stay!', pageWidth / 2, yPosition, { align: 'center' });
-    
+
     yPosition += 7;
     pdf.text('Please settle the payment at the front desk', pageWidth / 2, yPosition, { align: 'center' });
 

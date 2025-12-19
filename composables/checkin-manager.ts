@@ -372,6 +372,42 @@ export const useRejectCheckin = () => {
   };
 };
 
+// Extend Guest Stay - Extends the checkout date for an existing guest stay
+export const useExtendGuestStay = () => {
+  const { API } = useAPI();
+
+  const {
+    mutateAsync: extendGuestStay,
+    status,
+    error,
+    isLoading,
+    asyncStatus
+  } = useMutation({
+    mutation: async ({ stayId, checkOutDate }: { stayId: string | number; checkOutDate: string }) => {
+      console.log('extendGuestStay mutation called with:', { stayId, checkOutDate });
+      const endpoint = `/stay-management/${stayId}/extend-stay/`;
+      console.log('Making request to endpoint:', endpoint);
+
+      const response = await API(endpoint, {
+        method: 'POST',
+        body: {
+          check_out_date: checkOutDate
+        }
+      });
+      console.log('extendGuestStay response:', response);
+      return response;
+    }
+  });
+
+  return {
+    extendGuestStay,
+    status,
+    error,
+    isLoading,
+    asyncStatus
+  };
+};
+
 // Utility composable for managing check-in workflow state
 export const useCheckinWorkflow = () => {
   const checkinOfflineMutation = useCheckinOffline();
