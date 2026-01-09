@@ -1,1007 +1,623 @@
 <template>
-  <!-- Loading State -->
-  <div v-if="isLoading" class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 flex items-center justify-center">
-    <div class="text-center">
-      <div class="w-20 h-20 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl mx-auto mb-6 flex items-center justify-center animate-pulse">
-        <i class="pi pi-th-large text-white text-3xl"></i>
-      </div>
-      <div class="animate-pulse">
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">Setting Up Your Rooms</h2>
-        <p class="text-gray-600">Please wait while we prepare your room configuration...</p>
-      </div>
-      <div class="mt-6">
-        <div class="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main Content (shown when not loading) -->
-  <div v-else class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
-    <!-- Mobile-friendly header -->
-    <div class="w-full px-4 py-6 flex justify-between items-center">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center">
-          <i class="pi pi-th-large text-white text-lg"></i>
+  <OnboardingOnboardLayout
+    title="Room Setup"
+    icon="pi-th-large"
+    color-scheme="purple"
+    :steps="steps"
+    :current-step="currentStep"
+    :is-loading="isLoading"
+    loading-title="Setting Up Your Rooms"
+    loading-subtitle="Please wait while we prepare your room configuration..."
+    :is-saving="isCreating"
+    :show-navigation="currentStep !== 0 && currentStep !== steps.length - 1"
+    :continue-button-text="getButtonText()"
+    :continue-disabled="isContinueDisabled"
+    :api-error="apiError"
+    @next="handleNext"
+    @retry="retryFetch"
+  >
+    <!-- Slide 0: Welcome -->
+    <template #slide-0>
+      <div class="text-center mb-8">
+        <div class="w-20 h-20 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl mx-auto mb-6 flex items-center justify-center">
+          <i class="pi pi-th-large text-white text-3xl"></i>
         </div>
-        <h1 class="text-xl font-bold text-gray-900 hidden sm:block">Room Setup</h1>
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">
+          {{ (categories?.length || 0) > 0 ? 'Room Configuration' : 'Welcome to Room Setup' }}
+        </h2>
+        <p class="text-gray-600 leading-relaxed">
+          {{ (categories?.length || 0) > 0
+            ? `You have ${categories?.length || 0} room categories and ${totalRooms} rooms.`
+            : "Let's set up your room categories and create your first rooms."
+          }}
+        </p>
       </div>
 
-      <!-- Mobile step indicator -->
-      <div class="flex items-center space-x-2">
-        <span class="text-sm text-gray-500">Step</span>
-        <span class="text-sm font-semibold text-purple-600">{{ currentStep + 1 }}/{{ totalSteps }}</span>
-      </div>
-    </div>
-
-    <!-- Progress Bar - Mobile First -->
-    <div class="w-full px-4 mb-8">
-      <div class="relative">
-        <div class="h-1 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            class="h-full bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full transition-all duration-500 ease-out"
-            :style="{ width: `${progressPercentage}%` }"
-          ></div>
-        </div>
-        <div class="flex justify-between mt-3">
-          <div
-            v-for="(step, index) in steps"
-            :key="index"
-            class="flex flex-col items-center"
-            :class="{ 'opacity-100': index <= currentStep, 'opacity-50': index > currentStep }"
-          >
-            <div
-              class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-300"
-              :class="{
-                'bg-gradient-to-r from-purple-600 to-indigo-600 text-white': index < currentStep,
-                'bg-purple-600 text-white ring-4 ring-purple-100': index === currentStep,
-                'bg-gray-200 text-gray-500': index > currentStep
-              }"
-            >
-              <i v-if="index < currentStep" class="pi pi-check"></i>
-              <span v-else>{{ index + 1 }}</span>
-            </div>
-            <span class="text-xs text-gray-600 mt-1 hidden sm:block">{{ step.title }}</span>
+      <div v-if="(categories?.length || 0) === 0" class="bg-purple-50 border border-purple-100 rounded-xl p-6 mb-8">
+        <div class="flex items-start space-x-3">
+          <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="pi pi-info-circle text-purple-600"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-purple-900 mb-2">What we'll setup:</h3>
+            <ul class="space-y-2 text-sm text-purple-800">
+              <li class="flex items-center"><i class="pi pi-check-circle mr-2 text-purple-600"></i> Multiple room categories</li>
+              <li class="flex items-center"><i class="pi pi-check-circle mr-2 text-purple-600"></i> Pricing and occupancy</li>
+              <li class="flex items-center"><i class="pi pi-check-circle mr-2 text-purple-600"></i> Bulk room creation</li>
+            </ul>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Main Content -->
-    <div class="max-w-md mx-auto px-4 pb-8">
-      <!-- Slide Container with Animation -->
-      <div class="relative overflow-hidden">
-        <div
-          class="flex transition-transform duration-500 ease-out"
-          :style="{ transform: `translateX(-${currentStep * 100}%)` }"
-        >
-          <!-- Slide 1: Welcome -->
-          <div class="w-full flex-shrink-0 px-4">
-            <div class="text-center mb-8">
-              <div class="w-20 h-20 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl mx-auto mb-6 flex items-center justify-center">
-                <i class="pi pi-th-large text-white text-3xl"></i>
-              </div>
-              <h2 class="text-2xl font-bold text-gray-900 mb-4">
-                {{ (categories?.length || 0) > 0 ? 'Room Configuration' : 'Welcome to Room Setup' }}
-              </h2>
-              <p class="text-gray-600 leading-relaxed">
-                {{ (categories?.length || 0) > 0
-                  ? `You have ${categories?.length || 0} room categor${(categories?.length || 0) === 1 ? 'y' : 'ies'} and ${totalRooms} room${totalRooms === 1 ? '' : 's'}. Let's ensure your room setup is complete.`
-                  : "Let's set up your room categories and create your first rooms. This will help you manage your hotel inventory effectively."
-                }}
-              </p>
-            </div>
-
-            <div v-if="(categories?.length || 0) === 0" class="bg-purple-50 border border-purple-100 rounded-xl p-6 mb-8">
-              <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <i class="pi pi-info-circle text-purple-600"></i>
-                </div>
-                <div>
-                  <h3 class="font-semibold text-purple-900 mb-2">What we'll setup:</h3>
-                  <ul class="space-y-2 text-sm text-purple-800">
-                    <li class="flex items-center"><i class="pi pi-check-circle mr-2 text-purple-600"></i> Room categories (Deluxe, Standard, etc.)</li>
-                    <li class="flex items-center"><i class="pi pi-check-circle mr-2 text-purple-600"></i> Pricing and occupancy settings</li>
-                    <li class="flex items-center"><i class="pi pi-check-circle mr-2 text-purple-600"></i> Room amenities and features</li>
-                    <li class="flex items-center"><i class="pi pi-check-circle mr-2 text-purple-600"></i> Create your first rooms</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div v-else class="bg-green-50 border border-green-100 rounded-xl p-6 mb-8">
-              <div class="flex items-start space-x-3">
-                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <i class="pi pi-check-circle text-green-600"></i>
-                </div>
-                <div>
-                  <h3 class="font-semibold text-green-900 mb-2">Your Room Status</h3>
-                  <p class="text-sm text-green-800 mb-3">Current room configuration status:</p>
-                  <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="text-sm text-green-700">Categories:</span>
-                      <span class="font-semibold text-green-800">{{ categories?.length || 0 }} {{ (categories?.length || 0) === 1 ? 'type' : 'types' }}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                      <span class="text-sm text-green-700">Total Rooms:</span>
-                      <span class="font-semibold text-green-800">{{ totalRooms }}</span>
-                    </div>
-                    <div v-if="(categories?.length || 0) > 0 && totalRooms > 0" class="mt-3 p-2 bg-green-100 rounded-lg">
-                      <p class="text-xs text-green-700 font-medium">✓ Minimum requirements met</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex justify-center">
-              <button
-                @click="nextStep"
-                class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-              >
-                {{ (categories?.length || 0) === 0 ? 'Get Started' : 'Review Categories' }}
-                <i class="pi pi-arrow-right ml-2"></i>
-              </button>
-            </div>
+      <div v-else class="bg-green-50 border border-green-100 rounded-xl p-6 mb-8">
+        <div class="flex items-start space-x-3">
+          <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <i class="pi pi-check-circle text-green-600"></i>
           </div>
-
-          <!-- Slide 2: Room Categories -->
-          <div class="w-full flex-shrink-0 px-4">
-            <div class="mb-8">
-              <div class="w-16 h-16 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-                <i class="pi pi-tag text-white text-2xl"></i>
+          <div>
+            <h3 class="font-semibold text-green-900 mb-2">Your Room Status</h3>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-green-700">Categories:</span>
+                <span class="font-semibold text-green-800">{{ categories?.length || 0 }}</span>
               </div>
-              <h2 class="text-2xl font-bold text-gray-900 mb-2">Room Categories</h2>
-              <p class="text-gray-600">{{ (categories?.length || 0) === 0 ? 'Create your first room category' : 'Review and manage your room categories' }}</p>
-            </div>
-
-            <!-- Existing Categories -->
-            <div v-if="(categories?.length || 0) > 0" class="mb-6">
-              <h3 class="font-semibold text-gray-900 mb-3">Existing Categories</h3>
-              <div class="space-y-3">
-                <div
-                  v-for="category in categories.filter(c => c && c.id && c.name)"
-                  :key="category?.id || category"
-                  class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
-                >
-                  <div class="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 class="font-semibold text-gray-900">{{ category?.name }}</h4>
-                      <p class="text-sm text-gray-600">{{ category?.description }}</p>
-                    </div>
-                    <div class="text-right">
-                      <p class="font-semibold text-purple-600">₹{{ category?.base_price }}</p>
-                      <p class="text-xs text-gray-500">{{ category?.max_occupancy }} guests</p>
-                    </div>
-                  </div>
-                  <div v-if="category?.amenities && category?.amenities?.length > 0" class="flex flex-wrap gap-2">
-                    <span
-                      v-for="amenity in category.amenities?.slice(0, 3) || []"
-                      :key="amenity"
-                      class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full"
-                    >
-                      {{ amenity }}
-                    </span>
-                    <span v-if="category.amenities?.length > 3" class="text-xs text-gray-500">
-                      +{{ category.amenities.length - 3 }} more
-                    </span>
-                  </div>
-                </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-green-700">Total Rooms:</span>
+                <span class="font-semibold text-green-800">{{ totalRooms }}</span>
               </div>
-            </div>
-
-            <!-- Add New Category Form -->
-            <div class="bg-gray-50 rounded-xl p-4">
-              <h3 class="font-semibold text-gray-900 mb-3">
-                {{ (categories?.length || 0) === 0 ? 'Create Your First Category' : 'Add Another Category (Optional)' }}
-              </h3>
-
-              <div class="space-y-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Category Name *</label>
-                  <input
-                    v-model="categoryForm.name"
-                    type="text"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-                    placeholder="e.g., Deluxe Room, Standard Room, Suite"
-                    :class="{ 'border-red-500': categoryErrors.name }"
-                  />
-                  <span v-if="categoryErrors.name" class="text-red-500 text-sm mt-1 block">{{ categoryErrors.name }}</span>
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                  <textarea
-                    v-model="categoryForm.description"
-                    rows="3"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 resize-none"
-                    placeholder="Describe this room category"
-                  ></textarea>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Base Price *</label>
-                    <div class="relative">
-                      <input
-                        v-model="categoryForm.base_price"
-                        type="number"
-                        class="w-full px-4 py-3 pl-8 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-                        placeholder="0"
-                        :class="{ 'border-red-500': categoryErrors.base_price }"
-                      />
-                      <div class="absolute left-3 top-3.5 text-gray-500">₹</div>
-                    </div>
-                    <span v-if="categoryErrors.base_price" class="text-red-500 text-sm mt-1 block">{{ categoryErrors.base_price }}</span>
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Max Occupancy *</label>
-                    <div class="relative">
-                      <input
-                        v-model="categoryForm.max_occupancy"
-                        type="number"
-                        min="1"
-                        class="w-full px-4 py-3 pl-8 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-                        placeholder="2"
-                        :class="{ 'border-red-500': categoryErrors.max_occupancy }"
-                      />
-                      <div class="absolute left-3 top-3.5 text-gray-500">
-                        <i class="pi pi-user text-xs"></i>
-                      </div>
-                    </div>
-                    <span v-if="categoryErrors.max_occupancy" class="text-red-500 text-sm mt-1 block">{{ categoryErrors.max_occupancy }}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Amenities</label>
-                  <div class="max-h-32 overflow-y-auto border border-gray-300 rounded-xl p-3">
-                    <div class="grid grid-cols-2 gap-2">
-                      <label
-                        v-for="amenity in availableAmenities"
-                        :key="amenity"
-                        class="flex items-center space-x-2 text-sm cursor-pointer hover:bg-purple-50 p-2 rounded"
-                      >
-                        <input
-                          v-model="categoryForm.amenities"
-                          :value="amenity"
-                          type="checkbox"
-                          class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                        />
-                        <span class="text-gray-700">{{ amenity }}</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Slide 3: Create Rooms -->
-          <div class="w-full flex-shrink-0 px-4">
-            <div class="mb-8">
-              <div class="w-16 h-16 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-                <i class="pi pi-door-open text-white text-2xl"></i>
-              </div>
-              <h2 class="text-2xl font-bold text-gray-900 mb-2">Create Rooms</h2>
-              <p class="text-gray-600">{{ totalRooms === 0 ? 'Let\'s create your first rooms' : 'Add more rooms to your inventory' }}</p>
-            </div>
-
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Room Category *</label>
-                <select
-                  v-model="bulkAddForm.categoryId"
-                  class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-                  :class="{ 'border-red-500': bulkAddErrors.categoryId }"
-                >
-                  <option value="">Select a category</option>
-                  <option
-                    v-for="category in (Array.isArray(categories) ? categories.filter(c => c && c.id && c.name) : [])"
-                    :key="category?.id"
-                    :value="category?.id"
-                  >
-                    {{ category?.name || 'Unnamed Category' }} - ₹{{ category?.base_price || 0 }}
-                  </option>
-                </select>
-                <span v-if="bulkAddErrors.categoryId" class="text-red-500 text-sm mt-1 block">{{ bulkAddErrors.categoryId }}</span>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Floor *</label>
-                <div class="relative">
-                  <input
-                    v-model="bulkAddForm.floor"
-                    type="number"
-                    min="1"
-                    class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-                    placeholder="1"
-                    :class="{ 'border-red-500': bulkAddErrors.floor }"
-                  />
-                  <div class="absolute left-4 top-3.5 text-gray-400">
-                    <i class="pi pi-building"></i>
-                  </div>
-                </div>
-                <span v-if="bulkAddErrors.floor" class="text-red-500 text-sm mt-1 block">{{ bulkAddErrors.floor }}</span>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Start Room Number *</label>
-                  <input
-                    v-model="bulkAddForm.startRoomNumber"
-                    type="number"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-                    placeholder="101"
-                    :class="{ 'border-red-500': bulkAddErrors.startRoomNumber }"
-                  />
-                  <span v-if="bulkAddErrors.startRoomNumber" class="text-red-500 text-sm mt-1 block">{{ bulkAddErrors.startRoomNumber }}</span>
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">End Room Number *</label>
-                  <input
-                    v-model="bulkAddForm.endRoomNumber"
-                    type="number"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-                    placeholder="110"
-                    :class="{ 'border-red-500': bulkAddErrors.endRoomNumber }"
-                  />
-                  <span v-if="bulkAddErrors.endRoomNumber" class="text-red-500 text-sm mt-1 block">{{ bulkAddErrors.endRoomNumber }}</span>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Room Prefix</label>
-                  <input
-                    v-model="bulkAddForm.roomPrefix"
-                    type="text"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-                    placeholder="e.g., DEL-"
-                  />
-                  <p class="text-xs text-gray-500 mt-1">Optional prefix for room numbers</p>
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Room Suffix</label>
-                  <input
-                    v-model="bulkAddForm.roomSuffix"
-                    type="text"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
-                    placeholder="e.g., -A"
-                  />
-                  <p class="text-xs text-gray-500 mt-1">Optional suffix for room numbers</p>
-                </div>
-              </div>
-
-              <div v-if="estimatedRoomCount > 0" class="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                <div class="flex items-center space-x-3">
-                  <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <i class="pi pi-info-circle text-blue-600"></i>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-blue-900">Room Preview</p>
-                    <p class="text-xs text-blue-800">
-                      Creating {{ estimatedRoomCount }} room{{ estimatedRoomCount === 1 ? '' : 's' }} on floor {{ bulkAddForm.floor }}
-                    </p>
-                    <p class="text-xs text-blue-700 mt-1">
-                      Example: {{ formatRoomNumber(bulkAddForm.startRoomNumber) }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Slide 4: Complete -->
-          <div class="w-full flex-shrink-0 px-4">
-            <div class="text-center mb-8">
-              <div class="w-20 h-20 bg-gradient-to-r from-green-600 to-emerald-600 rounded-3xl mx-auto mb-6 flex items-center justify-center">
-                <i class="pi pi-check text-white text-3xl"></i>
-              </div>
-              <h2 class="text-2xl font-bold text-gray-900 mb-4">Rooms Ready! 🎉</h2>
-              <p class="text-gray-600 leading-relaxed mb-6">
-                Your room setup is now complete! You have successfully configured your hotel's room inventory and are ready to start managing your bookings.
-              </p>
-
-              <div class="bg-green-50 border border-green-100 rounded-xl p-6 mb-8">
-                <h3 class="font-semibold text-green-900 mb-4">Setup Summary</h3>
-                <div class="space-y-3 text-left">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                      <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <i class="pi pi-tag text-green-600"></i>
-                      </div>
-                      <span class="text-green-800">Room Categories</span>
-                    </div>
-                    <span class="font-semibold text-green-800">{{ categories?.length || 0 }}</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                      <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <i class="pi pi-th-large text-green-600"></i>
-                      </div>
-                      <span class="text-green-800">Total Rooms</span>
-                    </div>
-                    <span class="font-semibold text-green-800">{{ totalRooms }}</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                      <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <i class="pi pi-building text-green-600"></i>
-                      </div>
-                      <span class="text-green-800">Floors Used</span>
-                    </div>
-                    <span class="font-semibold text-green-800">{{ uniqueFloors.length }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex flex-col space-y-3">
-
-              <button
-                @click="router.push('/onboard/staffs')"
-                class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-              >
-                Next Onboard Staffs
-                <i class="pi pi-arrow-right ml-2"></i>
-              </button>
-
-              <button
-                @click="previousStep"
-                class="w-full bg-gray-100 text-gray-700 px-8 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200"
-              >
-                Review Setup
-              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Navigation Buttons (for non-welcome slides) -->
-      <div v-if="currentStep !== 0 && currentStep !== totalSteps - 1" class="flex justify-between items-center mt-8">
-        <button
-          @click="previousStep"
-          class="px-6 py-3 text-gray-600 hover:text-gray-900 transition-colors duration-200 flex items-center"
-        >
-          <i class="pi pi-arrow-left mr-2"></i>
-          Back
+      <div class="flex justify-center">
+        <button @click="nextStep" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all">
+          {{ (categories?.length || 0) === 0 ? 'Get Started' : 'Add More' }}
+          <i class="pi pi-arrow-right ml-2"></i>
         </button>
+      </div>
+    </template>
 
-        <div class="flex space-x-3">
-          <button
-            @click="nextStep"
-            :disabled="isCreatingCategory || isCreatingRooms"
-            class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+    <!-- Slide 1: Room Categories (Multiple) -->
+    <template #slide-1>
+      <div class="mb-4 text-center">
+        <div class="w-14 h-14 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl mx-auto mb-3 flex items-center justify-center">
+          <i class="pi pi-tag text-white text-xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 mb-1">Room Categories</h2>
+        <p class="text-gray-600 text-sm">Add one or more categories, then continue</p>
+      </div>
+
+      <!-- Queued Categories (to be created) -->
+      <div v-if="categoryQueue.length > 0" class="mb-4">
+        <h3 class="font-semibold text-gray-900 mb-2 text-sm flex items-center">
+          <i class="pi pi-list mr-2 text-purple-600"></i>
+          Categories to Create ({{ categoryQueue.length }})
+        </h3>
+        <div class="space-y-2 max-h-32 overflow-y-auto">
+          <div v-for="(cat, idx) in categoryQueue" :key="idx" 
+            @click="editCategory(idx)" 
+            class="bg-purple-50 border rounded-lg p-2 text-sm flex justify-between items-center cursor-pointer hover:bg-purple-100 transition-colors"
+            :class="editingCategoryIndex === idx ? 'border-purple-500 ring-2 ring-purple-200' : 'border-purple-200'"
           >
-            <i v-if="currentStep === 1 && isCreatingCategory" class="pi pi-spinner pi-spin mr-2"></i>
-            <i v-else-if="currentStep === 2 && isCreatingRooms" class="pi pi-spinner pi-spin mr-2"></i>
-            {{ currentStep === totalSteps - 2 ? 'Complete Setup' : 'Continue' }}
-            <i class="pi pi-arrow-right ml-2"></i>
-          </button>
+            <div class="flex items-center">
+              <i v-if="editingCategoryIndex === idx" class="pi pi-pencil text-purple-600 mr-2 text-xs"></i>
+              <span class="font-medium text-gray-900">{{ cat.name }}</span>
+              <span class="text-purple-600 ml-2">₹{{ cat.base_price }}</span>
+              <span class="text-gray-500 ml-2 text-xs">({{ cat.max_occupancy }} guests)</span>
+            </div>
+            <button @click.stop="removeCategoryFromQueue(idx)" class="text-red-500 hover:text-red-700 p-1">
+              <i class="pi pi-times text-xs"></i>
+            </button>
+          </div>
+        </div>
+        <!-- Add Another button when form is hidden -->
+        <button v-if="!showCategoryForm" @click="showCategoryForm = true" class="w-full mt-3 py-2 border-2 border-dashed border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors text-sm font-medium">
+          <i class="pi pi-plus mr-2"></i>Add Another Category
+        </button>
+      </div>
+
+      <!-- Add Category Form -->
+      <div v-if="showCategoryForm" class="bg-gray-50 rounded-xl p-4">
+        <h3 class="font-semibold text-gray-900 mb-3 text-sm flex items-center">
+          <i v-if="editingCategoryIndex !== null" class="pi pi-pencil mr-2 text-purple-600"></i>
+          {{ editingCategoryIndex !== null ? 'Edit Category' : (categoryQueue.length > 0 ? 'Add Another Category' : 'Category Details') }}
+        </h3>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+            <input v-model="categoryForm.name" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" placeholder="e.g., Deluxe Room" :class="{ 'border-red-500': categoryErrors.name }" />
+            <span v-if="categoryErrors.name" class="text-red-500 text-xs">{{ categoryErrors.name }}</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Price *</label>
+              <div class="relative">
+                <input v-model="categoryForm.base_price" type="number" class="w-full px-3 py-2 pl-6 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" placeholder="0" :class="{ 'border-red-500': categoryErrors.base_price }" />
+                <span class="absolute left-2 top-2 text-gray-500 text-sm">₹</span>
+              </div>
+              <span v-if="categoryErrors.base_price" class="text-red-500 text-xs">{{ categoryErrors.base_price }}</span>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Max Guests *</label>
+              <input v-model="categoryForm.max_occupancy" type="number" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm" placeholder="2" :class="{ 'border-red-500': categoryErrors.max_occupancy }" />
+              <span v-if="categoryErrors.max_occupancy" class="text-red-500 text-xs">{{ categoryErrors.max_occupancy }}</span>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button v-if="editingCategoryIndex !== null" @click="updateCategoryInQueue" class="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">
+              <i class="pi pi-check mr-2"></i>Update
+            </button>
+            <template v-else>
+              <button @click="addCategoryToQueue" class="flex-1 py-2 border-2 border-dashed border-purple-300 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors text-sm font-medium">
+                <i class="pi pi-plus mr-2"></i>Add Another
+              </button>
+              <button @click="addCategoryAndDone" class="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium">
+                <i class="pi pi-check mr-2"></i>Done
+              </button>
+            </template>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+
+    <!-- Slide 2: Create Rooms (Multiple Ranges) -->
+    <template #slide-2>
+      <div class="mb-4 text-center">
+        <div class="w-14 h-14 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl mx-auto mb-3 flex items-center justify-center">
+          <i class="pi pi-door-open text-white text-xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 mb-1">Create Rooms</h2>
+        <p class="text-gray-600 text-sm">Add room ranges for different floors/categories</p>
+      </div>
+
+      <!-- Queued Room Ranges -->
+      <div v-if="roomRangeQueue.length > 0" class="mb-4">
+        <h3 class="font-semibold text-gray-900 mb-2 text-sm flex items-center">
+          <i class="pi pi-list mr-2 text-green-600"></i>
+          Room Ranges ({{ totalQueuedRooms }} rooms)
+        </h3>
+        <div class="space-y-2 max-h-32 overflow-y-auto">
+          <div v-for="(range, idx) in roomRangeQueue" :key="idx"
+            @click="editRoomRange(idx)"
+            class="bg-green-50 border rounded-lg p-2 text-sm flex justify-between items-center cursor-pointer hover:bg-green-100 transition-colors"
+            :class="editingRoomRangeIndex === idx ? 'border-green-500 ring-2 ring-green-200' : 'border-green-200'"
+          >
+            <div class="flex items-center">
+              <i v-if="editingRoomRangeIndex === idx" class="pi pi-pencil text-green-600 mr-2 text-xs"></i>
+              <span class="font-medium text-gray-900">{{ getCategoryNameById(range.category) }}</span>
+              <span class="text-gray-600 ml-2">Floor {{ range.floor }}</span>
+              <span class="text-green-600 ml-2">Rooms {{ range.start_number }}-{{ range.end_number }}</span>
+              <span class="text-gray-500 ml-2 text-xs">({{ getRangeRoomCount(range) }} rooms)</span>
+            </div>
+            <button @click.stop="removeRoomRangeFromQueue(idx)" class="text-red-500 hover:text-red-700 p-1">
+              <i class="pi pi-times text-xs"></i>
+            </button>
+          </div>
+        </div>
+        <!-- Add Another button when form is hidden -->
+        <button v-if="!showRoomRangeForm" @click="showRoomRangeForm = true" class="w-full mt-3 py-2 border-2 border-dashed border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium">
+          <i class="pi pi-plus mr-2"></i>Add Another Range
+        </button>
+      </div>
+
+      <!-- Add Room Range Form -->
+      <div v-if="showRoomRangeForm" class="bg-gray-50 rounded-xl p-4">
+        <h3 class="font-semibold text-gray-900 mb-3 text-sm flex items-center">
+          <i v-if="editingRoomRangeIndex !== null" class="pi pi-pencil mr-2 text-green-600"></i>
+          {{ editingRoomRangeIndex !== null ? 'Edit Range' : (roomRangeQueue.length > 0 ? 'Add Another Range' : 'Room Range Details') }}
+        </h3>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+            <select v-model="roomRangeForm.category" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm" :class="{ 'border-red-500': roomRangeErrors.category }">
+              <option :value="null">Select category</option>
+              <option v-for="cat in allCategories" :key="cat.id" :value="cat.id">{{ cat.name }} - ₹{{ cat.base_price }}</option>
+            </select>
+            <span v-if="roomRangeErrors.category" class="text-red-500 text-xs">{{ roomRangeErrors.category }}</span>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Floor *</label>
+            <input v-model="roomRangeForm.floor" type="number" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm" placeholder="1" :class="{ 'border-red-500': roomRangeErrors.floor }" />
+            <span v-if="roomRangeErrors.floor" class="text-red-500 text-xs">{{ roomRangeErrors.floor }}</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Start #</label>
+              <input v-model="roomRangeForm.start_number" type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm" placeholder="101" :class="{ 'border-red-500': roomRangeErrors.start_number }" />
+              <span v-if="roomRangeErrors.start_number" class="text-red-500 text-xs">{{ roomRangeErrors.start_number }}</span>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">End #</label>
+              <input v-model="roomRangeForm.end_number" type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm" placeholder="110" :class="{ 'border-red-500': roomRangeErrors.end_number }" />
+              <span v-if="roomRangeErrors.end_number" class="text-red-500 text-xs">{{ roomRangeErrors.end_number }}</span>
+            </div>
+          </div>
+
+          <div v-if="currentRangeRoomCount > 0" class="bg-blue-50 border border-blue-100 rounded-lg p-2 text-center">
+            <p class="text-sm text-blue-800">{{ currentRangeRoomCount }} rooms on floor {{ roomRangeForm.floor }}</p>
+          </div>
+
+          <div class="flex gap-2">
+            <button v-if="editingRoomRangeIndex !== null" @click="updateRoomRangeInQueue" class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+              <i class="pi pi-check mr-2"></i>Update
+            </button>
+            <template v-else>
+              <button @click="addRoomRangeToQueue" class="flex-1 py-2 border-2 border-dashed border-green-300 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium">
+                <i class="pi pi-plus mr-2"></i>Add Another
+              </button>
+              <button @click="addRoomRangeAndDone" class="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                <i class="pi pi-check mr-2"></i>Done
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Slide 3: Complete -->
+    <template #slide-3>
+      <div class="text-center mb-8">
+        <div class="w-20 h-20 bg-gradient-to-r from-green-600 to-emerald-600 rounded-3xl mx-auto mb-6 flex items-center justify-center">
+          <i class="pi pi-check text-white text-3xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Rooms Ready! 🎉</h2>
+        <p class="text-gray-600 mb-6">Your room setup is complete.</p>
+
+        <div class="bg-green-50 border border-green-100 rounded-xl p-6 mb-8">
+          <h3 class="font-semibold text-green-900 mb-4">What's next?</h3>
+          <div class="space-y-3 text-left">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center"><i class="pi pi-users text-green-600"></i></div>
+              <span class="text-green-800">Add your staff members</span>
+            </div>
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center"><i class="pi pi-calendar text-green-600"></i></div>
+              <span class="text-green-800">Start accepting bookings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-center">
+        <button @click="router.push('/onboard/staffs')" class="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all">
+          Setup Staff <i class="pi pi-arrow-right ml-2"></i>
+        </button>
+      </div>
+    </template>
+  </OnboardingOnboardLayout>
+
+  <!-- Bulk Create Confirmation Modal -->
+  <Teleport to="body">
+    <Transition name="modal">
+      <div v-if="showConfirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showConfirmModal = false"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden animate-modal-in">
+          <div :class="confirmModalGradient" class="px-6 py-4 rounded-t-2xl">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <i :class="confirmModalIcon" class="text-white text-xl"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-bold text-white">{{ confirmModalTitle }}</h3>
+                <p class="text-white/80 text-sm">Review before creating</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-6 max-h-60 overflow-y-auto">
+            <!-- Categories Confirmation -->
+            <div v-if="confirmType === 'categories'" class="space-y-2">
+              <div v-for="(cat, idx) in categoryQueue" :key="idx" class="p-3 bg-gray-50 rounded-lg flex justify-between">
+                <span class="font-medium">{{ cat.name }}</span>
+                <span class="text-purple-600">₹{{ cat.base_price }}</span>
+              </div>
+              <div class="mt-3 p-3 bg-purple-50 rounded-lg text-center">
+                <p class="text-purple-800 font-semibold">{{ categoryQueue.length }} categories will be created</p>
+              </div>
+            </div>
+            
+            <!-- Rooms Confirmation -->
+            <div v-if="confirmType === 'rooms'" class="space-y-2">
+              <div v-for="(range, idx) in roomRangeQueue" :key="idx" class="p-3 bg-gray-50 rounded-lg">
+                <div class="flex justify-between items-center">
+                  <span class="font-medium">{{ getCategoryNameById(range.category) }}</span>
+                  <span class="text-xs text-gray-500">{{ getRangeRoomCount(range) }} rooms</span>
+                </div>
+                <div class="text-sm text-gray-600">Floor {{ range.floor }}: {{ range.start_number }} - {{ range.end_number }}</div>
+              </div>
+              <div class="mt-3 p-3 bg-green-50 rounded-lg text-center">
+                <p class="text-green-800 font-semibold">{{ totalQueuedRooms }} rooms will be created</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="px-6 py-4 bg-gray-50 rounded-b-2xl flex space-x-3">
+            <button @click="showConfirmModal = false" class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-100">Edit</button>
+            <button @click="confirmCreate" :disabled="isCreating" :class="confirmButtonClass" class="flex-1 px-4 py-3 text-white rounded-xl font-medium hover:shadow-lg disabled:opacity-50 flex items-center justify-center">
+              <i v-if="isCreating" class="pi pi-spinner pi-spin mr-2"></i>
+              {{ isCreating ? 'Creating...' : 'Create All' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, reactive } from 'vue'
-import { z } from 'zod'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import { storeToRefs } from 'pinia'
-import { useAuthStore } from '~/stores/auth'
 
-definePageMeta({
-  layout: 'empty',
-})
+definePageMeta({ layout: 'empty' })
 
 const router = useRouter()
 const toast = useToast()
-const authStore = useAuthStore()
-const { hotelId } = storeToRefs(authStore)
 
 const currentStep = ref(0)
-const isSaving = ref(false)
 const isLoading = ref(true)
-const isCreatingCategory = ref(false)
-const isCreatingRooms = ref(false)
+const isCreating = ref(false)
+const showConfirmModal = ref(false)
+const confirmType = ref<'categories' | 'rooms'>('categories')
+
+const steps = [{ title: 'Welcome' }, { title: 'Categories' }, { title: 'Rooms' }, { title: 'Complete' }]
 
 // API hooks
-const {
-  data: categoriesData,
-  isLoading: isCategoriesLoading,
-  error: categoriesError,
-  refetch: refetchCategories
-} = useFetchRoomCategories({ page: 1, search: '' })
-
-// Computed properties to extract the actual data
+const { data: categoriesData, isLoading: isCategoriesLoading, error: categoriesError, refetch: refetchCategories } = useFetchRoomCategories({ page: 1, search: '' })
 const categories = computed(() => categoriesData.value?.results || [])
+const { data: roomsData, isLoading: isRoomsLoading, error: roomsError, refetch: refetchRooms } = useFetchRooms({ page: 1, search: '' })
+const { mutateAsync: createCategories } = useCreateRoomCategory()
+const { mutateAsync: bulkCreateRooms } = useBulkCreateRooms()
 
-const {
-  data: roomsData,
-  isLoading: isRoomsLoading,
-  error: roomsError,
-  refetch: refetchRooms
-} = useFetchRooms({ page: 1, search: '' })
-
-const { mutateAsync: createCategory, status: createCategoryStatus } = useCreateRoomCategory()
-const { mutateAsync: bulkCreateRooms, status: bulkCreateRoomsStatus } = useBulkCreateRooms()
-
-// Forms
-const categoryForm = reactive({
-  name: '',
-  description: '',
-  base_price: 0,
-  max_occupancy: 2,
-  amenities: [] as string[],
-})
-
-const DEFAULT_BULK_ADD_FORM = {
-  startRoomNumber: 101,
-  endRoomNumber: 105,
-  floor: 1,
-  categoryId: null as number | null,
-  roomPrefix: '',
-  roomSuffix: '',
+// API Error state
+const apiError = computed(() => categoriesError.value || roomsError.value)
+const retryFetch = () => {
+  refetchCategories()
+  refetchRooms()
 }
 
-const bulkAddForm = reactive({ ...DEFAULT_BULK_ADD_FORM })
-
+// Category form & queue
+interface CategoryItem { name: string; description: string; base_price: number; max_occupancy: number }
+const categoryForm = reactive<CategoryItem>({ name: '', description: '', base_price: 0, max_occupancy: 2 })
+const categoryQueue = ref<CategoryItem[]>([])
 const categoryErrors = ref<Record<string, string>>({})
-const bulkAddErrors = ref<Record<string, string>>({})
+const editingCategoryIndex = ref<number | null>(null)
+const showCategoryForm = ref(true)
 
-// Available amenities (same as in rooms.vue)
-const availableAmenities = [
-  "WiFi",
-  "TV",
-  "Smart TV",
-  "Mini Fridge",
-  "Mini Bar",
-  "Coffee Maker",
-  "Balcony",
-  "Room Service",
-  "Safe",
-  "Hair Dryer",
-  "Iron",
-  "Bathrobe",
-  "Jacuzzi",
-  "Swimming Pool Access",
-  "Gym Access",
-  "Parking",
-  "Breakfast Included",
-]
+// Room range form & queue
+interface RoomRange { category: number | null; floor: number; start_number: number; end_number: number }
+const roomRangeForm = reactive<RoomRange>({ category: null, floor: 1, start_number: 101, end_number: 105 })
+const roomRangeQueue = ref<RoomRange[]>([])
+const roomRangeErrors = ref<Record<string, string>>({})
+const editingRoomRangeIndex = ref<number | null>(null)
+const showRoomRangeForm = ref(true)
 
-// Steps configuration
-const steps = [
-  { title: 'Welcome', icon: 'pi-home' },
-  { title: 'Categories', icon: 'pi-tag' },
-  { title: 'Rooms', icon: 'pi-th-large' },
-  { title: 'Complete', icon: 'pi-check' }
-]
-
-const totalSteps = computed(() => steps.length)
-
-const progressPercentage = computed(() => {
-  return ((currentStep.value + 1) / totalSteps.value) * 100
-})
-
+// Computed
 const totalRooms = computed(() => roomsData.value?.total || 0)
+const allCategories = computed(() => categories.value)
+const totalQueuedRooms = computed(() => roomRangeQueue.value.reduce((sum, r) => sum + getRangeRoomCount(r), 0))
+const currentRangeRoomCount = computed(() => roomRangeForm.start_number && roomRangeForm.end_number ? Math.max(0, roomRangeForm.end_number - roomRangeForm.start_number + 1) : 0)
 
-const uniqueFloors = computed(() => {
-  const floors = new Set()
-  if (roomsData.value?.data) {
-    roomsData.value.data.forEach(room => floors.add(room.floor))
-  }
-  return Array.from(floors)
+const confirmModalGradient = computed(() => confirmType.value === 'categories' ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : 'bg-gradient-to-r from-green-600 to-emerald-600')
+const confirmModalIcon = computed(() => confirmType.value === 'categories' ? 'pi pi-tag' : 'pi pi-door-open')
+const confirmModalTitle = computed(() => confirmType.value === 'categories' ? 'Create Categories' : 'Create Rooms')
+const confirmButtonClass = computed(() => confirmType.value === 'categories' ? 'bg-gradient-to-r from-purple-600 to-indigo-600' : 'bg-gradient-to-r from-green-600 to-emerald-600')
+
+// Check if form has valid data
+const hasCategoryFormData = computed(() => categoryForm.name && categoryForm.name.length >= 2 && categoryForm.base_price > 0 && categoryForm.max_occupancy >= 1)
+const hasRoomRangeFormData = computed(() => roomRangeForm.category && roomRangeForm.floor >= 1 && roomRangeForm.start_number && roomRangeForm.end_number && roomRangeForm.start_number <= roomRangeForm.end_number)
+
+// Continue only enabled when queue has items
+const isContinueDisabled = computed(() => {
+  if (currentStep.value === 1) return categoryQueue.value.length === 0
+  if (currentStep.value === 2) return roomRangeQueue.value.length === 0
+  return false
 })
 
-const estimatedRoomCount = computed(() => {
-  if (bulkAddForm.startRoomNumber && bulkAddForm.endRoomNumber) {
-    return Math.max(0, bulkAddForm.endRoomNumber - bulkAddForm.startRoomNumber + 1)
-  }
-  return 0
-})
+watch([isCategoriesLoading, isRoomsLoading], ([a, b]) => { if (!a && !b) isLoading.value = false })
 
-// Watch for loading states
-watch([isCategoriesLoading, isRoomsLoading], ([categoriesLoading, roomsLoading]) => {
-  if (!categoriesLoading && !roomsLoading) {
-    isLoading.value = false
-  }
-})
+// Helpers
+const getCategoryNameById = (id: number | null) => allCategories.value.find(c => c.id === id)?.name || 'Unknown'
+const getRangeRoomCount = (range: RoomRange) => Math.max(0, range.end_number - range.start_number + 1)
 
-// Watch for errors
-watch(categoriesError, (error) => {
-  if (error) {
-    isLoading.value = false
-    console.error('Error fetching categories:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load room categories',
-      life: 5000
-    })
+const getButtonText = () => {
+  if (currentStep.value === 1) {
+    if (categoryQueue.value.length > 0) return `Create ${categoryQueue.value.length} ${categoryQueue.value.length === 1 ? 'Category' : 'Categories'}`
+    return 'Continue'
   }
-})
-
-watch(roomsError, (error) => {
-  if (error) {
-    isLoading.value = false
-    console.error('Error fetching rooms:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load rooms',
-      life: 5000
-    })
+  if (currentStep.value === 2) {
+    if (roomRangeQueue.value.length > 0) return `Create ${totalQueuedRooms.value} Rooms`
+    return 'Continue'
   }
-})
-
-// Navigation functions
-const nextStep = async () => {
-  // Validate current step before proceeding
-  if (!validateCurrentStep()) {
-    return
-  }
-
-  // Handle category creation when moving from step 1 to 2
-  if (currentStep.value === 1 &&
-      (categoryForm.name || categoryForm.base_price || categoryForm.max_occupancy)) {
-    // Create category first, then proceed
-    await saveCategory()
-    // Don't proceed if category creation failed
-    if (isCreatingCategory.value) {
-      return
-    }
-  }
-
-  // Handle room creation when moving from step 2 to 3
-  if (currentStep.value === 2 &&
-      (bulkAddForm.startRoomNumber && bulkAddForm.endRoomNumber && bulkAddForm.categoryId)) {
-    // Create rooms first, then proceed
-    await bulkAddRooms()
-    // Don't proceed if room creation failed
-    if (isCreatingRooms.value) {
-      return
-    }
-  }
-
-  if (currentStep.value < totalSteps.value - 1) {
-    currentStep.value++
-  }
+  return 'Continue'
 }
 
-const previousStep = () => {
-  if (currentStep.value > 0) {
-    currentStep.value--
-  }
-}
-
-// Validation function for current step
-const validateCurrentStep = () => {
+// Category functions
+const validateCategoryForm = () => {
   categoryErrors.value = {}
-  bulkAddErrors.value = {}
-
-  switch (currentStep.value) {
-    case 1: // Room Categories
-      // If user has filled out the category form, validate it
-      if (categoryForm.name || categoryForm.base_price || categoryForm.max_occupancy) {
-        return validateCategoryForm()
-      }
-      // No category data entered, allow to proceed
-      return true
-
-    case 2: // Create Rooms - only validate if user is trying to add
-      if (bulkAddForm.categoryId || bulkAddForm.startRoomNumber || bulkAddForm.endRoomNumber) {
-        return validateBulkAddForm()
-      }
-      // Check if we have at least 1 room already
-      return totalRooms.value >= 1
-  }
-
+  if (!categoryForm.name || categoryForm.name.length < 2) { categoryErrors.value.name = 'Name required'; return false }
+  if (!categoryForm.base_price || categoryForm.base_price <= 0) { categoryErrors.value.base_price = 'Enter price'; return false }
+  if (!categoryForm.max_occupancy || categoryForm.max_occupancy < 1) { categoryErrors.value.max_occupancy = 'Min 1'; return false }
   return true
 }
 
-const validateCategoryForm = () => {
-  const errors: Record<string, string> = {}
-
-  if (!categoryForm.name || categoryForm.name.length < 2) {
-    errors.name = 'Category name is required'
-  }
-
-  if (!categoryForm.base_price || categoryForm.base_price <= 0) {
-    errors.base_price = 'Base price must be greater than 0'
-  }
-
-  if (!categoryForm.max_occupancy || categoryForm.max_occupancy < 1) {
-    errors.max_occupancy = 'Max occupancy must be at least 1'
-  }
-
-  categoryErrors.value = errors
-  return Object.keys(errors).length === 0
+const addCategoryToQueue = () => {
+  if (!validateCategoryForm()) return
+  categoryQueue.value.push({ ...categoryForm })
+  Object.assign(categoryForm, { name: '', description: '', base_price: 0, max_occupancy: 2 })
+  categoryErrors.value = {}
 }
 
-const validateBulkAddForm = () => {
-  const errors: Record<string, string> = {}
-
-  if (!bulkAddForm.categoryId) {
-    errors.categoryId = 'Please select a room category'
-  }
-
-  if (!bulkAddForm.floor || bulkAddForm.floor < 1) {
-    errors.floor = 'Floor must be at least 1'
-  }
-
-  if (!bulkAddForm.startRoomNumber || bulkAddForm.startRoomNumber < 1) {
-    errors.startRoomNumber = 'Start room number is required'
-  }
-
-  if (!bulkAddForm.endRoomNumber || bulkAddForm.endRoomNumber < 1) {
-    errors.endRoomNumber = 'End room number is required'
-  }
-
-  if (bulkAddForm.startRoomNumber && bulkAddForm.endRoomNumber &&
-      bulkAddForm.startRoomNumber > bulkAddForm.endRoomNumber) {
-    errors.endRoomNumber = 'End room number must be greater than start'
-  }
-
-  bulkAddErrors.value = errors
-  return Object.keys(errors).length === 0
+const addCategoryAndDone = () => {
+  if (!validateCategoryForm()) return
+  categoryQueue.value.push({ ...categoryForm })
+  Object.assign(categoryForm, { name: '', description: '', base_price: 0, max_occupancy: 2 })
+  categoryErrors.value = {}
+  showCategoryForm.value = false
 }
 
-const saveCategory = async () => {
-  if (!validateCategoryForm()) {
-    return
-  }
+const editCategory = (idx: number) => {
+  const cat = categoryQueue.value[idx]
+  Object.assign(categoryForm, { ...cat })
+  editingCategoryIndex.value = idx
+  categoryErrors.value = {}
+  showCategoryForm.value = true
+}
 
-  isCreatingCategory.value = true
-
-  try {
-    await createCategory(categoryForm)
-
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Room category created successfully!',
-      life: 3000
-    })
-
-    // Reset form
-    Object.assign(categoryForm, {
-      name: '',
-      description: '',
-      base_price: 0,
-      max_occupancy: 2,
-      amenities: []
-    })
-
-    // Refetch categories to include the newly created one
-    // Small delay to ensure the category is properly saved on the backend
-    await new Promise(resolve => setTimeout(resolve, 500))
-    await refetchCategories()
-
-  } catch (error) {
-    console.error('Failed to create category:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to create room category. Please try again.',
-      life: 5000
-    })
-  } finally {
-    isCreatingCategory.value = false
+const updateCategoryInQueue = () => {
+  if (!validateCategoryForm()) return
+  if (editingCategoryIndex.value !== null) {
+    categoryQueue.value[editingCategoryIndex.value] = { ...categoryForm }
+    clearCategoryForm()
+    showCategoryForm.value = false
   }
 }
 
-const formatRoomNumber = (num: number) => {
-  let result = ''
-  if (bulkAddForm.roomPrefix) {
-    result += bulkAddForm.roomPrefix
-  }
-  result += num.toString()
-  if (bulkAddForm.roomSuffix) {
-    result += bulkAddForm.roomSuffix
-  }
-  return result
+const clearCategoryForm = () => {
+  Object.assign(categoryForm, { name: '', description: '', base_price: 0, max_occupancy: 2 })
+  editingCategoryIndex.value = null
+  categoryErrors.value = {}
 }
 
-const bulkAddRooms = async () => {
-  if (!validateBulkAddForm()) {
-    return
-  }
+const removeCategoryFromQueue = (idx: number) => {
+  categoryQueue.value.splice(idx, 1)
+  if (editingCategoryIndex.value === idx) clearCategoryForm()
+  else if (editingCategoryIndex.value !== null && idx < editingCategoryIndex.value) editingCategoryIndex.value--
+  // Show form if queue becomes empty
+  if (categoryQueue.value.length === 0) showCategoryForm.value = true
+}
 
-  isCreatingRooms.value = true
+// Room range functions
+const validateRoomRangeForm = () => {
+  roomRangeErrors.value = {}
+  if (!roomRangeForm.category) { roomRangeErrors.value.category = 'Select category'; return false }
+  if (!roomRangeForm.floor || roomRangeForm.floor < 1) { roomRangeErrors.value.floor = 'Enter floor'; return false }
+  if (!roomRangeForm.start_number) { roomRangeErrors.value.start_number = 'Required'; return false }
+  if (!roomRangeForm.end_number) { roomRangeErrors.value.end_number = 'Required'; return false }
+  if (roomRangeForm.start_number > roomRangeForm.end_number) { roomRangeErrors.value.end_number = 'Must be >= start'; return false }
+  return true
+}
 
-  try {
-    await bulkCreateRooms({
-      category: bulkAddForm.categoryId!,
-      floor: bulkAddForm.floor,
-      start_number: bulkAddForm.startRoomNumber.toString(),
-      end_number: bulkAddForm.endRoomNumber.toString(),
-      room_prefix: bulkAddForm.roomPrefix || undefined,
-      room_suffix: bulkAddForm.roomSuffix || undefined,
-    })
+const addRoomRangeToQueue = () => {
+  if (!validateRoomRangeForm()) return
+  roomRangeQueue.value.push({ ...roomRangeForm })
+  Object.assign(roomRangeForm, { category: null, floor: roomRangeForm.floor + 1, start_number: (roomRangeForm.floor + 1) * 100 + 1, end_number: (roomRangeForm.floor + 1) * 100 + 5 })
+  roomRangeErrors.value = {}
+}
 
-    const roomCount = bulkAddForm.endRoomNumber - bulkAddForm.startRoomNumber + 1
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: `${roomCount} rooms created successfully!`,
-      life: 3000
-    })
+const addRoomRangeAndDone = () => {
+  if (!validateRoomRangeForm()) return
+  roomRangeQueue.value.push({ ...roomRangeForm })
+  Object.assign(roomRangeForm, { category: null, floor: 1, start_number: 101, end_number: 105 })
+  roomRangeErrors.value = {}
+  showRoomRangeForm.value = false
+}
 
-    // Reset form
-    Object.assign(bulkAddForm, DEFAULT_BULK_ADD_FORM)
+const editRoomRange = (idx: number) => {
+  const range = roomRangeQueue.value[idx]
+  Object.assign(roomRangeForm, { ...range })
+  editingRoomRangeIndex.value = idx
+  roomRangeErrors.value = {}
+  showRoomRangeForm.value = true
+}
 
-    // Refetch rooms
-    await refetchRooms()
-
-  } catch (error) {
-    console.error('Failed to create rooms:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to create rooms. Please try again.',
-      life: 5000
-    })
-  } finally {
-    isCreatingRooms.value = false
+const updateRoomRangeInQueue = () => {
+  if (!validateRoomRangeForm()) return
+  if (editingRoomRangeIndex.value !== null) {
+    roomRangeQueue.value[editingRoomRangeIndex.value] = { ...roomRangeForm }
+    clearRoomRangeForm()
+    showRoomRangeForm.value = false
   }
 }
 
-// Complete onboarding
-const completeOnboarding = async () => {
-  // Ensure minimum requirements are met
-  if (categories.value && categories.value.length === 0) {
-    toast.add({
-      severity: 'error',
-      summary: 'Setup Incomplete',
-      detail: 'Please create at least one room category',
-      life: 5000
-    })
-    currentStep.value = 1
-    return
-  }
+const clearRoomRangeForm = () => {
+  Object.assign(roomRangeForm, { category: null, floor: 1, start_number: 101, end_number: 105 })
+  editingRoomRangeIndex.value = null
+  roomRangeErrors.value = {}
+}
 
-  isSaving.value = true
+const removeRoomRangeFromQueue = (idx: number) => {
+  roomRangeQueue.value.splice(idx, 1)
+  if (editingRoomRangeIndex.value === idx) clearRoomRangeForm()
+  else if (editingRoomRangeIndex.value !== null && idx < editingRoomRangeIndex.value) editingRoomRangeIndex.value--
+  // Show form if queue becomes empty
+  if (roomRangeQueue.value.length === 0) showRoomRangeForm.value = true
+}
 
-  try {
-    // Auto-create rooms if none exist
-    if (totalRooms.value === 0 && categories.value.length > 0) {
-      const firstCategory = categories.value[0]
-      // Reset form to defaults and set the category
-      Object.assign(bulkAddForm, {
-        ...DEFAULT_BULK_ADD_FORM,
-        categoryId: firstCategory.id
-      })
+// Navigation
+const nextStep = () => { if (currentStep.value < steps.length - 1) currentStep.value++ }
 
-      await bulkCreateRooms({
-        category: firstCategory.id,
-        floor: bulkAddForm.floor || 1,
-        start_number: (bulkAddForm.startRoomNumber || 101).toString(),
-        end_number: (bulkAddForm.endRoomNumber || 105).toString(),
-        room_prefix: bulkAddForm.roomPrefix || undefined,
-        room_suffix: bulkAddForm.roomSuffix || undefined,
-      })
-
-      toast.add({
-        severity: 'info',
-        summary: 'Rooms Created',
-        detail: '5 sample rooms have been automatically created',
-        life: 3000
-      })
+const handleNext = () => {
+  if (currentStep.value === 1) {
+    // Only proceed if queue has items
+    if (categoryQueue.value.length > 0) {
+      confirmType.value = 'categories'
+      showConfirmModal.value = true
+      return
     }
+    toast.add({ severity: 'warn', summary: 'Required', detail: 'Add at least one category', life: 3000 })
+    return
+  }
+  if (currentStep.value === 2) {
+    // Only proceed if queue has items
+    if (roomRangeQueue.value.length > 0) {
+      confirmType.value = 'rooms'
+      showConfirmModal.value = true
+      return
+    }
+    toast.add({ severity: 'warn', summary: 'Required', detail: 'Add at least one room range', life: 3000 })
+    return
+  }
+  nextStep()
+}
 
-    toast.add({
-      severity: 'success',
-      summary: 'Setup Complete!',
-      detail: 'Room configuration completed successfully',
-      life: 3000
-    })
-
-    // Redirect to rooms page
-    await router.push('/rooms')
-
-  } catch (error) {
-    console.error('Failed to complete onboarding:', error)
-
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to complete room setup. Please try again.',
-      life: 5000
-    })
+const confirmCreate = async () => {
+  isCreating.value = true
+  try {
+    if (confirmType.value === 'categories') {
+      // Send array for bulk create
+      await createCategories(categoryQueue.value)
+      toast.add({ severity: 'success', summary: 'Success', detail: `${categoryQueue.value.length} categories created!`, life: 3000 })
+      categoryQueue.value = []
+      await refetchCategories()
+    } else {
+      // Send array for bulk create
+      const payload = roomRangeQueue.value.map(r => ({
+        category: r.category!,
+        floor: r.floor,
+        start_number: r.start_number.toString(),
+        end_number: r.end_number.toString()
+      }))
+      await bulkCreateRooms(payload)
+      toast.add({ severity: 'success', summary: 'Success', detail: `${totalQueuedRooms.value} rooms created!`, life: 3000 })
+      roomRangeQueue.value = []
+      await refetchRooms()
+    }
+    showConfirmModal.value = false
+    nextStep()
+  } catch (error: any) {
+    console.error('Create error:', error)
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to create. Please try again.', life: 5000 })
   } finally {
-    isSaving.value = false
+    isCreating.value = false
   }
 }
 
 onMounted(() => {
-  // Reset any existing state
   currentStep.value = 0
-  categoryErrors.value = {}
-  bulkAddErrors.value = {}
-  // Fetch data
   refetchCategories()
   refetchRooms()
 })
 </script>
 
 <style scoped>
-/* Custom animations and transitions */
-.transition-transform {
-  transition-property: transform;
-}
-
-.transition-all {
-  transition-property: all;
-}
-
-.duration-200 {
-  transition-duration: 200ms;
-}
-
-.duration-500 {
-  transition-duration: 500ms;
-}
-
-.ease-out {
-  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
-}
-
-/* Custom scrollbar for mobile */
-.overflow-x-auto::-webkit-scrollbar {
-  height: 4px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 2px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-/* Focus states */
-input:focus,
-textarea:focus,
-select:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
-}
-
-/* Animation classes */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slide-in {
-  animation: slideIn 0.5s ease-out;
-}
-
-/* Button animations */
-button:active {
-  transform: scale(0.98);
-}
-
-/* Checkbox styling */
-input[type="checkbox"]:checked {
-  background-color: #9333ea;
-  border-color: #9333ea;
-}
+.modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+.animate-modal-in { animation: modalIn 0.3s ease-out; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 </style>

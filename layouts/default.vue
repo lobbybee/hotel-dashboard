@@ -1,5 +1,13 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800">
+  <!-- Onboarding Check Loading Overlay -->
+  <div v-if="onboardingStore.isChecking" class="fixed inset-0 z-[100] bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-gray-600 font-medium">Checking setup status...</p>
+    </div>
+  </div>
+  
+  <div v-else class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800">
     <div class="flex h-screen overflow-hidden">
       <!-- Mobile Drawer -->
       <Drawer v-model:visible="sidebarVisible" position="left" :pt="{ content: { class: 'p-0' } }" class="w-72 md:hidden">
@@ -341,6 +349,7 @@
 import { useAuthStore } from '~/stores/auth';
 import { useChatStore } from '~/stores/chat';
 import { useNotificationStore } from '~/stores/notifications';
+import { useOnboardingStore } from '~/stores/onboarding';
 import { useFetchHotel, useFetchRooms } from '~/composables/useHotel';
 import { useFetchStaff } from '~/composables/useStaff';
 import { useFetchNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from '~/composables/useNotification';
@@ -354,6 +363,7 @@ const { user, isAuthenticated, userRole, userInitials, hotelId } = storeToRefs(a
 const chatStore = useChatStore();
 const { totalUnreadCount } = storeToRefs(chatStore);
 const notificationStore = useNotificationStore();
+const onboardingStore = useOnboardingStore();
 const { notifications, unreadCount } = storeToRefs(notificationStore);
 
 // API notifications
@@ -451,147 +461,10 @@ watch(HotelData, (newHotel) => {
   }
 });
 
-// Onboarding Check Function
-const checkOnboardingStatus = async () => {
-  console.log('🚀 [ONBOARDING] Starting onboarding status check');
-  console.log('📍 [ONBOARDING] Current route:', route.path);
-  console.log('👤 [ONBOARDING] User role:', userRole.value);
-  console.log('🏨 [ONBOARDING] Hotel ID:', hotelId.value);
-
-  // Skip onboarding check if already on onboarding pages
-  if (route.path.startsWith('/onboard/')) {
-    console.log('⏭️ [ONBOARDING] Skipping - already on onboarding pages');
-    return;
-  }
-
-  // Only run onboarding for hotel_admin role
-  if (userRole.value !== 'hotel_admin') {
-    console.log('⏭️ [ONBOARDING] Skipping - user role not eligible for onboarding:', userRole.value);
-    return;
-  }
-
-  console.log('✅ [ONBOARDING] User eligible for onboarding check');
-
-  try {
-    // Check hotel profile completeness
-    console.log('🏨 [ONBOARDING] Checking hotel profile completeness...');
-    console.log('📋 [ONBOARDING] Hotel profile data:', HotelData.value);
-
-    if (HotelData.value) {
-      const hotel = HotelData.value;
-
-      const requiredFields = ['address', 'city', 'state', 'country', 'pincode', 'phone', 'email'];
-      const missingFields = requiredFields.filter(field => !hotel[field] || hotel[field]?.trim() === '');
-
-      console.log('🔍 [ONBOARDING] Required fields check:');
-      console.log('  - Missing fields:', missingFields);
-      console.log('  - Field values:', {
-        address: hotel.address,
-        city: hotel.city,
-        state: hotel.state,
-        country: hotel.country,
-        pincode: hotel.pincode,
-        phone: hotel.phone,
-        email: hotel.email
-      });
-
-      if (missingFields.length > 0) {
-        console.log('❌ [ONBOARDING] Hotel profile incomplete - redirecting to /onboard/hotel');
-        console.log('📝 [ONBOARDING] Missing fields count:', missingFields.length);
-        await navigateTo('/onboard/hotel');
-        return;
-      }
-
-      console.log('✅ [ONBOARDING] Hotel profile complete');
-    } else {
-      console.log('⚠️ [ONBOARDING] No hotel profile data found - redirecting to /onboard/hotel');
-      await navigateTo('/onboard/hotel');
-      return;
-    }
-
-    // Check if hotel has at least 1 room
-    console.log('🏠 [ONBOARDING] Checking hotel rooms...');
-    console.log('📊 [ONBOARDING] Rooms data:', RoomsData.value);
-
-    if (RoomsData.value && RoomsData.value.results && RoomsData.value.results.length === 0) {
-      console.log('❌ [ONBOARDING] No rooms found - redirecting to /onboard/rooms');
-      console.log('📊 [ONBOARDING] Rooms count:', RoomsData.value.results.length);
-      await navigateTo('/onboard/rooms');
-      return;
-    }
-
-    console.log('✅ [ONBOARDING] Hotel has rooms');
-
-    // Check if hotel has staff members (excluding the current user)
-    console.log('👥 [ONBOARDING] Checking hotel staff...');
-    console.log('👥 [ONBOARDING] Staff data:', StaffData.value);
-    console.log('🔢 [ONBOARDING] Staff count:', StaffData.value?.length || 0);
-
-    if (StaffData.value && StaffData.value.length <= 1) {
-      console.log('❌ [ONBOARDING] Insufficient staff - redirecting to /onboard/staffs');
-      console.log('👤 [ONBOARDING] Current staff count:', StaffData.value.length);
-      await navigateTo('/onboard/staffs');
-      return;
-    }
-
-    console.log('✅ [ONBOARDING] Hotel has sufficient staff');
-    console.log('🎉 [ONBOARDING] Onboarding check passed - user can continue');
-
-  } catch (error) {
-    console.error('💥 [ONBOARDING] Error checking onboarding status:', error);
-    console.error('💥 [ONBOARDING] Error details:', {
-      message: error.message,
-      stack: error.stack
-    });
-  }
-};
-
 // Redirect to login if not authenticated
 watch(isAuthenticated, (isAuth) => {
-  console.log('🔐 [AUTH WATCHER] Authentication state changed:', {
-    isAuth,
-    isClient: process.client,
-    currentRoute: route.path
-  });
-
   if (process.client && !isAuth) {
-    console.log('🚪 [AUTH WATCHER] Not authenticated - redirecting to login');
     navigateTo('/login');
-  } else {
-    console.log('✅ [AUTH WATCHER] User authenticated - can continue');
-  }
-}, { immediate: true });
-
-// Run onboarding check when user, hotel, rooms, and staff data are available
-watch([isAuthenticated, user, hotelId, HotelData, RoomsData, StaffData], async ([isAuth, currentUser, currentHotelId, hotelData, roomsData, staffData]) => {
-  console.log('👀 [ONBOARDING WATCHER] Triggered with:', {
-    isAuth,
-    currentUser: currentUser ? { id: currentUser.id, role: currentUser.role, hotel_id: currentUser.hotel_id } : null,
-    currentHotelId,
-    hotelDataAvailable: !!hotelData,
-    roomsDataAvailable: !!roomsData,
-    staffDataAvailable: !!staffData,
-    isClient: process.client
-  });
-
-  if (process.client && isAuth && currentUser && currentHotelId && hotelData && roomsData && staffData) {
-    console.log('⏰ [ONBOARDING WATCHER] All data available - scheduling onboarding check in 1 second...');
-    // Small delay to ensure all data is loaded
-    await nextTick();
-    setTimeout(() => {
-      console.log('🚀 [ONBOARDING WATCHER] Executing scheduled onboarding check');
-      checkOnboardingStatus();
-    }, 1000);
-  } else {
-    console.log('⏭️ [ONBOARDING WATCHER] Conditions not met - skipping onboarding check');
-    console.log('🔍 [ONBOARDING WATCHER] Missing:', {
-      isAuth,
-      currentUser: !!currentUser,
-      currentHotelId: !!currentHotelId,
-      hotelData: !!hotelData,
-      roomsData: !!roomsData,
-      staffData: !!staffData
-    });
   }
 }, { immediate: true });
 
@@ -764,11 +637,14 @@ const handleRemoveNotification = (notificationId: string, event: Event): void =>
 
 const handleLogout = async () => {
   try {
+    // Clear onboarding cache to ensure fresh check on next login
+    onboardingStore.clearCache();
     await logout();
     // Use window.location.replace to bypass middleware completely
     window.location.replace('/login');
   } catch (error) {
     console.error('Logout failed:', error);
+    onboardingStore.clearCache();
     // Use window.location.replace even if logout API fails
     window.location.replace('/login');
   }

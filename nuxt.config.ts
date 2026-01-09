@@ -14,32 +14,31 @@ export default defineNuxtConfig({
   ],
   css: ["@/assets/css/tailwind.css"],
   primevue: {
-    importTheme: { from: '@/themes/mytheme.ts' },
+    importTheme: { from: "@/themes/mytheme.ts" },
     options: {
-
       theme: {
         options: {
           cssLayer: {
-                          name: 'primevue',
-                          order: 'tailwind-base, primevue, tailwind-utilities'
-                      }
+            name: "primevue",
+            order: "tailwind-base, primevue, tailwind-utilities",
+          },
         },
       },
     },
   },
-  fonts:{
+  fonts: {
     families: [
-     {
-      name: 'Poppins',
-      provider: 'google'
-     }
-    ]
+      {
+        name: "Poppins",
+        provider: "google",
+      },
+    ],
   },
   runtimeConfig: {
-     public: {
-       apiUrl: process.env.NUXT_PUBLIC_API_URL || 'http://localhost:8000/api',
-       wsUrl: process.env.NUXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws'
-     }
-   },
+    public: {
+      apiUrl: process.env.NUXT_PUBLIC_API_URL || "http://localhost:8000/api",
+      wsUrl: process.env.NUXT_PUBLIC_WS_URL || "ws://localhost:8000/ws",
+    },
+  },
   ssr: false,
 });
