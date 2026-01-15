@@ -484,7 +484,6 @@ const searchTerm = ref('');
 const searchInputValue = ref('');
 const selectedGuest = ref<any>(null);
 const filteredGuests = ref([]);
-const guestsData = ref(null);
 const guestsLoading = ref(false);
 const lastSearchResults = ref([]); // Store last search results
 
@@ -811,14 +810,15 @@ const completeCheckin = async () => {
       primary_guest_id: guestId,
       room_ids: stayForm.value.rooms,
       check_in_date: checkinDates.value.check_in.toISOString(),
-      check_out_date: checkinDates.value.check_out.toISOString(),
+      check_out_date: stayForm.value.check_out_date?.toISOString() || checkinDates.value.check_out.toISOString(),
       guest_names: guestData.value.accompanying_guests?.map(g => g.full_name).filter(Boolean)
     };
 
     const checkinResult = await checkinOfflineMutation.checkinOffline(checkinData);
 
     // 3. Verify check-in for each stay with any modifications using the workflow mutation
-    for (const stayId of checkinResult.stay_ids) {
+    const stayIds = checkinResult?.stay_ids || [];
+    for (const stayId of stayIds) {
       const verifyRequestData: any = {
         guest_updates: {
           hours_24: verifyData.value.hours_24 || false,
@@ -863,6 +863,10 @@ const completeCheckin = async () => {
 
 const resetForm = () => {
   step.value = 1;
+  selectedGuest.value = null;
+  searchInputValue.value = '';
+  lastSearchResults.value = [];
+  filteredGuests.value = [];
   guestData.value = {
     primary_guest: {
       full_name: '',
