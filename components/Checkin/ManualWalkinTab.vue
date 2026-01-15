@@ -803,7 +803,7 @@ const completeCheckin = async () => {
       });
 
       const guestResult = await createGuestMutation.createGuest(formData);
-      guestId = guestResult.primary_guest.id;
+      guestId = guestResult.primary_guest_id;
     }
 
     // 2. Check-in offline with guest ID using the workflow mutation
