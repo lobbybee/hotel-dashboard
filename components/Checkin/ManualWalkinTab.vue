@@ -802,7 +802,7 @@ const completeCheckin = async () => {
         accompanyingDocuments: accompanyingDocuments.value
       });
 
-      const guestResult = await createGuestMutation.mutateAsync(formData);
+      const guestResult = await createGuestMutation.createGuest(formData);
       guestId = guestResult.primary_guest.id;
     }
 
