@@ -375,7 +375,7 @@ const saveTemplate = async () => {
       template_type: globalTemplate?.template_type || 'custom',
       category: globalTemplate?.category || 'custom',
       text_content: formData.value.text_content,
-      variables: extractedVars.value,
+      variables: extractedTemplateVars.value,
       is_active: formData.value.is_active,
       base_template: formData.value.base_template!,
       description: `Custom template based on ${globalTemplate?.name || 'global template'}`,
