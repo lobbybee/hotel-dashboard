@@ -23,17 +23,17 @@
           <i class="pi pi-users text-white text-3xl"></i>
         </div>
         <h2 class="text-2xl font-bold text-gray-900 mb-4">
-          {{ (staffMembers?.value?.length || 0) > 0 ? 'Staff Management' : 'Welcome to Staff Setup' }}
+          {{ ((staffMembers as any)?.results?.length || (Array.isArray(staffMembers) ? staffMembers.length : 0)) > 0 ? 'Staff Management' : 'Welcome to Staff Setup' }}
         </h2>
         <p class="text-gray-600 leading-relaxed">
-          {{ (staffMembers?.value?.length || 0) > 0
-            ? `You have ${staffMembers.value.length} staff members in your team.`
+          {{ ((staffMembers as any)?.results?.length || (Array.isArray(staffMembers) ? staffMembers.length : 0)) > 0
+            ? `You have ${(staffMembers as any)?.count || (staffMembers as any)?.results?.length || (Array.isArray(staffMembers) ? staffMembers.length : 0)} staff members in your team.`
             : "Let's set up your hotel staff team with roles and permissions."
           }}
         </p>
       </div>
 
-      <div v-if="(!staffMembers?.value || staffMembers.value.length === 0)" class="bg-amber-50 border border-amber-100 rounded-xl p-6 mb-8">
+      <div v-if="!((staffMembers as any)?.results?.length || (Array.isArray(staffMembers) ? staffMembers.length : 0))" class="bg-amber-50 border border-amber-100 rounded-xl p-6 mb-8">
         <div class="flex items-start space-x-3">
           <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
             <i class="pi pi-info-circle text-amber-600"></i>
@@ -59,7 +59,7 @@
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <span class="text-sm text-green-700">Total Staff:</span>
-                <span class="font-semibold text-green-800">{{ staffMembers.value.length }}</span>
+                <span class="font-semibold text-green-800">{{ (staffMembers as any)?.count || (staffMembers as any)?.results?.length || 0 }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-sm text-green-700">Active:</span>
@@ -72,7 +72,7 @@
 
       <div class="flex justify-center">
         <button @click="nextStep" class="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all">
-          {{ (!staffMembers?.value || staffMembers.value.length === 0) ? 'Get Started' : 'Add More Staff' }}
+          {{ !((staffMembers as any)?.results?.length || (Array.isArray(staffMembers) ? staffMembers.length : 0)) ? 'Get Started' : 'Add More Staff' }}
           <i class="pi pi-arrow-right ml-2"></i>
         </button>
       </div>
@@ -332,7 +332,7 @@ const userTypeColors: Record<string, string> = {
 }
 
 // Computed
-const activeStaffCount = computed(() => staffMembers.value?.filter(s => s.is_active_hotel_user).length || 0)
+const activeStaffCount = computed(() => ((staffMembers.value as any)?.results || (Array.isArray(staffMembers.value) ? staffMembers.value : []))?.filter((s: any) => s.is_active_hotel_user).length || 0)
 const hasStaffFormData = computed(() => staffForm.username && staffForm.username.length >= 2 && staffForm.email && staffForm.email.includes('@') && staffForm.password && staffForm.password.length >= 6 && staffForm.user_type && staffForm.phone_number && staffForm.phone_number.length >= 10)
 
 // Continue only enabled when queue has items
@@ -445,8 +445,8 @@ const confirmCreate = async () => {
       department: s.user_type === 'department_staff' ? s.department : ''
     }))
     
-    // Send array for bulk create
-    await createStaff(payload)
+    // Create staff members in parallel
+    await Promise.all(payload.map(staff => createStaff(staff as any)))
     toast.add({ severity: 'success', summary: 'Success', detail: `${staffQueue.value.length} staff members created!`, life: 3000 })
     staffQueue.value = []
     showConfirmModal.value = false

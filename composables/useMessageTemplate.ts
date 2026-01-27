@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { useAPI } from './useAPI';
+import { useAPIHelper } from './useAPIHelper';
 
 // Base Template Interface
 export interface MessageTemplate {
@@ -36,9 +37,7 @@ export interface GlobalMessageTemplate {
 }
 
 // Custom Template Interface
-export interface CustomMessageTemplate extends MessageTemplate {}
-
-
+export interface CustomMessageTemplate extends MessageTemplate { }
 
 // Template Creation Data
 export interface CustomTemplateCreateData {
@@ -135,13 +134,14 @@ export interface TemplateVariablesResponse {
 // Fetch all custom templates
 export const useFetchCustomTemplates = (params?: TemplateListParams) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
   const {
     data,
     isLoading,
     error,
     refetch
   } = useQuery({
-    key: ['custom-templates', params],
+    key: ['custom-templates', (params ?? null) as any],
     query: async () => {
       const queryString = params ? new URLSearchParams(
         Object.entries(params).filter(([_, value]) => value !== undefined) as [string, string][]
@@ -149,7 +149,7 @@ export const useFetchCustomTemplates = (params?: TemplateListParams) => {
 
       const url = queryString ? `/chat/custom-templates/?${queryString}` : '/chat/custom-templates/';
       const response = await API(url);
-      return response as TemplateListResponse;
+      return getData<TemplateListResponse>(response);
     }
   });
 
@@ -165,6 +165,7 @@ export const useFetchCustomTemplates = (params?: TemplateListParams) => {
 // Fetch a single custom template by ID
 export const useFetchCustomTemplateById = (id: string | number) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
   const {
     data,
     isLoading,
@@ -175,7 +176,7 @@ export const useFetchCustomTemplateById = (id: string | number) => {
     query: async () => {
       if (!id) return null;
       const response = await API(`/chat/custom-templates/${id}/`);
-      return response as CustomMessageTemplate;
+      return getData<CustomMessageTemplate>(response);
     },
     enabled: computed(() => !!id)
   });
@@ -191,6 +192,7 @@ export const useFetchCustomTemplateById = (id: string | number) => {
 // Create custom template
 export const useCreateCustomTemplate = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
 
   const {
     mutateAsync: createCustomTemplate,
@@ -201,33 +203,33 @@ export const useCreateCustomTemplate = () => {
   } = useMutation({
     mutation: async (data: CustomTemplateCreateData) => {
       const formData = new FormData();
-      
+
       // Add all text fields to FormData
       formData.append('name', data.name);
       formData.append('template_type', data.template_type);
-      
+
       if (data.category) {
         formData.append('category', data.category);
       }
-      
+
       formData.append('text_content', data.text_content);
-      
+
       if (data.variables && data.variables.length > 0) {
         formData.append('variables', JSON.stringify(data.variables));
       }
-      
+
       if (data.is_active !== undefined) {
         formData.append('is_active', data.is_active.toString());
       }
-      
+
       if (data.base_template) {
         formData.append('base_template', data.base_template.toString());
       }
-      
+
       if (data.description) {
         formData.append('description', data.description);
       }
-      
+
       if (data.media_file) {
         formData.append('media_file', data.media_file);
       }
@@ -236,7 +238,7 @@ export const useCreateCustomTemplate = () => {
         method: 'POST',
         body: formData
       });
-      return response as CustomMessageTemplate;
+      return getData<CustomMessageTemplate>(response);
     }
   });
 
@@ -252,6 +254,7 @@ export const useCreateCustomTemplate = () => {
 // Update custom template (full update)
 export const useUpdateCustomTemplate = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
 
   const {
     mutateAsync: updateCustomTemplate,
@@ -262,40 +265,40 @@ export const useUpdateCustomTemplate = () => {
   } = useMutation({
     mutation: async ({ id, data }: { id: string | number; data: CustomTemplateUpdateData }) => {
       const formData = new FormData();
-      
+
       // Add all provided fields to FormData
       if (data.name) {
         formData.append('name', data.name);
       }
-      
+
       if (data.template_type) {
         formData.append('template_type', data.template_type);
       }
-      
+
       if (data.category) {
         formData.append('category', data.category);
       }
-      
+
       if (data.text_content) {
         formData.append('text_content', data.text_content);
       }
-      
+
       if (data.variables) {
         formData.append('variables', JSON.stringify(data.variables));
       }
-      
+
       if (data.is_active !== undefined) {
         formData.append('is_active', data.is_active.toString());
       }
-      
+
       if (data.base_template) {
         formData.append('base_template', data.base_template.toString());
       }
-      
+
       if (data.description) {
         formData.append('description', data.description);
       }
-      
+
       if (data.media_file) {
         formData.append('media_file', data.media_file);
       }
@@ -304,7 +307,7 @@ export const useUpdateCustomTemplate = () => {
         method: 'PUT',
         body: formData
       });
-      return response as CustomMessageTemplate;
+      return getData<CustomMessageTemplate>(response);
     }
   });
 
@@ -320,6 +323,7 @@ export const useUpdateCustomTemplate = () => {
 // Partially update custom template
 export const usePartialUpdateCustomTemplate = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
 
   const {
     mutateAsync: partialUpdateCustomTemplate,
@@ -330,40 +334,40 @@ export const usePartialUpdateCustomTemplate = () => {
   } = useMutation({
     mutation: async ({ id, data }: { id: string | number; data: Partial<CustomTemplateUpdateData> }) => {
       const formData = new FormData();
-      
+
       // Add all provided fields to FormData
       if (data.name) {
         formData.append('name', data.name);
       }
-      
+
       if (data.template_type) {
         formData.append('template_type', data.template_type);
       }
-      
+
       if (data.category) {
         formData.append('category', data.category);
       }
-      
+
       if (data.text_content) {
         formData.append('text_content', data.text_content);
       }
-      
+
       if (data.variables) {
         formData.append('variables', JSON.stringify(data.variables));
       }
-      
+
       if (data.is_active !== undefined) {
         formData.append('is_active', data.is_active.toString());
       }
-      
+
       if (data.base_template) {
         formData.append('base_template', data.base_template.toString());
       }
-      
+
       if (data.description) {
         formData.append('description', data.description);
       }
-      
+
       if (data.media_file) {
         formData.append('media_file', data.media_file);
       }
@@ -372,7 +376,7 @@ export const usePartialUpdateCustomTemplate = () => {
         method: 'PATCH',
         body: formData
       });
-      return response as CustomMessageTemplate;
+      return getData<CustomMessageTemplate>(response);
     }
   });
 
@@ -420,13 +424,14 @@ export const useDeleteCustomTemplate = () => {
 // Fetch all global templates
 export const useFetchGlobalTemplates = (params?: TemplateListParams) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
   const {
     data,
     isLoading,
     error,
     refetch
   } = useQuery({
-    key: ['global-templates', params],
+    key: ['global-templates', (params ?? null) as any],
     query: async () => {
       const queryString = params ? new URLSearchParams(
         Object.entries(params).filter(([_, value]) => value !== undefined) as [string, string][]
@@ -434,12 +439,12 @@ export const useFetchGlobalTemplates = (params?: TemplateListParams) => {
 
       const url = queryString ? `/chat/templates/?${queryString}` : '/chat/templates/';
       const response = await API(url);
-      return response as {
+      return getData<{
         count: number;
         next: string | null;
         previous: string | null;
         results: GlobalMessageTemplate[];
-      };
+      }>(response);
     }
   });
 
@@ -455,6 +460,7 @@ export const useFetchGlobalTemplates = (params?: TemplateListParams) => {
 // Fetch a single global template by ID
 export const useFetchGlobalTemplateById = (id: string | number) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
   const {
     data,
     isLoading,
@@ -465,7 +471,7 @@ export const useFetchGlobalTemplateById = (id: string | number) => {
     query: async () => {
       if (!id) return null;
       const response = await API(`/chat/templates/${id}/`);
-      return response as GlobalMessageTemplate;
+      return getData<GlobalMessageTemplate>(response);
     },
     enabled: computed(() => !!id)
   });
@@ -485,6 +491,7 @@ export const useFetchGlobalTemplateById = (id: string | number) => {
 // Get template variables
 export const useFetchTemplateVariables = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
   const {
     data,
     isLoading,
@@ -494,7 +501,7 @@ export const useFetchTemplateVariables = () => {
     key: ['template-variables'],
     query: async () => {
       const response = await API('/chat/templates/variables/');
-      return response as TemplateVariablesResponse;
+      return getData<TemplateVariablesResponse>(response);
     }
   });
 
@@ -509,6 +516,7 @@ export const useFetchTemplateVariables = () => {
 // Get template types and categories
 export const useFetchTemplateTypes = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
   const {
     data,
     isLoading,
@@ -518,7 +526,7 @@ export const useFetchTemplateTypes = () => {
     key: ['template-types'],
     query: async () => {
       const response = await API('/chat/templates/types/');
-      return response as TemplateTypesResponse;
+      return getData<TemplateTypesResponse>(response);
     }
   });
 
@@ -533,6 +541,7 @@ export const useFetchTemplateTypes = () => {
 // Preview template (works for both custom and global templates)
 export const usePreviewTemplate = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
 
   const {
     mutateAsync: previewTemplate,
@@ -543,7 +552,7 @@ export const usePreviewTemplate = () => {
   } = useMutation({
     mutation: async (id: string | number) => {
       const response = await API(`/chat/templates/${id}/preview/`);
-      return response as TemplatePreviewResponse;
+      return getData<TemplatePreviewResponse>(response);
     }
   });
 
@@ -563,6 +572,7 @@ export const usePreviewTemplate = () => {
 // Upload template media
 export const useUploadTemplateMedia = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
 
   const {
     mutateAsync: uploadTemplateMedia,
@@ -579,7 +589,7 @@ export const useUploadTemplateMedia = () => {
         method: 'POST',
         body: formData
       });
-      return response as TemplateMediaUploadResponse;
+      return getData<TemplateMediaUploadResponse>(response);
     }
   });
 

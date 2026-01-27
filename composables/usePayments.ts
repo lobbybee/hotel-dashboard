@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { useAPI } from './useAPI';
+import { useAPIHelper } from './useAPIHelper';
 
 // Interfaces based on the API specification
 export interface SubscriptionPlan {
@@ -64,6 +65,8 @@ export interface PaginatedResponse<T> {
 // Fetch all subscription plans
 export const useFetchPlans = () => {
   const { API } = useAPI();
+  const { getResults, getPaginatedResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -72,8 +75,9 @@ export const useFetchPlans = () => {
   } = useQuery({
     key: ['plans'],
     query: async () => {
-      const response: PaginatedResponse<SubscriptionPlan> = await API('/plans/');
-      return response.results; // API returns paginated response with results array
+      const response = await API('/plans/');
+      // API returns paginated response with results array, getResults handles it
+      return getPaginatedResults<SubscriptionPlan>(response);
     }
   });
 
@@ -88,6 +92,8 @@ export const useFetchPlans = () => {
 // Fetch a single subscription plan by ID
 export const useFetchPlanById = (id: string) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -98,7 +104,7 @@ export const useFetchPlanById = (id: string) => {
     query: async () => {
       if (!id) return null;
       const response = await API(`/plans/${id}/`);
-      return response;
+      return getData<SubscriptionPlan>(response);
     },
     enabled: computed(() => !!id)
   });
@@ -120,24 +126,26 @@ export const useFetchTransactions = (filters?: {
   status?: 'pending' | 'completed' | 'failed' | 'cancelled';
 }) => {
   const { API } = useAPI();
+  const { getResults, getPaginatedResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
     error,
     refetch
   } = useQuery({
-    key: ['transactions', filters],
+    key: ['transactions', filters ?? null],
     query: async () => {
       const params = new URLSearchParams();
       if (filters?.plan) params.append('plan', filters.plan);
       if (filters?.transaction_type) params.append('transaction_type', filters.transaction_type);
       if (filters?.status) params.append('status', filters.status);
-      
+
       const queryString = params.toString();
       const url = `/transactions/${queryString ? `?${queryString}` : ''}`;
-      
-      const response: PaginatedResponse<Transaction> = await API(url);
-      return response.results; // API returns paginated response with results array
+
+      const response = await API(url);
+      return getPaginatedResults<Transaction>(response);
     }
   });
 
@@ -152,6 +160,8 @@ export const useFetchTransactions = (filters?: {
 // Fetch a single own transaction by ID
 export const useFetchTransactionById = (id: string) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -162,7 +172,7 @@ export const useFetchTransactionById = (id: string) => {
     query: async () => {
       if (!id) return null;
       const response = await API(`/transactions/${id}/`);
-      return response;
+      return getData<Transaction>(response);
     },
     enabled: computed(() => !!id)
   });
@@ -180,6 +190,8 @@ export const useFetchTransactionById = (id: string) => {
 // Fetch all own subscriptions
 export const useFetchSubscriptions = () => {
   const { API } = useAPI();
+  const { getResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -189,7 +201,7 @@ export const useFetchSubscriptions = () => {
     key: ['subscriptions'],
     query: async () => {
       const response = await API('/subscriptions/');
-      return response;
+      return getResults<HotelSubscription>(response);
     }
   });
 
@@ -204,6 +216,8 @@ export const useFetchSubscriptions = () => {
 // Fetch a single own subscription by ID
 export const useFetchSubscriptionById = (id: string) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -214,7 +228,7 @@ export const useFetchSubscriptionById = (id: string) => {
     query: async () => {
       if (!id) return null;
       const response = await API(`/subscriptions/${id}/`);
-      return response;
+      return getData<HotelSubscription>(response);
     },
     enabled: computed(() => !!id)
   });
@@ -230,6 +244,8 @@ export const useFetchSubscriptionById = (id: string) => {
 // Fetch my subscription
 export const useFetchMySubscription = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -240,7 +256,7 @@ export const useFetchMySubscription = () => {
     query: async () => {
       try {
         const response = await API('/subscriptions/my_subscription/');
-        return response;
+        return getData<HotelSubscription>(response);
       } catch (err) {
         // Handle 404 response when no active subscription is found
         if (err instanceof APIError && err.status === 404) {
@@ -262,7 +278,7 @@ export const useFetchMySubscription = () => {
 // Subscribe to a plan
 export const useSubscribeToPlan = () => {
   const { API } = useAPI();
-  
+
   const subscribeToPlan = async (planId: string) => {
     try {
       const response = await API('/payments/subscriptions/subscribe_to_plan/', {

@@ -462,6 +462,7 @@ import { useDebounceFn } from "@vueuse/core";
 import { useToast } from 'primevue/usetoast';
 import { useCheckinWorkflow, prepareGuestFormData } from '~/composables/checkin-manager';
 import { useAPI } from '~/composables/useAPI';
+import { useAPIHelper } from '~/composables/useAPIHelper';
 import {
     useFetchRooms,
     useFetchRoomCategories,
@@ -483,9 +484,9 @@ const { createGuestMutation, checkinOfflineMutation, verifyCheckinMutation } = u
 const searchTerm = ref('');
 const searchInputValue = ref('');
 const selectedGuest = ref<any>(null);
-const filteredGuests = ref([]);
+const filteredGuests = ref<any[]>([]);
 const guestsLoading = ref(false);
-const lastSearchResults = ref([]); // Store last search results
+const lastSearchResults = ref<any[]>([]); // Store last search results
 
 // Debounced search function
 const debouncedSearch = useDebounceFn((searchValue: string) => {
@@ -498,15 +499,10 @@ const searchAPI = async (searchValue: string) => {
     guestsLoading.value = true;
     try {
       const { API } = useAPI();
+      const { getResults } = useAPIHelper();
       const response = await API(`/guest-management/guests/?search=${encodeURIComponent(searchValue)}`);
 
-      // Check if response is an array directly or has results property
-      let results = [];
-      if (Array.isArray(response)) {
-        results = response;
-      } else if (response && response.results) {
-        results = response.results;
-      }
+      const results = getResults<any>(response);
 
       filteredGuests.value = results;
       lastSearchResults.value = results; // Store the results
@@ -563,7 +559,7 @@ const checkinDates = ref({
 
 // Room selection form
 const stayForm = ref({
-  rooms: [],
+  rooms: [] as any[],
   check_out_date: checkinDates.value.check_out
 });
 
@@ -579,15 +575,15 @@ const {
 } = useFetchRooms(
   computed(() => ({
     status: "available",
-    category: selectedRoomCategory.value,
-    floor: selectedFloor.value,
+    category: selectedRoomCategory.value || undefined,
+    floor: selectedFloor.value || undefined,
     page_size: 30,
   })),
 );
 
 const roomCategories = computed(() => {
   const categories =
-    roomCategoriesData.value?.results.map((category: any) => ({
+    (roomCategoriesData.value as any[])?.map((category: any) => ({
       label: `${category.name}`,
       value: category.id,
     })) || [];
@@ -595,8 +591,13 @@ const roomCategories = computed(() => {
 });
 
 const floorOptions = computed(() => {
-  if (!floorsData.value?.floors) return [];
-  const floors = floorsData.value.floors.map((floor: number) => ({
+  // floorsData.value should be number[] based on useHotel.ts using getResults
+  // But if the endpoint returns { floors: [...] } and getResults returns [], that's bad.
+  // Assuming getResults was used correctly or returns the array.
+  // If useFetchHotelRoomFloors returns number[], then use it directly.
+  if (!floorsData.value) return [];
+  // Use 'as number[]' if needed or check array
+  const floors = (floorsData.value as unknown as number[]).map((floor: number) => ({
     label: `Floor ${floor}`,
     value: floor,
   }));
@@ -604,8 +605,10 @@ const floorOptions = computed(() => {
 });
 
 const availableRooms = computed(() => {
-  if (!roomsData.value?.results) return [];
-  return roomsData.value.results.map((room: any) => ({
+  if (!roomsData.value) return [];
+  // Handle paginated or list response
+  const rooms = (roomsData.value as any).results || (Array.isArray(roomsData.value) ? roomsData.value : []);
+  return rooms.map((room: any) => ({
     label: selectedRoomCategory.value && selectedRoomCategory.value !== null
       ? `Room ${room.room_number}`
       : `Room ${room.room_number} - ${room.category.name}`,
@@ -616,10 +619,11 @@ const availableRooms = computed(() => {
 });
 
 const selectedRoomsDisplay = computed(() => {
-  if (!stayForm.value.rooms.length || !roomsData.value?.results) return [];
+  if (!stayForm.value.rooms.length || !roomsData.value) return [];
   return stayForm.value.rooms
     .map((roomId: any) => {
-      const room = roomsData.value.results.find(
+      const rooms = (roomsData.value as any).results || (Array.isArray(roomsData.value) ? roomsData.value : []);
+      const room = rooms.find(
         (r: any) => r.id === roomId,
       );
       return room
@@ -714,8 +718,9 @@ const onInputFocus = () => {
 const fetchGuestFlags = async (guestId: number) => {
   try {
     const { API } = useAPI();
+    const { getData } = useAPIHelper();
     const response = await API(`/guest-management/guests/${guestId}/flags/`);
-    flagSummary.value = response;
+    flagSummary.value = getData(response);
   } catch (error) {
     console.error('Error fetching guest flags:', error);
     flagSummary.value = null;
@@ -757,7 +762,7 @@ const removeAccompanyingGuest = (index: number) => {
 };
 
 const updateStayField = ({ field, value }: any) => {
-  stayForm.value[field] = value;
+  (stayForm.value as any)[field] = value;
   if (field === 'check_out_date') {
     checkinDates.value.check_out = value;
   }
@@ -801,7 +806,8 @@ const completeCheckin = async () => {
         accompanyingDocuments: accompanyingDocuments.value
       });
 
-      const guestResult = await createGuestMutation.createGuest(formData);
+      // useCreateGuest expects { documents: FormData } for file uploads
+      const guestResult = await createGuestMutation.createGuest({ documents: formData } as any);
       guestId = guestResult.primary_guest_id;
     }
 

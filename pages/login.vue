@@ -70,8 +70,10 @@
   </div>
 </template>
 
+
 <script setup lang="ts">
 import { useAPI, APIError, ForbiddenUserError } from '~/composables/useAPI';
+import { useAPIHelper } from '~/composables/useAPIHelper';
 
 definePageMeta({
   layout: 'auth'
@@ -79,6 +81,7 @@ definePageMeta({
 
 const router = useRouter()
 const { login } = useAPI()
+const { getData, getErrorMessage } = useAPIHelper()
 
 const username = ref('')
 const password = ref('')
@@ -94,8 +97,10 @@ async function handleLogin() {
       username: username.value,
       password: password.value
     })
+    
+    const data = getData<{ user: { user_type: string } }>(response)
+    const userRole = data.user?.user_type
 
-    const userRole = response.user?.user_type
     if (userRole === 'manager' || userRole === 'hotel_admin') {
       router.push('/manager')
     } else if (userRole === 'receptionist') {
@@ -108,10 +113,15 @@ async function handleLogin() {
   } catch (err) {
     if (err instanceof ForbiddenUserError) {
       error.value = err.message
-    } else if (err instanceof APIError && err.data && err.data.detail) {
-      error.value = err.data.detail
+    } else if (err instanceof APIError) {
+       // Use helper or err.message (which useAPI already processed)
+       // useAPI.onResponseError already uses getErrorMessage to set the message.
+       // So err.message is likely correct. 
+       // But err.data might contain details?
+       // Let's use getErrorMessage to be safe and consistent.
+       error.value = getErrorMessage(err)
     } else {
-      error.value = err.message || 'Invalid username or password'
+      error.value = (err as Error).message || 'Invalid username or password'
     }
   } finally {
     loading.value = false

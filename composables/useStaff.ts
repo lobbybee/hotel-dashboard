@@ -1,6 +1,7 @@
 import { computed } from 'vue';
 import { useAPI } from './useAPI';
-import type { User } from '~/types';
+import { useAPIHelper } from './useAPIHelper';
+import type { User } from '~/types/user';
 
 export interface StaffCreateData {
   username: string;
@@ -24,6 +25,8 @@ export interface StaffUpdateData {
 // Fetch all staff members
 export const useFetchStaff = () => {
   const { API } = useAPI();
+  const { getResults, getPaginatedResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -33,7 +36,7 @@ export const useFetchStaff = () => {
     key: ['staff'],
     query: async () => {
       const response = await API('/users/');
-      return response.results; // API returns array directly
+      return getPaginatedResults<User>(response);
     }
   });
 
@@ -48,6 +51,8 @@ export const useFetchStaff = () => {
 // Fetch a single staff member by ID
 export const useFetchStaffById = (id: string | number) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -58,7 +63,7 @@ export const useFetchStaffById = (id: string | number) => {
     query: async () => {
       if (!id) return null;
       const response = await API(`/users/${id}/`);
-      return response;
+      return getData<User>(response);
     },
     enabled: computed(() => !!id)
   });

@@ -241,7 +241,7 @@ const { mutateAsync: deleteRoomAPI, status: deleteRoomStatus } =
     useDeleteRoom();
 
 // Computed Data
-const floors = computed(() => floorsData.value?.floors || []);
+const floors = computed(() => floorsData.value || []);
 const rooms = computed(() => roomsData.value?.results || []);
 const totalRooms = computed(() => roomsData.value?.count || 0);
 const categories = computed(() => categoriesData.value?.results || []);

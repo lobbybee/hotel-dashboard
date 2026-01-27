@@ -124,7 +124,6 @@
                 ref="notificationMenu"
                 :popup="true"
                 :model="[]"
-                :appendTo="body"
                 :autoZIndex="true"
                 class="mt-2 w-96 notification-panel"
               >

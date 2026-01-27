@@ -1,5 +1,6 @@
 import { computed, type Ref } from 'vue';
 import { useAPI } from './useAPI';
+import { useAPIHelper } from './useAPIHelper';
 
 /**
  * Fetches guest history for the hotel user.
@@ -16,16 +17,18 @@ export const useFetchGuestHistory = (options?: Ref<{
   guest_whatsapp?: string;
 }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: guestHistory,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['reporting', 'guest-history', options?.value]),
+    key: computed(() => ['reporting', 'guest-history', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/guest-history/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
@@ -49,16 +52,18 @@ export const useFetchRoomHistory = (options?: Ref<{
   guest_whatsapp?: string;
 }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: roomHistory,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['reporting', 'room-history', options?.value]),
+    key: computed(() => ['reporting', 'room-history', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/room-history/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
@@ -78,16 +83,18 @@ export const useFetchConversationHistory = (options?: Ref<{
   end_date?: string;
 }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: conversationHistory,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['reporting', 'conversation-history', options?.value]),
+    key: computed(() => ['reporting', 'conversation-history', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/conversation-history/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
@@ -111,16 +118,18 @@ export const useFetchFeedbackAnalytics = (options?: Ref<{
   guest_whatsapp?: string;
 }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: feedbackAnalytics,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['reporting', 'feedback-analytics', options?.value]),
+    key: computed(() => ['reporting', 'feedback-analytics', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/feedback-analytics/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
@@ -142,19 +151,21 @@ export const useFetchHotelOverview = (options?: Ref<{
   end_date?: string;
 }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: hotelOverview,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['reporting', 'hotel-overview', options?.value]),
+    key: computed(() => ['reporting', 'hotel-overview', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/overview/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
-  
+
   return { hotelOverview, isLoading, error, refetch };
 };

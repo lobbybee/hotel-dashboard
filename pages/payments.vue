@@ -33,7 +33,7 @@
       <div v-else class="space-y-8">
         <!-- Current Subscription -->
         <MySubscription
-          :subscription="mySubscription"
+          :subscription="mySubscription || null"
           @refresh="refetchAll"
         />
 
@@ -45,7 +45,7 @@
 
         <!-- Recent Transactions -->
         <PaymentTransactions
-          :transactions="transactions"
+          :transactions="transactionsList"
           @refresh="refetchAll"
         />
       </div>
@@ -77,6 +77,10 @@ import PaymentTransactions from '~/components/Payments/PaymentTransactions.vue';
 const { plans, isLoading: plansLoading, error: plansError, refetch: refetchPlans } = useFetchPlans();
 const { transactions, isLoading: transactionsLoading, error: transactionsError, refetch: refetchTransactions } = useFetchTransactions();
 const { subscription: mySubscription, isLoading: subscriptionLoading, error: subscriptionError, refetch: refetchSubscription } = useFetchMySubscription();
+
+// Computed lists for components (handling pagination)
+const plansList = computed(() => (plans.value as any)?.results || (Array.isArray(plans.value) ? plans.value : []));
+const transactionsList = computed(() => (transactions.value as any)?.results || (Array.isArray(transactions.value) ? transactions.value : []));
 
 // Toast for notifications
 const toast = useToast();

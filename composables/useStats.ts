@@ -1,5 +1,6 @@
 import { computed, type Ref } from 'vue';
 import { useAPI } from './useAPI';
+import { useAPIHelper } from './useAPIHelper';
 
 /**
  * Fetches overview statistics for the hotel user.
@@ -10,16 +11,18 @@ import { useAPI } from './useAPI';
  */
 export const useFetchOverviewStats = (options?: Ref<{ date?: string }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: stats,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['stats', 'overview', options?.value]),
+    key: computed(() => ['stats', 'overview', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
@@ -35,16 +38,18 @@ export const useFetchOverviewStats = (options?: Ref<{ date?: string }>) => {
  */
 export const useFetchOccupancyStats = (options?: Ref<{ date?: string }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: stats,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['stats', 'occupancy', options?.value]),
+    key: computed(() => ['stats', 'occupancy', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/occupancy/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
@@ -59,16 +64,18 @@ export const useFetchOccupancyStats = (options?: Ref<{ date?: string }>) => {
  */
 export const useFetchGuestStats = (options?: Ref<{ date?: string }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: stats,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['stats', 'guests', options?.value]),
+    key: computed(() => ['stats', 'guests', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/guests/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
@@ -83,16 +90,18 @@ export const useFetchGuestStats = (options?: Ref<{ date?: string }>) => {
  */
 export const useFetchRoomStats = (options?: Ref<{ date?: string }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: stats,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['stats', 'rooms', options?.value]),
+    key: computed(() => ['stats', 'rooms', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/rooms/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
@@ -107,16 +116,18 @@ export const useFetchRoomStats = (options?: Ref<{ date?: string }>) => {
  */
 export const useFetchStaffStats = (options?: Ref<{ date?: string }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: stats,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['stats', 'staff', options?.value]),
+    key: computed(() => ['stats', 'staff', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/staff/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
@@ -131,16 +142,18 @@ export const useFetchStaffStats = (options?: Ref<{ date?: string }>) => {
  */
 export const useFetchPerformanceStats = (options?: Ref<{ date?: string }>) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: stats,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['stats', 'performance', options?.value]),
+    key: computed(() => ['stats', 'performance', options?.value ?? null]),
     query: async () => {
       const response = await API('/hotel_stat/performance/', { params: options?.value });
-      return response;
+      return getData(response);
     },
   });
 
@@ -154,17 +167,19 @@ export const useFetchDetailedStats = (
   options?: Ref<{ date?: string }>
 ) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
+
   const {
     data: stats,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    key: computed(() => ['stats', 'detailed', statType.value, options?.value]),
+    key: computed(() => ['stats', 'detailed', statType.value, options?.value ?? null]),
     query: async () => {
       if (!statType.value) return null;
       const response = await API(`/hotel_stat/${statType.value}/`, { params: options?.value });
-      return response;
+      return getData(response);
     },
     enabled: computed(() => !!statType.value),
   });

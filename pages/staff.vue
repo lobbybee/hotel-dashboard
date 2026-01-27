@@ -10,7 +10,7 @@
         <Button
           label="Add Staff Member"
           icon="pi pi-plus"
-          :loading="createAsyncStatus === 'pending'"
+          :loading="createAsyncStatus === 'pending' as any"
           @click="openAddStaffForm"
         />
       </div>
@@ -50,7 +50,7 @@
       <i class="pi pi-exclamation-triangle text-6xl text-red-300 mb-4"></i>
       <h3 class="text-lg font-medium text-gray-900 mb-2">Error loading staff members</h3>
       <p class="text-gray-500 mb-4">{{ error?.message || 'An unexpected error occurred' }}</p>
-      <Button label="Retry" icon="pi pi-refresh" @click="refetch" />
+      <Button label="Retry" icon="pi pi-refresh" @click="() => refetch()" />
     </div>
 
         <!-- Table Content -->
@@ -316,14 +316,15 @@ const staffForm = reactive({
 
 const staffErrors = ref<Record<string, string>>({});
 
-const totalStaffCount = computed(() => staffMembers.value?.length || 0);
+const totalStaffCount = computed(() => (staffMembers.value as any)?.count || (staffMembers.value as any)?.results?.length || (Array.isArray(staffMembers.value) ? staffMembers.value.length : 0));
 const activeStaffCount = computed(() =>
-  staffMembers.value?.filter((staff: any) => staff.is_active_hotel_user).length || 0
+  ((staffMembers.value as any)?.results || (Array.isArray(staffMembers.value) ? staffMembers.value : []))?.filter((staff: any) => staff.is_active_hotel_user).length || 0
 );
 
 const filteredStaffMembers = computed(() => {
   if (!staffMembers.value) return [];
-  let filtered = [...staffMembers.value];
+  // Handle paginated or list response
+  let filtered = [...((staffMembers.value as any).results || (Array.isArray(staffMembers.value) ? staffMembers.value : []))];
 
   if (selectedDepartmentFilter.value !== 'all') {
     filtered = filtered.filter((staff: any) =>

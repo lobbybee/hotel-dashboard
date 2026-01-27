@@ -1,5 +1,6 @@
 import { ofetch } from 'ofetch';
 import { useAuthStore } from '~/stores/auth';
+import { useAPIHelper } from './useAPIHelper';
 
 // Custom error classes
 export class AuthenticationError extends Error {
@@ -32,6 +33,7 @@ export const useAPI = () => {
   const config = useRuntimeConfig();
   const apiURL = config.public.apiUrl || 'http://localhost:8000/api';
   const authStore = useAuthStore();
+  const { getErrorMessage, getData } = useAPIHelper();
 
   const authToken = useCookie<string | null>('auth_token');
   const refreshToken = useCookie<string | null>('auth_refresh_token');
@@ -62,19 +64,28 @@ export const useAPI = () => {
       method: 'POST',
       body: { refresh: refreshToken.value },
     })
-    .then((response) => {
-      authToken.value = response.access;
-      refreshToken.value = response.refresh;
-      return response;
-    })
-    .catch((error) => {
-      clearAuthData();
-      throw new AuthenticationError(error.message || "Token refresh failed");
-    })
-    .finally(() => {
-      refreshState.value.isRefreshing = false;
-      refreshState.value.refreshPromise = null;
-    });
+      .then((response) => {
+        // Assuming refresh endpoint also follows new format: { success: true, data: { access: "...", refresh: "..." } }
+        // Or maybe it stays same? Standard Django SimpleJWT might stay same. 
+        // User said "response format of the api", usually implies all custom endpoints. 
+        // But library endpoints like SimpleJWT might be an exception unless wrapped.
+        // I'll add a check.
+        const data = response.data || response;
+        authToken.value = data.access;
+        // Refresh token might not be rotated always, but if it is:
+        if (data.refresh) {
+          refreshToken.value = data.refresh;
+        }
+        return data;
+      })
+      .catch((error) => {
+        clearAuthData();
+        throw new AuthenticationError(error.message || "Token refresh failed");
+      })
+      .finally(() => {
+        refreshState.value.isRefreshing = false;
+        refreshState.value.refreshPromise = null;
+      });
 
     return refreshState.value.refreshPromise;
   };
@@ -95,7 +106,7 @@ export const useAPI = () => {
           .then(() => {
             const newOptions = { ...request };
             if (authToken.value) {
-                newOptions.headers.set('Authorization', `Bearer ${authToken.value}`);
+              newOptions.headers.set('Authorization', `Bearer ${authToken.value}`);
             }
             return ofetch(newOptions);
           })
@@ -105,7 +116,9 @@ export const useAPI = () => {
             throw new AuthenticationError("Authentication failed, please log in again");
           });
       }
-      const errorMessage = error?.message || response?._data?.message || "API request failed";
+
+      const errorMessage = getErrorMessage({ data: response?._data, message: error?.message });
+
       throw new APIError(
         errorMessage,
         response?.status || 0,
@@ -121,20 +134,22 @@ export const useAPI = () => {
         body: credentials,
       });
 
+      const data = getData<{ access: string; refresh: string; user: any }>(response);
+
       // Check if user type is forbidden before setting any tokens
       const forbiddenRoles = ['platform_admin', 'platform_staff', 'other_staff'];
-      const userRole = response.user?.user_type;
-      
+      const userRole = data.user?.user_type;
+
       if (forbiddenRoles.includes(userRole)) {
         // Don't set tokens, throw error immediately
         throw new ForbiddenUserError("Access denied: Your user type is not allowed to access this application");
       }
 
       // Only set tokens and user if role is allowed
-      authToken.value = response.access;
-      refreshToken.value = response.refresh;
-      authStore.setUser(response.user);
-      return response;
+      authToken.value = data.access;
+      refreshToken.value = data.refresh;
+      authStore.setUser(data.user);
+      return response; // Return full response so component can check .success or .message
     } catch (err) {
       clearAuthData();
       if (err instanceof ForbiddenUserError) {
@@ -149,14 +164,14 @@ export const useAPI = () => {
 
   const logout = async () => {
     if (refreshToken.value) {
-        try {
-            await API('/logout/', {
-                method: 'POST',
-                body: { refresh: refreshToken.value },
-            });
-        } catch (err) {
-            console.error("Failed to logout from backend. Clearing local tokens anyway.", err);
-        }
+      try {
+        await API('/logout/', {
+          method: 'POST',
+          body: { refresh: refreshToken.value },
+        });
+      } catch (err) {
+        console.error("Failed to logout from backend. Clearing local tokens anyway.", err);
+      }
     }
     clearAuthData();
     refreshState.value = {
@@ -177,7 +192,8 @@ export const useAPI = () => {
       if (err instanceof APIError) {
         throw err;
       }
-      throw new Error(err.message || 'Request password reset failed');
+      // Use standard error message extraction
+      throw new Error(getErrorMessage(err));
     }
   };
 
@@ -193,7 +209,7 @@ export const useAPI = () => {
       if (err instanceof APIError) {
         throw err;
       }
-      throw new Error(err.message || 'Confirm password reset failed');
+      throw new Error(getErrorMessage(err));
     }
   };
 

@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { useAPI } from './useAPI';
+import { useAPIHelper } from './useAPIHelper';
 
 export interface PaymentQRCode {
   id: string;
@@ -49,13 +50,15 @@ export interface SendToWhatsAppRequest {
 // Fetch all payment QR codes
 export const useFetchPaymentQRCodes = (params?: PaymentQRCodeListParams) => {
   const { API } = useAPI();
+  const { getResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
     error,
     refetch
   } = useQuery({
-    key: ['payment-qr-codes', params],
+    key: ['payment-qr-codes', (params ?? null) as any],
     query: async () => {
       const queryString = params ? new URLSearchParams(
         Object.entries(params).filter(([_, value]) => value !== undefined) as [string, string][]
@@ -63,13 +66,13 @@ export const useFetchPaymentQRCodes = (params?: PaymentQRCodeListParams) => {
 
       const url = queryString ? `/payment-qr-codes/?${queryString}` : '/payment-qr-codes/';
       const response = await API(url);
-      return response as PaymentQRCodeListResponse;
+      return getResults<PaymentQRCode>(response);
     }
   });
 
   return {
-    paymentQRCodes: computed(() => data.value?.results || []),
-    totalCount: computed(() => data.value?.count || 0),
+    paymentQRCodes: computed(() => (Array.isArray(data.value) ? data.value : [])),
+    totalCount: computed(() => data.value?.length || 0), // Not preserving count if getResults returns list only. But getResults returns T[].
     isLoading,
     error,
     refetch

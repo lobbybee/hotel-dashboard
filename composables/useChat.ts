@@ -1,9 +1,9 @@
 import { useAPI } from './useAPI';
 import { useWebSocket } from './useWebSocket';
+import { useAPIHelper } from './useAPIHelper';
 import type { Conversation, Message, ConversationDetailsResponse } from '~/types/chat';
 
 interface MediaUploadResponse {
-  success: boolean;
   file_url: string;
   filename: string;
   file_type: string;
@@ -14,17 +14,18 @@ interface MediaUploadResponse {
 
 export const useChat = () => {
   const { API } = useAPI();
+  const { getResults, getData } = useAPIHelper();
   const ws = useWebSocket();
 
   const fetchConversations = async () => {
     const response = await API('/chat/conversations/');
     console.log(response);
-    return response as Conversation[];
+    return getResults<Conversation>(response);
   };
 
   const fetchMessages = async (conversationId: number) => {
     const response = await API(`/chat/conversations/${conversationId}`);
-    return response as ConversationDetailsResponse;
+    return getData<ConversationDetailsResponse>(response);
   };
 
 
@@ -92,7 +93,7 @@ export const useChat = () => {
       body: formData,
     });
 
-    return response as MediaUploadResponse;
+    return getData<MediaUploadResponse>(response);
   };
 
   const sendMediaMessage = (conversationId: number, fileUrl: string, filename: string, fileType: string, caption?: string) => {

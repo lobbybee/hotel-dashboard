@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { useAPI } from './useAPI';
+import { useAPIHelper } from './useAPIHelper';
 
 // Based on the API specification provided
 
@@ -26,13 +27,13 @@ export interface FlowStepTemplateDropdown {
 }
 
 export interface FlowStep {
-    id: number;
-    template: number;
-    hotel: number;
-    step_id: string;
-    message_template: { [key: string]: any };
-    message_type: string;
-    options: { [key: string]: any };
+  id: number;
+  template: number;
+  hotel: number;
+  step_id: string;
+  message_template: { [key: string]: any };
+  message_type: string;
+  options: { [key: string]: any };
 }
 
 export interface FlowStepCreateData {
@@ -40,21 +41,22 @@ export interface FlowStepCreateData {
 }
 
 export interface FlowStepUpdateData {
-    message_template?: { [key: string]: any };
-    options?: { [key: string]: any };
-    conditional_next_steps?: { [key: string]: any };
-    // Add other updatable fields from FlowStep if necessary
+  message_template?: { [key: string]: any };
+  options?: { [key: string]: any };
+  conditional_next_steps?: { [key: string]: any };
+  // Add other updatable fields from FlowStep if necessary
 }
 
 
 // 1. Discover Customizable Step Templates
 export const useFetchCustomizableStepTemplates = (options?: Ref<{ page?: number, page_size?: number, search?: string, ordering?: string }>) => {
   const { API } = useAPI();
+  const { getResults } = useAPIHelper();
   return useQuery({
-    key: computed(() => ['customizable-step-templates', options?.value]),
+    key: computed(() => ['customizable-step-templates', options?.value ?? null]),
     query: async () => {
       const response = await API('/context/hotel/customizable-step-templates/', { params: options?.value });
-      return response;
+      return getResults(response);
     },
     placeholderData: (previousData) => previousData,
   });
@@ -63,6 +65,7 @@ export const useFetchCustomizableStepTemplates = (options?: Ref<{ page?: number,
 // 2. Create a Hotel-Specific Flow Step (Initiate Customization)
 export const useCreateFlowStep = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
 
   const {
     mutateAsync: createFlowStep,
@@ -76,7 +79,7 @@ export const useCreateFlowStep = () => {
         method: 'POST',
         body: data
       });
-      return response as FlowStep;
+      return getData<FlowStep>(response);
     }
   });
 
@@ -94,11 +97,12 @@ export const useCreateFlowStep = () => {
 // List all flow steps for the hotel
 export const useFetchFlowSteps = (options?: Ref<{ page?: number, page_size?: number, search?: string, ordering?: string }>) => {
   const { API } = useAPI();
+  const { getResults } = useAPIHelper();
   return useQuery({
-    key: computed(() => ['flow-steps', options?.value]),
+    key: computed(() => ['flow-steps', options?.value ?? null]),
     query: async () => {
       const response = await API('/context/hotel/flow-steps/', { params: options?.value });
-      return response;
+      return getResults(response);
     },
     placeholderData: (previousData) => previousData,
   });
@@ -107,6 +111,7 @@ export const useFetchFlowSteps = (options?: Ref<{ page?: number, page_size?: num
 // Retrieve a single flow step by ID
 export const useFetchFlowStepById = (id: string | number) => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
   const {
     data,
     isLoading,
@@ -117,7 +122,7 @@ export const useFetchFlowStepById = (id: string | number) => {
     query: async () => {
       if (!id) return null;
       const response = await API(`/context/hotel/flow-steps/${id}/`);
-      return response as FlowStep;
+      return getData<FlowStep>(response);
     },
     enabled: computed(() => !!id)
   });

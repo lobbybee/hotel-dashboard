@@ -1,9 +1,12 @@
 import { computed } from 'vue';
 import { useAPI } from './useAPI';
+import { useAPIHelper } from './useAPIHelper';
 
 // Fetch all notifications
 export const useFetchNotifications = () => {
   const { API } = useAPI();
+  const { getResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -13,7 +16,7 @@ export const useFetchNotifications = () => {
     key: ['notifications'],
     query: async () => {
       const response = await API('/notifications/');
-      return response.results; // API returns array directly
+      return getResults(response);
     }
   });
 

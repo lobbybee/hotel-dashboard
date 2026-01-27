@@ -368,9 +368,9 @@ const confirmType = ref<'categories' | 'rooms'>('categories')
 const steps = [{ title: 'Welcome' }, { title: 'Categories' }, { title: 'Rooms' }, { title: 'Complete' }]
 
 // API hooks
-const { data: categoriesData, isLoading: isCategoriesLoading, error: categoriesError, refetch: refetchCategories } = useFetchRoomCategories({ page: 1, search: '' })
-const categories = computed(() => categoriesData.value?.results || [])
-const { data: roomsData, isLoading: isRoomsLoading, error: roomsError, refetch: refetchRooms } = useFetchRooms({ page: 1, search: '' })
+const { data: categoriesData, isLoading: isCategoriesLoading, error: categoriesError, refetch: refetchCategories } = useFetchRoomCategories(computed(() => ({ page: 1, search: '' })))
+const categories = computed(() => (categoriesData.value as any)?.results || (Array.isArray(categoriesData.value) ? categoriesData.value : []))
+const { data: roomsData, isLoading: isRoomsLoading, error: roomsError, refetch: refetchRooms } = useFetchRooms(computed(() => ({ page: 1, search: '' })))
 const { mutateAsync: createCategories } = useCreateRoomCategory()
 const { mutateAsync: bulkCreateRooms } = useBulkCreateRooms()
 
@@ -398,7 +398,7 @@ const editingRoomRangeIndex = ref<number | null>(null)
 const showRoomRangeForm = ref(true)
 
 // Computed
-const totalRooms = computed(() => roomsData.value?.total || 0)
+const totalRooms = computed(() => (roomsData.value as any)?.count || (roomsData.value as any)?.total || 0)
 const allCategories = computed(() => categories.value)
 const totalQueuedRooms = computed(() => roomRangeQueue.value.reduce((sum, r) => sum + getRangeRoomCount(r), 0))
 const currentRangeRoomCount = computed(() => roomRangeForm.start_number && roomRangeForm.end_number ? Math.max(0, roomRangeForm.end_number - roomRangeForm.start_number + 1) : 0)
@@ -422,7 +422,7 @@ const isContinueDisabled = computed(() => {
 watch([isCategoriesLoading, isRoomsLoading], ([a, b]) => { if (!a && !b) isLoading.value = false })
 
 // Helpers
-const getCategoryNameById = (id: number | null) => allCategories.value.find(c => c.id === id)?.name || 'Unknown'
+const getCategoryNameById = (id: number | null) => allCategories.value.find((c: any) => c.id === id)?.name || 'Unknown'
 const getRangeRoomCount = (range: RoomRange) => Math.max(0, range.end_number - range.start_number + 1)
 
 const getButtonText = () => {
@@ -581,7 +581,7 @@ const confirmCreate = async () => {
   try {
     if (confirmType.value === 'categories') {
       // Send array for bulk create
-      await createCategories(categoryQueue.value)
+      await (createCategories as any)(categoryQueue.value)
       toast.add({ severity: 'success', summary: 'Success', detail: `${categoryQueue.value.length} categories created!`, life: 3000 })
       categoryQueue.value = []
       await refetchCategories()
@@ -593,7 +593,7 @@ const confirmCreate = async () => {
         start_number: r.start_number.toString(),
         end_number: r.end_number.toString()
       }))
-      await bulkCreateRooms(payload)
+      await (bulkCreateRooms as any)(payload)
       toast.add({ severity: 'success', summary: 'Success', detail: `${totalQueuedRooms.value} rooms created!`, life: 3000 })
       roomRangeQueue.value = []
       await refetchRooms()

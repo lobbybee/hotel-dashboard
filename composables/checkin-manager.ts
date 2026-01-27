@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue';
 import { useAPI } from './useAPI';
+import { useAPIHelper } from './useAPIHelper';
 
 // Type definitions for check-in management
 export interface CheckinOfflineData {
@@ -112,6 +113,8 @@ export const useVerifyCheckin = () => {
 // List Pending Stays - Lists all stays that are pending verification
 export const useListPendingStays = () => {
   const { API } = useAPI();
+  const { getResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -121,7 +124,7 @@ export const useListPendingStays = () => {
     key: ['pending-stays'],
     query: async () => {
       const response = await API('/stay-management/pending-stays/');
-      return response;
+      return getResults(response);
     }
   });
 
@@ -137,17 +140,19 @@ export const useListPendingStays = () => {
 
 export const useListGuests = (searchTerm?: string) => {
   const { API } = useAPI();
+  const { getResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
     error,
     refetch
   } = useQuery({
-    key: ['guests', searchTerm],
+    key: ['guests', searchTerm ?? null],
     query: async () => {
       const params = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
       const response = await API(`/guest-management/guests/${params}`);
-      return response;
+      return getResults(response);
     },
     enabled: computed(() => true)
   });
@@ -288,6 +293,8 @@ export const useCheckRoomAvailability = () => {
 // List Checked-in Users - Lists all guests who are currently checked-in (active stays)
 export const useListCheckedInUsers = () => {
   const { API } = useAPI();
+  const { getResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -297,7 +304,7 @@ export const useListCheckedInUsers = () => {
     key: ['checked-in-users'],
     query: async () => {
       const response = await API('/stay-management/checked-in-users/');
-      return response;
+      return getResults(response);
     }
   });
 

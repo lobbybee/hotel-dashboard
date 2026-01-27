@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { useAPI } from './useAPI';
+import { useAPIHelper } from './useAPIHelper';
 
 export interface WifiCredential {
   id: number;
@@ -41,17 +42,18 @@ export interface WifiCredentialFilters {
 // Fetch all WiFi credentials with filtering and search
 export const useFetchWifiCredentials = (filters: WifiCredentialFilters = {}) => {
   const { API } = useAPI();
-  
+  const { getResults, getPaginatedResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
     error,
     refetch
   } = useQuery({
-    key: ['wifi-credentials', filters],
+    key: ['wifi-credentials', filters as any],
     query: async () => {
       const queryParams = new URLSearchParams();
-      
+
       // Add filters to query params
       if (filters.floor !== undefined) queryParams.append('floor', filters.floor.toString());
       if (filters.room_category) queryParams.append('room_category', filters.room_category);
@@ -60,12 +62,12 @@ export const useFetchWifiCredentials = (filters: WifiCredentialFilters = {}) => 
       if (filters.ordering) queryParams.append('ordering', filters.ordering);
       if (filters.page) queryParams.append('page', filters.page.toString());
       if (filters.page_size) queryParams.append('page_size', filters.page_size.toString());
-      
+
       const queryString = queryParams.toString();
       const url = `/wifi-credentials/${queryString ? `?${queryString}` : ''}`;
-      
+
       const response = await API(url);
-      return response;
+      return getPaginatedResults<WifiCredential>(response);
     }
   });
 
@@ -80,7 +82,8 @@ export const useFetchWifiCredentials = (filters: WifiCredentialFilters = {}) => 
 // Fetch a single WiFi credential by ID
 export const useFetchWifiCredentialById = (id: string | number) => {
   const { API } = useAPI();
-  
+  const { getData } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -91,7 +94,7 @@ export const useFetchWifiCredentialById = (id: string | number) => {
     query: async () => {
       if (!id) return null;
       const response = await API(`/wifi-credentials/${id}/`);
-      return response;
+      return getData<WifiCredential>(response);
     },
     enabled: computed(() => !!id)
   });
@@ -107,6 +110,7 @@ export const useFetchWifiCredentialById = (id: string | number) => {
 // Create WiFi credential (CRUD)
 export const useCreateWifiCredential = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
 
   const {
     mutateAsync: createWifiCredential,
@@ -120,7 +124,7 @@ export const useCreateWifiCredential = () => {
         method: 'POST',
         body: data
       });
-      return response;
+      return getData<WifiCredential>(response);
     }
   });
 
@@ -136,6 +140,7 @@ export const useCreateWifiCredential = () => {
 // Update WiFi credential (full update)
 export const useUpdateWifiCredential = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
 
   const {
     mutateAsync: updateWifiCredential,
@@ -149,7 +154,7 @@ export const useUpdateWifiCredential = () => {
         method: 'PUT',
         body: data
       });
-      return response;
+      return getData<WifiCredential>(response);
     }
   });
 
@@ -165,6 +170,7 @@ export const useUpdateWifiCredential = () => {
 // Partially update WiFi credential
 export const usePartialUpdateWifiCredential = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
 
   const {
     mutateAsync: partialUpdateWifiCredential,
@@ -178,7 +184,7 @@ export const usePartialUpdateWifiCredential = () => {
         method: 'PATCH',
         body: data
       });
-      return response;
+      return getData<WifiCredential>(response);
     }
   });
 
@@ -222,6 +228,7 @@ export const useDeleteWifiCredential = () => {
 // Toggle active status of WiFi credential
 export const useToggleWifiCredentialActive = () => {
   const { API } = useAPI();
+  const { getData } = useAPIHelper();
 
   const {
     mutateAsync: toggleActive,
@@ -234,7 +241,7 @@ export const useToggleWifiCredentialActive = () => {
       const response = await API(`/wifi-credentials/${id}/toggle-active/`, {
         method: 'POST'
       });
-      return response;
+      return getData<WifiCredential>(response);
     }
   });
 
@@ -250,7 +257,8 @@ export const useToggleWifiCredentialActive = () => {
 // Get WiFi credentials for specific room (smart credential resolution)
 export const useFetchWifiCredentialsByRoom = (roomId: string | number) => {
   const { API } = useAPI();
-  
+  const { getData } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -261,7 +269,7 @@ export const useFetchWifiCredentialsByRoom = (roomId: string | number) => {
     query: async () => {
       if (!roomId) return null;
       const response = await API(`/wifi-credentials/by-room/${roomId}/`);
-      return response;
+      return getData(response); // Returns list or single object? Assuming smart resolution returns one or list. Let's assume list of applicable creds or single. Standard would be list.
     },
     enabled: computed(() => !!roomId)
   });
@@ -277,7 +285,8 @@ export const useFetchWifiCredentialsByRoom = (roomId: string | number) => {
 // Get all WiFi credentials for a floor
 export const useFetchWifiCredentialsByFloor = (floor: number) => {
   const { API } = useAPI();
-  
+  const { getResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -288,7 +297,7 @@ export const useFetchWifiCredentialsByFloor = (floor: number) => {
     query: async () => {
       if (floor === undefined || floor === null) return null;
       const response = await API(`/wifi-credentials/by-floor/${floor}/`);
-      return response;
+      return getResults<WifiCredential>(response);
     },
     enabled: computed(() => floor !== undefined && floor !== null)
   });
@@ -304,7 +313,8 @@ export const useFetchWifiCredentialsByFloor = (floor: number) => {
 // Get floors with configured WiFi
 export const useFetchAvailableFloors = () => {
   const { API } = useAPI();
-  
+  const { getResults } = useAPIHelper();
+
   const {
     data,
     isLoading,
@@ -314,7 +324,7 @@ export const useFetchAvailableFloors = () => {
     key: ['available-floors'],
     query: async () => {
       const response = await API('/wifi-credentials/available-floors/');
-      return response;
+      return getResults<number>(response);
     }
   });
 
