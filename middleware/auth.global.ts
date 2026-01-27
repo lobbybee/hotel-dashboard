@@ -1,5 +1,6 @@
 import { useOnboardingStore } from '~/stores/onboarding'
 import { useAPI } from '~/composables/useAPI'
+import { useAPIHelper } from '~/composables/useAPIHelper'
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
   const authStore = useAuthStore()
@@ -63,6 +64,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
 
     const { API } = useAPI()
+    const { getData } = useAPIHelper()
 
     // Fetch hotel, rooms, and staff data
     const [hotelRes, roomsRes, staffRes] = await Promise.all([
@@ -72,7 +74,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     ])
 
     // Check hotel profile completeness
-    const hotel = hotelRes as any
+    const hotel = getData<any>(hotelRes)
     const requiredFields = ['address', 'city', 'state', 'country', 'pincode', 'phone', 'email']
     const missingFields = requiredFields.filter(field => !hotel[field] || hotel[field]?.trim() === '')
 
@@ -82,28 +84,25 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
 
     // Check if hotel has rooms
-    const rooms = roomsRes as any
-    if (!rooms.results || rooms.results.length === 0) {
+    const rooms = getData<any>(roomsRes)
+
+    // Check if we have results in the data object (paginated response)
+    const roomList = rooms.results || rooms
+
+    if (!roomList || roomList.length === 0) {
       onboardingStore.setIncomplete('rooms')
       return navigateTo('/onboard/rooms')
     }
 
     // Check if hotel has staff (more than just the admin)
-    const staff = staffRes as any
-    // API returns array directly for users based on useStaff.ts
-    // Wait, let me double check useStaff.ts. 
-    // useStaff.ts says: return response.results; // API returns array directly
-    // But useFetchStaff calls API('/users/') and returns response.results.
-    // So the API response itself likely has a .results property or is paginated.
-    // Let's re-read useStaff.ts carefully.
-    // Line 35: const response = await API('/users/');
-    // Line 36: return response.results; 
-    // So distinct from rooms which is also paginated.
+    const staffResponse = getData<any>(staffRes)
+    const staffList = staffResponse.results || staffResponse
 
-    // In the middleware, I am calling API('/users/'). The result `staffRes` will be the full response object.
-    // So safely accessing .results is key.
+    // We check for > 0 because sometimes the admin themself might not be in the list depending on filtering,
+    // or if the list includes the current admin, we might want to ensure there is at least one person.
+    // However, the original logic was <= 1, potentially assuming the admin is always returned.
+    // Let's stick to the original logic's intent but fixed data access.
 
-    const staffList = staffRes.results || staffRes
     if (!staffList || staffList.length <= 1) {
       onboardingStore.setIncomplete('staff')
       return navigateTo('/onboard/staffs')
