@@ -182,6 +182,10 @@ import ProgressSpinner from "primevue/progressspinner";
 const toast = useToast();
 const { getErrorMessage } = useAPIHelper();
 
+// Import schemas for validation
+import { RoomCategorySchema, RoomSchema } from '~/utils/schemas/room';
+
+
 
 // State
 const selectedFloor = ref<number>(1);

@@ -114,6 +114,7 @@
 import { ref } from 'vue';
 import { useAPI, APIError } from '~/composables/useAPI';
 import { useAPIHelper } from '~/composables/useAPIHelper';
+import { PasswordResetRequestSchema, PasswordResetConfirmSchema } from '~/utils/schemas/auth';
 
 definePageMeta({
   layout: 'auth'
@@ -135,6 +136,15 @@ async function handleRequestReset() {
   loading.value = true;
   error.value = '';
   message.value = '';
+
+  // Zod Validation
+  const validationResult = PasswordResetRequestSchema.safeParse({ email: email.value });
+  if (!validationResult.success) {
+    error.value = validationResult.error?.issues[0]?.message || 'Validation failed';
+    loading.value = false;
+    return;
+  }
+
   try {
     const response = await requestPasswordReset({ email: email.value });
     message.value = response.message || "If an account with that email exists, a password reset OTP has been sent.";
@@ -150,6 +160,19 @@ async function handleConfirmReset() {
   loading.value = true;
   error.value = '';
   message.value = '';
+
+  // Zod Validation
+  const validationResult = PasswordResetConfirmSchema.safeParse({
+    email: email.value,
+    otp: otp.value,
+    new_password: new_password.value
+  });
+  if (!validationResult.success) {
+    error.value = validationResult.error?.issues[0]?.message || 'Validation failed';
+    loading.value = false;
+    return;
+  }
+
   try {
     const response = await confirmPasswordReset({
       email: email.value,
@@ -166,6 +189,7 @@ async function handleConfirmReset() {
   }
 }
 </script>
+
 
 <style scoped>
 /* Custom styles for PrimeVue components */

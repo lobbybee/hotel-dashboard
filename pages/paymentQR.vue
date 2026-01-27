@@ -505,6 +505,10 @@ const authStore = useAuthStore();
 const { userRole } = storeToRefs(authStore);
 const { getErrorMessage } = useAPIHelper();
 
+// Import validation schema
+import { PaymentQRCodeSchema } from '~/utils/schemas/payment';
+
+
 // Reactive State
 const searchQuery = ref('');
 const selectedFilter = ref('all');

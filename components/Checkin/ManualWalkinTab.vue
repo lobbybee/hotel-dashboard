@@ -470,7 +470,12 @@ import {
 } from "~/composables/useHotel";
 import FlagWarningAccordion from './FlagWarningAccordion.vue';
 import Badge from 'primevue/badge';
-import type { CreateGuestData, AccompanyingGuestData } from '~/composables/checkin-manager';
+import type { CreateGuestData, AccompanyingGuestData } from '~/types/guest';
+
+// Import validation schemas
+import { GuestSchema, CheckinOfflineSchema } from '~/utils/schemas/guest';
+
+
 
 // Define emits
 const emit = defineEmits<{

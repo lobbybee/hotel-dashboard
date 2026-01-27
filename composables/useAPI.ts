@@ -1,6 +1,8 @@
 import { ofetch } from 'ofetch';
 import { useAuthStore } from '~/stores/auth';
 import { useAPIHelper } from './useAPIHelper';
+import type { User, LoginRequest } from '~/types/auth';
+
 
 // Custom error classes
 export class AuthenticationError extends Error {
@@ -127,14 +129,15 @@ export const useAPI = () => {
     }
   });
 
-  const login = async (credentials: { username?: string; password?: string }) => {
+  const login = async (credentials: LoginRequest) => {
     try {
       const response = await API('/login/', {
         method: 'POST',
         body: credentials,
       });
 
-      const data = getData<{ access: string; refresh: string; user: any }>(response);
+      const data = getData<{ access: string; refresh: string; user: User }>(response);
+
 
       // Check if user type is forbidden before setting any tokens
       const forbiddenRoles = ['platform_admin', 'platform_staff', 'other_staff'];

@@ -163,19 +163,32 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import type { PropType } from "vue";
 import Dropdown from "primevue/dropdown";
 import Calendar from "primevue/calendar";
 import MultiSelect from "primevue/multiselect";
 import FileUpload from "primevue/fileupload";
 import Badge from "primevue/badge";
 import Checkbox from "primevue/checkbox";
+import type { CheckinOfflineData, CreateGuestData } from "~/types/guest";
 import {
     useFetchRooms,
     useFetchRoomCategories,
     useFetchHotelRoomFloors,
 } from "~/composables/useHotel";
 
-const props = defineProps(["stayForm", "docForm"]);
+
+const props = defineProps({
+    stayForm: {
+        type: Object as PropType<any>, // Ideally CheckinOfflineData but structure might differ slightly in form
+        required: true
+    },
+    docForm: {
+        type: Object as PropType<any>, // Ideally CreateGuestData
+        required: true
+    }
+});
+
 const emit = defineEmits([
     "file-select",
     "file-select-back",

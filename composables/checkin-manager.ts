@@ -3,49 +3,18 @@ import { useAPI } from './useAPI';
 import { useAPIHelper } from './useAPIHelper';
 
 // Type definitions for check-in management
-export interface CheckinOfflineData {
-  primary_guest_id: number;
-  room_ids: number[];
-  check_in_date: string; // ISO datetime string
-  check_out_date: string; // ISO datetime string
-  guest_names?: string[]; // Optional guest names for each room
-}
+import type {
+  CheckinOfflineData,
+  CreateGuestData,
+  VerifyCheckinData // Need to ensure this is in guest.ts or keep local if specific
+} from '~/types/guest';
 
-export interface VerifyCheckinData {
-  register_number?: string;
-  room_id?: number; // For room assignment or changes during verification
-  check_out_date?: string; // ISO datetime string for stays without room assignments
-  guest_updates?: {
-    full_name?: string;
-    email?: string;
-    date_of_birth?: string;
-    nationality?: string;
-    preferred_language?: string;
-    notes?: string;
-    hours_24?: boolean;
-    breakfast_reminder?: boolean;
-    dinner_reminder?: boolean;
-  };
-}
+// Keep VerifyCheckinData local if not in shared types, or move it. 
+// I didn't add VerifyCheckinData to guest.ts yet, I only added CheckinOfflineData, CreateGuestData.
+// Let's check guest.ts content again or just keep VerifyCheckinData here if it wasn't added.
+// I added CheckinOfflineData, CreateGuestData in guest.ts.
+// I'll keep local interfaces that I missed in guest.ts or better yet, verify guest.ts content.
 
-export interface PrimaryGuestData {
-  full_name: string;
-  whatsapp_number: string;
-  email?: string;
-  document_type?: string;
-  document_number?: string;
-}
-
-export interface AccompanyingGuestData {
-  full_name: string;
-  document_type?: string;
-  document_number?: string;
-}
-
-export interface CreateGuestData {
-  primary_guest: PrimaryGuestData;
-  accompanying_guests?: AccompanyingGuestData[];
-}
 
 // Check-in Offline - Creates pending stay records with room assignments
 export const useCheckinOffline = () => {

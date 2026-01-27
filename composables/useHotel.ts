@@ -1,6 +1,12 @@
 import { computed } from 'vue';
 import { useAPI } from './useAPI';
 import { useAPIHelper } from './useAPIHelper';
+import type { Hotel, HotelCreate, HotelUpdate, HotelDocument } from '~/types/hotel';
+import type { RoomCategory, Room, RoomCreate, RoomUpdate, WifiCredential } from '~/types/room';
+import type { PaginatedResult } from '~/types/common';
+import type { Department, DepartmentCreate, DepartmentUpdate } from '~/types/department';
+
+
 
 // Hotels
 
@@ -11,8 +17,9 @@ export const useFetchHotels = (options?: Ref<{ status?: string; city?: string; c
     key: computed(() => ['hotels', (options?.value ?? null) as any]),
     query: async () => {
       const response = await API('/hotels/', { params: options?.value });
-      return getResults(response);
+      return getResults<Hotel>(response);
     },
+
   });
 };
 
@@ -25,7 +32,8 @@ export const useFetchHotel = (id: Ref<string | null>) => {
     query: async () => {
       if (!id.value) return null;
       const response = await API(`/hotels/${id.value}/`);
-      return getData(response);
+      return getData<Hotel>(response);
+
     },
     enabled: computed(() => !!id.value)
   });
@@ -34,8 +42,9 @@ export const useFetchHotel = (id: Ref<string | null>) => {
 export const useCreateHotel = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (newHotel: any) => {
+    mutation: async (newHotel: HotelCreate) => {
       return await API('/hotels/', {
+
         method: 'POST',
         body: newHotel,
       });
@@ -46,8 +55,9 @@ export const useCreateHotel = () => {
 export const useUpdateHotel = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (updatedHotel: any) => {
+    mutation: async (updatedHotel: HotelUpdate) => {
       if (!updatedHotel.id) throw new Error('Hotel ID is required for update');
+
       return await API(`/hotels/${updatedHotel.id}/`, {
         method: 'PUT',
         body: updatedHotel,
@@ -59,8 +69,9 @@ export const useUpdateHotel = () => {
 export const usePatchHotel = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (patchedHotel: any) => {
+    mutation: async (patchedHotel: Partial<Hotel>) => {
       if (!patchedHotel.id) throw new Error('Hotel ID is required for patch');
+
       return await API(`/hotels/${patchedHotel.id}/`, {
         method: 'PATCH',
         body: patchedHotel,
@@ -144,8 +155,9 @@ export const useFetchRoomCategories = (options?: Ref<{ page?: number, search?: s
     key: computed(() => ['room-categories', (options?.value ?? null) as any]),
     query: async () => {
       const response = await API('/room-categories/', { params: options?.value });
-      return getPaginatedResults(response);
+      return getPaginatedResults<RoomCategory>(response);
     },
+
   });
 };
 
@@ -157,7 +169,8 @@ export const useFetchRoomCategory = (id: Ref<string | null>) => {
     query: async () => {
       if (!id.value) return null;
       const response = await API(`/room-categories/${id.value}/`);
-      return getData(response);
+      return getData<RoomCategory>(response);
+
     },
     enabled: computed(() => !!id.value),
   });
@@ -166,8 +179,9 @@ export const useFetchRoomCategory = (id: Ref<string | null>) => {
 export const useCreateRoomCategory = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (newCategory: any) => {
+    mutation: async (newCategory: Omit<RoomCategory, 'id'>) => {
       return await API('/room-categories/', {
+
         method: 'POST',
         body: newCategory,
       });
@@ -178,8 +192,9 @@ export const useCreateRoomCategory = () => {
 export const useUpdateRoomCategory = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (updatedCategory: any) => {
+    mutation: async (updatedCategory: RoomCategory) => {
       if (!updatedCategory.id) throw new Error('Category ID is required');
+
       return await API(`/room-categories/${updatedCategory.id}/`, {
         method: 'PUT',
         body: updatedCategory,
@@ -191,8 +206,9 @@ export const useUpdateRoomCategory = () => {
 export const usePatchRoomCategory = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (patchedCategory: any) => {
+    mutation: async (patchedCategory: Partial<RoomCategory>) => {
       if (!patchedCategory.id) throw new Error('Category ID is required');
+
       return await API(`/room-categories/${patchedCategory.id}/`, {
         method: 'PATCH',
         body: patchedCategory,
@@ -222,8 +238,9 @@ export const useFetchRooms = (options?: Ref<{ status?: string; floor?: number; c
     key: computed(() => ['rooms', (options?.value ?? null) as any]),
     query: async () => {
       const response = await API('/rooms/', { params: options?.value });
-      return getPaginatedResults(response);
+      return getPaginatedResults<Room>(response);
     },
+
   });
 };
 
@@ -235,7 +252,8 @@ export const useFetchRoom = (id: Ref<string | null>) => {
     query: async () => {
       if (!id.value) return null;
       const response = await API(`/rooms/${id.value}/`);
-      return getData(response);
+      return getData<Room>(response);
+
     },
     enabled: computed(() => !!id.value),
   });
@@ -244,8 +262,9 @@ export const useFetchRoom = (id: Ref<string | null>) => {
 export const useCreateRoom = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (newRoom: any) => {
+    mutation: async (newRoom: RoomCreate) => {
       return await API('/rooms/', {
+
         method: 'POST',
         body: newRoom,
       });
@@ -256,8 +275,9 @@ export const useCreateRoom = () => {
 export const useBulkCreateRooms = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (bulkData: any) => {
+    mutation: async (bulkData: any) => { // bulk data type?
       return await API('/rooms/bulk-create/', {
+
         method: 'POST',
         body: bulkData,
       });
@@ -268,8 +288,9 @@ export const useBulkCreateRooms = () => {
 export const useUpdateRoom = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (updatedRoom: any) => {
+    mutation: async (updatedRoom: RoomUpdate) => {
       if (!updatedRoom.id) throw new Error('Room ID is required');
+
       return await API(`/rooms/${updatedRoom.id}/`, {
         method: 'PUT',
         body: updatedRoom,
@@ -281,8 +302,9 @@ export const useUpdateRoom = () => {
 export const usePatchRoom = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (patchedRoom: any) => {
+    mutation: async (patchedRoom: Partial<Room>) => {
       if (!patchedRoom.id) throw new Error('Room ID is required');
+
       return await API(`/rooms/${patchedRoom.id}/`, {
         method: 'PATCH',
         body: patchedRoom,
@@ -343,7 +365,8 @@ export const useFetchDepartment = (id: Ref<string | null>) => {
     query: async () => {
       if (!id.value) return null;
       const response = await API(`/departments/${id.value}/`);
-      return getData(response);
+      return getData<Department>(response);
+
     },
     enabled: computed(() => !!id.value),
   });
@@ -352,8 +375,9 @@ export const useFetchDepartment = (id: Ref<string | null>) => {
 export const useCreateDepartment = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (newDepartment: any) => {
+    mutation: async (newDepartment: DepartmentCreate) => {
       return await API('/departments/', {
+
         method: 'POST',
         body: newDepartment,
       });
@@ -364,8 +388,9 @@ export const useCreateDepartment = () => {
 export const useUpdateDepartment = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (updatedDepartment: any) => {
+    mutation: async (updatedDepartment: DepartmentUpdate) => {
       if (!updatedDepartment.id) throw new Error('Department ID is required');
+
       return await API(`/departments/${updatedDepartment.id}/`, {
         method: 'PUT',
         body: updatedDepartment,
@@ -377,8 +402,9 @@ export const useUpdateDepartment = () => {
 export const usePatchDepartment = () => {
   const { API } = useAPI();
   return useMutation({
-    mutation: async (patchedDepartment: any) => {
+    mutation: async (patchedDepartment: Partial<Department>) => {
       if (!patchedDepartment.id) throw new Error('Department ID is required');
+
       return await API(`/departments/${patchedDepartment.id}/`, {
         method: 'PATCH',
         body: patchedDepartment,

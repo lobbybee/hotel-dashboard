@@ -74,6 +74,7 @@
 <script setup lang="ts">
 import { useAPI, APIError, ForbiddenUserError } from '~/composables/useAPI';
 import { useAPIHelper } from '~/composables/useAPIHelper';
+import { LoginSchema } from '~/utils/schemas/auth';
 
 definePageMeta({
   layout: 'auth'
@@ -92,12 +93,32 @@ async function handleLogin() {
   error.value = ''
   loading.value = true
 
+  // Zod Validation
+  const validationResult = LoginSchema.safeParse({
+    username: username.value,
+    password: password.value
+  });
+
+  if (!validationResult.success) {
+    // Explicitly handle Zod error
+    const zodError = validationResult.error;
+    if (zodError) {
+      error.value = zodError.issues[0].message;
+    }
+    loading.value = false;
+    return;
+  }
+
+
+
+
   try {
     const response = await login({
       username: username.value,
       password: password.value
     })
     
+    // Response data type should ideally be inferred or imported
     const data = getData<{ user: { user_type: string } }>(response)
     const userRole = data.user?.user_type
 
@@ -114,11 +135,6 @@ async function handleLogin() {
     if (err instanceof ForbiddenUserError) {
       error.value = err.message
     } else if (err instanceof APIError) {
-       // Use helper or err.message (which useAPI already processed)
-       // useAPI.onResponseError already uses getErrorMessage to set the message.
-       // So err.message is likely correct. 
-       // But err.data might contain details?
-       // Let's use getErrorMessage to be safe and consistent.
        error.value = getErrorMessage(err)
     } else {
       error.value = (err as Error).message || 'Invalid username or password'
@@ -128,6 +144,7 @@ async function handleLogin() {
   }
 }
 </script>
+
 
 <style scoped>
 /* Custom styles for PrimeVue components that need CSS overrides */

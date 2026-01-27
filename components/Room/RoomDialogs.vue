@@ -493,27 +493,21 @@ import Textarea from "primevue/textarea";
 import Dropdown from "primevue/dropdown";
 import Checkbox from "primevue/checkbox";
 
-interface Category {
-    id: number;
-    name: string;
-    description: string;
-    base_price: number;
-    max_occupancy: number;
-    amenities: string[];
-}
+// Import shared types
+import type { RoomCategory, Room as RoomType } from "~/types/room";
+import { RoomCategorySchema } from "~/utils/schemas/room";
 
-interface Room {
-    id: number;
-    room_number: string;
-    floor: number;
-    category: any;
-    status: string;
-}
+// Use shared types - RoomCategory imported above
+// Local alias for component interface compatibility
+type Category = RoomCategory;
+type Room = RoomType;
+
 
 interface RoomStatus {
     label: string;
     value: string;
 }
+
 
 interface Props {
     categoryDialogVisible: boolean;

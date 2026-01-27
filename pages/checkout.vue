@@ -404,11 +404,29 @@ import Checkbox from 'primevue/checkbox';
 import InputNumber from 'primevue/inputnumber';
 import Calendar from 'primevue/calendar';
 import { useToast } from 'primevue/usetoast';
+import { z } from 'zod';
 
 import { useListCheckedInUsers, useCheckoutUser, useExtendGuestStay } from '~/composables/checkin-manager';
 import { useAPIHelper } from '~/composables/useAPIHelper';
 
+// Import shared types
+import type { Stay, Guest } from '~/types/guest';
+
+// Checkout data validation schema
+const CheckoutDataSchema = z.object({
+  internal_rating: z.number().min(1).max(5).nullable(),
+  internal_note: z.string(),
+  flag_user: z.boolean(),
+  final_charge: z.number().min(0)
+}).refine(
+  (data) => !data.flag_user || (data.flag_user && data.internal_note.trim().length > 0),
+  { message: 'Internal note is required when flagging a user' }
+);
+
+type CheckoutData = z.infer<typeof CheckoutDataSchema>;
+
 const { getErrorMessage } = useAPIHelper();
+
 
 const toast = useToast();
 

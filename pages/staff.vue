@@ -256,6 +256,8 @@ import {
   useDeleteStaff
 } from '~/composables/useStaff';
 import { useAPIHelper } from '~/composables/useAPIHelper';
+import { StaffSchema, StaffUpdateSchema } from '~/utils/schemas/staff';
+
 
 const { staff: staffMembers, isLoading, error, refetch } = useFetchStaff();
 const { createStaff, asyncStatus: createAsyncStatus } = useCreateStaff();

@@ -331,6 +331,11 @@ import {
 } from '~/composables/useWifiCredentials';
 import { useAPIHelper } from '~/composables/useAPIHelper';
 
+// Import validation schema
+import { WifiCredentialSchema } from '~/utils/schemas/room';
+
+
+
 // Import PrimeVue components
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';

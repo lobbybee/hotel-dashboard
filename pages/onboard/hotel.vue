@@ -338,6 +338,10 @@ import { useToast } from 'primevue/usetoast'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '~/stores/auth'
 import { useAPIHelper } from '~/composables/useAPIHelper'
+import { HotelSchema } from '~/utils/schemas/hotel'
+import type { Hotel } from '~/types/hotel'
+
+
 
 definePageMeta({ layout: 'empty' })
 
@@ -361,20 +365,8 @@ const steps = [
   { title: 'Complete' }
 ]
 
-const hotelFormSchema = z.object({
-  name: z.string().min(3, 'Hotel name must be at least 3 characters').max(200),
-  description: z.string().optional(),
-  address: z.string().min(5, 'Address is required'),
-  city: z.string().min(2, 'City is required').max(100),
-  state: z.string().min(2, 'State is required').max(100),
-  country: z.string().min(2, 'Country is required').max(100),
-  pincode: z.string().min(5, 'Valid pincode is required').max(10),
-  phone: z.string().min(10, 'Valid phone number is required').max(15),
-  email: z.string().email('Invalid email address'),
-  check_in_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format'),
-  time_zone: z.string().min(2, 'Time zone is required').max(50),
-  google_review_link: z.string().url().optional().or(z.literal('')),
-})
+const hotelFormSchema = HotelSchema;
+
 
 const hotelForm = ref({
   name: '', description: '', address: '', city: '', state: '', country: '', pincode: '',
@@ -439,8 +431,10 @@ const confirmAndSave = async () => {
   isSaving.value = true
   try {
     const { mutate: updateHotelProfile } = usePatchHotel()
+    if (!hotelId.value) throw new Error("Hotel ID is missing");
     await updateHotelProfile({ id: hotelId.value, ...result.data })
     toast.add({ severity: 'success', summary: 'Success', detail: 'Hotel profile saved!', life: 3000 })
+
     showConfirmation.value = false
     currentStep.value = steps.length - 1 // Go to complete slide
   } catch (error) {
@@ -453,7 +447,8 @@ const confirmAndSave = async () => {
 
 const goToRooms = () => router.push('/onboard/rooms')
 
-const { data: hotel, error: hotelError, refetch: refetchHotel } = useFetchHotel(hotelId) as any
+const { data: hotel, error: hotelError, refetch: refetchHotel } = useFetchHotel(hotelId) as { data: Ref<Hotel | null>, error: Ref<any>, refetch: () => void }
+
 
 // Flag to prevent overwriting user edits after initial load
 const formInitialized = ref(false)
