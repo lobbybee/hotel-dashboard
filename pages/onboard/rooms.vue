@@ -353,11 +353,13 @@
 import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
+import { useAPIHelper } from '~/composables/useAPIHelper'
 
 definePageMeta({ layout: 'empty' })
 
 const router = useRouter()
 const toast = useToast()
+const { getErrorMessage } = useAPIHelper()
 
 const currentStep = ref(0)
 const isLoading = ref(true)
@@ -602,7 +604,7 @@ const confirmCreate = async () => {
     nextStep()
   } catch (error: any) {
     console.error('Create error:', error)
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to create. Please try again.', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(error), life: 5000 })
   } finally {
     isCreating.value = false
   }

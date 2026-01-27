@@ -38,6 +38,14 @@ export const useAPIHelper = () => {
             return errData.message;
         }
 
+        // Fallback for legacy Django/DRF errors
+        if (errData?.detail) {
+            return errData.detail;
+        }
+        if (errData?.error) {
+            return errData.error;
+        }
+
         // Fallback for standard error objects or simple strings
         return error?.message || "An unexpected error occurred";
     }

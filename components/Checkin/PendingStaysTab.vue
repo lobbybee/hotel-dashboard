@@ -216,11 +216,14 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
 
 import { useListPendingStays, useVerifyCheckin, useRejectCheckin } from '~/composables/checkin-manager';
+
 import { useFetchRooms } from '~/composables/useHotel';
+import { useAPIHelper } from '~/composables/useAPIHelper';
 
 import CheckinConfirmationDialog from './ConfirmationDialog.vue';
 
 const toast = useToast();
+const { getErrorMessage } = useAPIHelper();
 
 // --- EVENT LISTENERS ---
 const handleNewCheckinEvent = () => {
@@ -281,8 +284,7 @@ const handleConfirmCheckin = async (verifyData: any) => {
 
   } catch (err: any) {
     console.error('verifyCheckin error:', err);
-    const errorMessage = err.response?._data?.detail || err.response?._data?.error || 'An unexpected error occurred.';
-    toast.add({ severity: 'error', summary: 'Check-in Failed', detail: errorMessage, life: 5000 });
+    toast.add({ severity: 'error', summary: 'Check-in Failed', detail: getErrorMessage(err), life: 5000 });
   }
 };
 
@@ -312,11 +314,10 @@ const handleConfirmReject = async () => {
 
   } catch (err: any) {
     console.error('rejectCheckin error:', err);
-    const errorMessage = err.response?._data?.error || err.response?._data?.detail || 'An unexpected error occurred.';
     toast.add({
       severity: 'error',
       summary: 'Rejection Failed',
-      detail: errorMessage,
+      detail: getErrorMessage(err),
       life: 5000
     });
   }

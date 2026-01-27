@@ -113,6 +113,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useAPI, APIError } from '~/composables/useAPI';
+import { useAPIHelper } from '~/composables/useAPIHelper';
 
 definePageMeta({
   layout: 'auth'
@@ -120,6 +121,7 @@ definePageMeta({
 
 const { requestPasswordReset, confirmPasswordReset } = useAPI();
 const router = useRouter();
+const { getErrorMessage } = useAPIHelper();
 
 const step = ref('request'); // 'request' or 'confirm'
 const email = ref('');
@@ -138,11 +140,7 @@ async function handleRequestReset() {
     message.value = response.message || "If an account with that email exists, a password reset OTP has been sent.";
     step.value = 'confirm';
   } catch (err) {
-    if (err instanceof APIError && err.data) {
-        error.value = Object.values(err.data).flat().join(' ') || 'An error occurred.';
-    } else {
-        error.value = err.message || 'An error occurred.';
-    }
+    error.value = getErrorMessage(err);
   } finally {
     loading.value = false;
   }
@@ -162,18 +160,7 @@ async function handleConfirmReset() {
     error.value = ''; // Clear previous errors on success
     setTimeout(() => router.push('/login'), 3000);
   } catch (err) {
-    if (err instanceof APIError && err.data) {
-        // A more robust way to display multiple errors
-        const errorMessages = Object.entries(err.data).map(([key, value]) => {
-            if (Array.isArray(value)) {
-                return `${key}: ${value.join(', ')}`;
-            }
-            return `${key}: ${value}`;
-        });
-        error.value = errorMessages.join('; ');
-    } else {
-        error.value = err.message || 'An error occurred.';
-    }
+    error.value = getErrorMessage(err);
   } finally {
     loading.value = false;
   }

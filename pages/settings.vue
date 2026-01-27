@@ -160,8 +160,10 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
 import { useChangePassword } from '~/composables/useSettings';
+import { useAPIHelper } from '~/composables/useAPIHelper';
 
 const { changePassword, isLoading, error: apiError } = useChangePassword();
+const { getErrorMessage } = useAPIHelper();
 
 const form = reactive({
   old_password: '',
@@ -246,7 +248,7 @@ const handleSubmit = async () => {
       showToast({
         severity: 'error',
         summary: 'Error',
-        detail: 'An unexpected error occurred. Please try again.',
+        detail: getErrorMessage(err),
         life: 3000,
       });
     }

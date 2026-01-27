@@ -255,6 +255,7 @@ import {
   usePartialUpdateStaff,
   useDeleteStaff
 } from '~/composables/useStaff';
+import { useAPIHelper } from '~/composables/useAPIHelper';
 
 const { staff: staffMembers, isLoading, error, refetch } = useFetchStaff();
 const { createStaff, asyncStatus: createAsyncStatus } = useCreateStaff();
@@ -263,6 +264,7 @@ const { partialUpdateStaff } = usePartialUpdateStaff();
 const { deleteStaff: deleteStaffAPI, asyncStatus: deleteAsyncStatus } = useDeleteStaff();
 
 const toast = useToast();
+const { getErrorMessage } = useAPIHelper();
 
 const departmentChoices = [
   'Housekeeping', 'Room Service', 'Café/Restaurant'
@@ -468,9 +470,9 @@ const saveStaff = async () => {
 
     await refetch();
     closeStaffForm();
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error saving staff:', err);
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to save staff member', life: 5000 });
+    toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 });
   }
 };
 
@@ -491,9 +493,9 @@ const deleteStaff = async () => {
       toast.add({ severity: 'success', summary: 'Success', detail: 'Staff member deleted successfully', life: 3000 });
       await refetch();
       closeDeleteConfirmation();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting staff:', err);
-      toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete staff member', life: 5000 });
+      toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(err), life: 5000 });
     }
   }
 };

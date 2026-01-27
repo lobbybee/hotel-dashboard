@@ -406,6 +406,9 @@ import Calendar from 'primevue/calendar';
 import { useToast } from 'primevue/usetoast';
 
 import { useListCheckedInUsers, useCheckoutUser, useExtendGuestStay } from '~/composables/checkin-manager';
+import { useAPIHelper } from '~/composables/useAPIHelper';
+
+const { getErrorMessage } = useAPIHelper();
 
 const toast = useToast();
 
@@ -503,7 +506,7 @@ const saveCheckoutDate = async () => {
     editedCheckoutDate.value = '';
 
   } catch (err: any) {
-    const errorMessage = err.error || err.response?._data?.detail || 'Failed to extend stay.';
+    const errorMessage = getErrorMessage(err);
     toast.add({
       severity: 'error',
       summary: 'Extension Failed',
@@ -691,7 +694,7 @@ const handleConfirmCheckout = async () => {
     await refetch();
 
   } catch (err: any) {
-    const errorMessage = err.error || err.response?._data?.detail || 'An unexpected error occurred.';
+    const errorMessage = getErrorMessage(err);
     toast.add({ severity: 'error', summary: 'Check-out Failed', detail: errorMessage, life: 5000 });
   }
 };

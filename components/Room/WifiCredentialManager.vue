@@ -329,6 +329,7 @@ import {
     useToggleWifiCredentialActive,
     useFetchAvailableFloors
 } from '~/composables/useWifiCredentials';
+import { useAPIHelper } from '~/composables/useAPIHelper';
 
 // Import PrimeVue components
 import Button from 'primevue/button';
@@ -352,6 +353,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Toast
 const toast = useToast();
+const { getErrorMessage } = useAPIHelper();
 
 // State
 const pageSize = ref(10);
@@ -540,11 +542,10 @@ const saveCredential = async () => {
         closeDialog();
     } catch (err: any) {
         console.error('Error saving WiFi credential:', err);
-        const errorMsg = err.response?._data?.detail || 'Failed to save WiFi network';
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: errorMsg,
+            detail: getErrorMessage(err),
             life: 5000
         });
     } finally {
@@ -580,11 +581,10 @@ const deleteCredential = async () => {
         closeDeleteDialog();
     } catch (err: any) {
         console.error('Error deleting WiFi credential:', err);
-        const errorMsg = err.response?._data?.detail || 'Failed to delete WiFi network';
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: errorMsg,
+            detail: getErrorMessage(err),
             life: 5000
         });
     } finally {
@@ -624,11 +624,10 @@ const toggleActiveStatus = async (credentialId: number) => {
         await refetch();
     } catch (err: any) {
         console.error('Error toggling WiFi status:', err);
-        const errorMsg = err.response?._data?.detail || 'Failed to update status';
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: errorMsg,
+            detail: getErrorMessage(err),
             life: 5000
         });
     }

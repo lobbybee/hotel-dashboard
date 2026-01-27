@@ -337,6 +337,7 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '~/stores/auth'
+import { useAPIHelper } from '~/composables/useAPIHelper'
 
 definePageMeta({ layout: 'empty' })
 
@@ -344,6 +345,7 @@ const router = useRouter()
 const toast = useToast()
 const authStore = useAuthStore()
 const { hotelId } = storeToRefs(authStore)
+const { getErrorMessage } = useAPIHelper()
 
 const currentStep = ref(0)
 const isSaving = ref(false)
@@ -443,7 +445,7 @@ const confirmAndSave = async () => {
     currentStep.value = steps.length - 1 // Go to complete slide
   } catch (error) {
     console.error('Failed to save:', error)
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to save. Please try again.', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(error), life: 5000 })
   } finally {
     isSaving.value = false
   }
@@ -451,7 +453,7 @@ const confirmAndSave = async () => {
 
 const goToRooms = () => router.push('/onboard/rooms')
 
-const { data: hotel, error: hotelError, refetch: refetchHotel } = useFetchHotel(hotelId)
+const { data: hotel, error: hotelError, refetch: refetchHotel } = useFetchHotel(hotelId) as any
 
 // Flag to prevent overwriting user edits after initial load
 const formInitialized = ref(false)
@@ -482,7 +484,7 @@ watch(hotel, (data) => {
 watch(hotelError, (error) => {
   if (error) {
     isLoading.value = false
-    toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load hotel data', life: 5000 })
+    toast.add({ severity: 'error', summary: 'Error', detail: getErrorMessage(error), life: 5000 })
   }
 })
 

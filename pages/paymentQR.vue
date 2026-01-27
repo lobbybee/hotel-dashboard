@@ -487,6 +487,7 @@ import type { PaymentQRCode, PaymentQRCodeCreateData, PaymentQRCodeUpdateData } 
 import { useSendPaymentQRCodeToWhatsApp } from '~/composables/usePaymentQRCodes';
 import { useListGuests } from '~/composables/checkin-manager';
 import { useAuthStore } from '~/stores/auth';
+import { useAPIHelper } from '~/composables/useAPIHelper';
 
 // Composables
 const toast = useToast();
@@ -499,9 +500,10 @@ const { updatePaymentQRCode } = useUpdatePaymentQRCode();
 const { deletePaymentQRCode } = useDeletePaymentQRCode();
 const { togglePaymentQRCodeActive } = useTogglePaymentQRCodeActive();
 const { sendPaymentQRCodeToWhatsApp } = useSendPaymentQRCodeToWhatsApp();
-const { guests, isLoading: guestsLoading, refetch: refetchGuests } = useListGuests();
+const { guests, isLoading: guestsLoading, refetch: refetchGuests } = useListGuests() as any;
 const authStore = useAuthStore();
 const { userRole } = storeToRefs(authStore);
+const { getErrorMessage } = useAPIHelper();
 
 // Reactive State
 const searchQuery = ref('');
@@ -591,7 +593,7 @@ const toggleQRStatus = async (qrCode: PaymentQRCode) => {
         refetch();
         showToast('success', 'Success', `QR code ${action}d successfully`);
       } catch (error) {
-        showToast('error', 'Error', `Failed to ${action} QR code`);
+        showToast('error', 'Error', getErrorMessage(error));
       }
     }
   });
@@ -609,7 +611,7 @@ const deleteQRCode = (qrCode: PaymentQRCode) => {
         refetch();
         showToast('success', 'Deleted', 'QR code deleted successfully');
       } catch (error) {
-        showToast('error', 'Error', 'Failed to delete QR code');
+        showToast('error', 'Error', getErrorMessage(error));
       }
     }
   });
@@ -663,7 +665,7 @@ const handleSubmit = async () => {
     refetch();
     closeModal();
   } catch (error) {
-    showToast('error', 'Error', isEditing.value ? 'Failed to update QR code' : 'Failed to create QR code');
+    showToast('error', 'Error', getErrorMessage(error));
   } finally {
     isSubmitting.value = false;
   }
@@ -754,7 +756,7 @@ const sendToWhatsApp = async () => {
     showToast('success', 'Sent to WhatsApp', `QR code sent to ${selectedGuest.value.full_name} via WhatsApp`);
     closeWhatsAppDialog();
   } catch (error: any) {
-    showToast('error', 'Error', error.message || 'Failed to send QR code to WhatsApp');
+    showToast('error', 'Error', getErrorMessage(error));
   } finally {
     isSendingWhatsApp.value = false;
   }

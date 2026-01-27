@@ -163,6 +163,7 @@ import {
   type GlobalMessageTemplate,
   type CustomMessageTemplate 
 } from '~/composables/useMessageTemplate'
+import { useAPIHelper } from '~/composables/useAPIHelper'
 
 // Props
 const props = defineProps<{
@@ -179,6 +180,7 @@ const emit = defineEmits<{
 
 // Toast
 const toast = useToast()
+const { getErrorMessage } = useAPIHelper()
 
 // Data
 const { globalTemplates } = useFetchGlobalTemplates()
@@ -401,7 +403,7 @@ const saveTemplate = async () => {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: error.message || 'Failed to save template',
+      detail: getErrorMessage(error),
       life: 3000
     })
   } finally {

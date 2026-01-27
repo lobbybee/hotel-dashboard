@@ -60,6 +60,7 @@ import ProgressSpinner from 'primevue/progressspinner';
 import Badge from 'primevue/badge';
 import { useToast } from 'primevue/usetoast';
 import type { SubscriptionPlan, Transaction, HotelSubscription } from '~/composables/usePayments';
+import { useAPIHelper } from '~/composables/useAPIHelper';
 
 // Import composables
 import {
@@ -87,7 +88,9 @@ const toast = useToast();
 
 // Loading and error states
 const isLoading = computed(() => plansLoading.value || transactionsLoading.value || subscriptionLoading.value);
+
 const error = computed(() => plansError.value || transactionsError.value || subscriptionError.value);
+const { getErrorMessage } = useAPIHelper();
 
 // Refresh all data
 const refetchAll = async () => {
@@ -109,7 +112,7 @@ const refetchAll = async () => {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Failed to refresh data',
+      detail: getErrorMessage(err),
       life: 5000
     });
   }

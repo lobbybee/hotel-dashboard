@@ -1,0 +1,43 @@
+
+> build
+> nuxt build
+
+[nuxi] Nuxt 4.0.3 with Nitro 2.12.4
+
+ ERROR  (node:45336) ExperimentalWarning: CommonJS module /home/darkwebplayer/Documents/Infywork/CRMHotel/hotel-dashboard/node_modules/.pnpm/debug@4.4.1/node_modules/debug/src/node.js is loading ES Module /home/darkwebplayer/Documents/Infywork/CRMHotel/hotel-dashboard/node_modules/.pnpm/supports-color@10.2.0/node_modules/supports-color/index.js using require().
+Support for loading ES Module in require() is an experimental feature and might change at any time
+(Use node --trace-warnings ... to show where the warning was created)
+
+[nuxt:tailwindcss] ℹ Using Tailwind CSS from ~/assets/css/tailwind.css
+ℹ Nuxt Icon server bundle mode is set to local
+[nuxi] ℹ Building for Nitro preset: node-server
+ℹ Building client...
+ℹ vite v7.1.3 building for production...
+ℹ transforming...
+ℹ ✓ 915 modules transformed.
+
+ ERROR  ✗ Build failed in 6.52s
+
+
+[nuxi]  ERROR  Nuxt Build Error: [vite:vue] [vue/compiler-sfc] Identifier 'useListPendingStays' has already been declared. (6:9)
+
+/home/darkwebplayer/Documents/Infywork/CRMHotel/hotel-dashboard/components/Checkin/PendingStaysTab.vue
+217|  
+218|  import { useListPendingStays, useVerifyCheckin, useRejectCheckin } from '~/composables/checkin-manager';
+219|  import { useListPendingStays, useVerifyCheckin, useRejectCheckin } from '~/composables/checkin-manager';
+   |           ^
+220|  import { useFetchRooms } from '~/composables/useHotel';
+221|  import { useAPIHelper } from '~/composables/useAPIHelper';
+file: /home/darkwebplayer/Documents/Infywork/CRMHotel/hotel-dashboard/components/Checkin/PendingStaysTab.vue:6:9
+
+    at constructor (node_modules/.pnpm/@babel+parser@7.28.0/node_modules/@babel/parser/lib/index.js:367:19)
+    at TypeScriptParserMixin.raise (node_modules/.pnpm/@babel+parser@7.28.0/node_modules/@babel/parser/lib/index.js:6627:19)
+    at TypeScriptScopeHandler.declareName (node_modules/.pnpm/@babel+parser@7.28.0/node_modules/@babel/parser/lib/index.js:4896:21)
+    at TypeScriptParserMixin.declareNameFromIdentifier (node_modules/.pnpm/@babel+parser@7.28.0/node_modules/@babel/parser/lib/index.js:7591:16)
+    at TypeScriptParserMixin.checkIdentifier (node_modules/.pnpm/@babel+parser@7.28.0/node_modules/@babel/parser/lib/index.js:7587:12)
+    at TypeScriptParserMixin.checkLVal (node_modules/.pnpm/@babel+parser@7.28.0/node_modules/@babel/parser/lib/index.js:7526:12)
+    at TypeScriptParserMixin.finishImportSpecifier (node_modules/.pnpm/@babel+parser@7.28.0/node_modules/@babel/parser/lib/index.js:14266:10)
+    at TypeScriptParserMixin.parseImportSpecifier (node_modules/.pnpm/@babel+parser@7.28.0/node_modules/@babel/parser/lib/index.js:14423:17)
+    at TypeScriptParserMixin.parseImportSpecifier (node_modules/.pnpm/@babel+parser@7.28.0/node_modules/@babel/parser/lib/index.js:10166:18)
+    at TypeScriptParserMixin.parseNamedImportSpecifiers (node_modules/.pnpm/@babel+parser@7.28.0/node_modules/@babel/parser/lib/index.js:14402:36)
+

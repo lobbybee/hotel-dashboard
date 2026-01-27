@@ -282,11 +282,13 @@
 import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
+import { useAPIHelper } from '~/composables/useAPIHelper'
 
 definePageMeta({ layout: 'empty' })
 
 const router = useRouter()
 const toast = useToast()
+const { getErrorMessage } = useAPIHelper()
 
 const currentStep = ref(0)
 const isLoading = ref(true)
@@ -454,11 +456,7 @@ const confirmCreate = async () => {
     nextStep()
   } catch (error: any) {
     console.error('Create error:', error)
-    let msg = 'Failed to create staff'
-    if (error?.data) {
-      const errors = Object.entries(error.data).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('; ')
-      if (errors) msg = errors
-    }
+    const msg = getErrorMessage(error)
     toast.add({ severity: 'error', summary: 'Error', detail: msg, life: 5000 })
   } finally {
     isCreating.value = false

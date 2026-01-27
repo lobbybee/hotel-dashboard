@@ -478,6 +478,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
+const { getErrorMessage } = useAPIHelper();
 const { createGuestMutation, checkinOfflineMutation, verifyCheckinMutation } = useCheckinWorkflow();
 
 // Guest search
@@ -583,7 +584,7 @@ const {
 
 const roomCategories = computed(() => {
   const categories =
-    (roomCategoriesData.value as any[])?.map((category: any) => ({
+    ((roomCategoriesData.value as unknown as { results: any[] })?.results || (roomCategoriesData.value as unknown as any[]) || [])?.map((category: any) => ({
       label: `${category.name}`,
       value: category.id,
     })) || [];
@@ -856,7 +857,7 @@ const completeCheckin = async () => {
     }, 2000);
 
   } catch (error: any) {
-    errorMessage.value = error.message || 'Failed to complete check-in';
+    errorMessage.value = getErrorMessage(error);
     toast.add({
       severity: 'error',
       summary: 'Error',

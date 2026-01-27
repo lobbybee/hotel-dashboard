@@ -180,6 +180,7 @@ import ProgressSpinner from "primevue/progressspinner";
 
 
 const toast = useToast();
+const { getErrorMessage } = useAPIHelper();
 
 
 // State
@@ -242,9 +243,9 @@ const { mutateAsync: deleteRoomAPI, status: deleteRoomStatus } =
 
 // Computed Data
 const floors = computed(() => floorsData.value || []);
-const rooms = computed(() => roomsData.value?.results || []);
+const rooms = computed(() => (roomsData.value as any)?.results || []);
 const totalRooms = computed(() => roomsData.value?.count || 0);
-const categories = computed(() => categoriesData.value?.results || []);
+const categories = computed(() => (categoriesData.value as any)?.results || []);
 const totalCategories = computed(() => categoriesData.value?.count || 0);
 
 const floorOptions = computed(() => {
@@ -428,8 +429,7 @@ const saveCategory = async () => {
         closeCategoryForm();
     } catch (err: any) {
         console.error("Error saving category:", err);
-        const errorMsg =
-            err.response?._data?.detail || "Failed to save category";
+        const errorMsg = getErrorMessage(err);
         toast.add({
             severity: "error",
             summary: "Error",
@@ -520,8 +520,7 @@ const bulkAddRooms = async () => {
         closeBulkAddDialog();
     } catch (err: any) {
         console.error("Error creating rooms:", err);
-        const errorMsg =
-            err.response?._data?.detail || "Failed to create rooms";
+        const errorMsg = getErrorMessage(err);
         toast.add({
             severity: "error",
             summary: "Error",
@@ -574,7 +573,7 @@ const saveRoom = async () => {
         closeRoomDialog();
     } catch (err: any) {
         console.error("Error updating room:", err);
-        const errorMsg = err.response?._data?.detail || "Failed to update room";
+        const errorMsg = getErrorMessage(err);
         toast.add({
             severity: "error",
             summary: "Error",
@@ -617,8 +616,7 @@ const updateSelectedRoomsStatus = async () => {
         closeBulkStatusDialog();
     } catch (err: any) {
         console.error("Error updating room statuses:", err);
-        const errorMsg =
-            err.response?._data?.detail || "Failed to update room statuses";
+        const errorMsg = getErrorMessage(err);
         toast.add({
             severity: "error",
             summary: "Error",
@@ -655,8 +653,7 @@ const deleteCategory = async () => {
             closeDeleteCategoryConfirmation();
         } catch (err: any) {
             console.error("Error deleting category:", err);
-            const errorMsg =
-                err.response?._data?.detail || "Failed to delete category";
+            const errorMsg = getErrorMessage(err);
             toast.add({
                 severity: "error",
                 summary: "Error",
@@ -696,8 +693,7 @@ const deleteSelectedRooms = async () => {
         closeBulkDeleteConfirmation();
     } catch (err: any) {
         console.error("Error deleting rooms:", err);
-        const errorMsg =
-            err.response?._data?.detail || "Failed to delete rooms";
+        const errorMsg = getErrorMessage(err);
         toast.add({
             severity: "error",
             summary: "Error",
