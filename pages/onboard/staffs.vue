@@ -321,7 +321,11 @@ const staffErrors = ref<Record<string, string>>({})
 const editingStaffIndex = ref<number | null>(null)
 const showStaffForm = ref(true)
 
-const departmentChoices = ['Housekeeping', 'Room Service', 'Café/Restaurant']
+const departmentChoices = [
+  'Housekeeping',
+  'Room Service',
+  'Restaurant'
+]
 const userTypes = [
   { label: 'Manager', value: 'manager' },
   { label: 'Receptionist', value: 'receptionist' },

@@ -269,7 +269,9 @@ const toast = useToast();
 const { getErrorMessage } = useAPIHelper();
 
 const departmentChoices = [
-  'Housekeeping', 'Room Service', 'Café/Restaurant'
+  'Housekeeping',
+  'Room Service',
+  'Restaurant'
 ];
 
 const userTypes = [
