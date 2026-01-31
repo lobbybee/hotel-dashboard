@@ -190,3 +190,21 @@ export const useDeleteStaff = () => {
     asyncStatus
   };
 };
+
+// Check if user exists (username or email)
+export const useCheckUserExists = () => {
+  const { API } = useAPI();
+
+  const checkUserExists = async (params: { username?: string; email?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params.username) queryParams.append('username', params.username);
+    if (params.email) queryParams.append('email', params.email);
+
+    const response = await API(`/check-user-exists/?${queryParams.toString()}`);
+    return response;
+  };
+
+  return {
+    checkUserExists
+  };
+};

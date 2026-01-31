@@ -50,24 +50,14 @@
       </div>
 
       <div v-else class="bg-green-50 border border-green-100 rounded-xl p-6 mb-8">
-        <div class="flex items-start space-x-3">
-          <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-            <i class="pi pi-check-circle text-green-600"></i>
+           <div>
+            <h3 class="font-semibold text-amber-900 mb-2">What we'll setup:</h3>
+            <ul class="space-y-2 text-sm text-amber-800">
+              <li class="flex items-center"><i class="pi pi-check-circle mr-2 text-amber-600"></i> Multiple staff accounts</li>
+              <li class="flex items-center"><i class="pi pi-check-circle mr-2 text-amber-600"></i> Role assignments</li>
+              <li class="flex items-center"><i class="pi pi-check-circle mr-2 text-amber-600"></i> Department setup</li>
+            </ul>
           </div>
-          <div>
-            <h3 class="font-semibold text-green-900 mb-2">Your Team Status</h3>
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-green-700">Total Staff:</span>
-                <span class="font-semibold text-green-800">{{ (staffMembers as any)?.count || (staffMembers as any)?.results?.length || 0 }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-green-700">Active:</span>
-                <span class="font-semibold text-green-800">{{ activeStaffCount }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="flex justify-center">
@@ -283,6 +273,7 @@ import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useAPIHelper } from '~/composables/useAPIHelper'
+import { useDebounceFn } from '@vueuse/core'
 
 definePageMeta({ layout: 'empty' })
 
@@ -300,6 +291,7 @@ const steps = [{ title: 'Welcome' }, { title: 'Staff' }, { title: 'Complete' }]
 // API hooks
 const { staff: staffMembers, isLoading: isStaffLoading, error: staffError, refetch } = useFetchStaff()
 const { createStaff } = useCreateStaff()
+const { checkUserExists } = useCheckUserExists()
 
 // Staff form & queue
 interface StaffItem {
@@ -370,8 +362,13 @@ const validateStaffForm = () => {
   if (!staffForm.user_type) { staffErrors.value.user_type = 'Required'; return false }
   if (!staffForm.phone_number || staffForm.phone_number.length < 10) { staffErrors.value.phone_number = 'Invalid phone'; return false }
   if (staffForm.user_type === 'department_staff' && !staffForm.department) { staffErrors.value.form = 'Select department'; return false }
-  // Check for duplicate username in queue
-  if (staffQueue.value.some(s => s.username === staffForm.username)) { staffErrors.value.username = 'Already in list'; return false }
+  if (staffForm.user_type === 'department_staff' && !staffForm.department) { staffErrors.value.form = 'Select department'; return false }
+  
+  // Check for duplicate username in queue (excluding current being edited)
+  if (staffQueue.value.some((s, idx) => s.username === staffForm.username && idx !== editingStaffIndex.value)) { 
+    staffErrors.value.username = 'Already in list'; 
+    return false 
+  }
   return true
 }
 
@@ -466,6 +463,49 @@ const confirmCreate = async () => {
     isCreating.value = false
   }
 }
+
+
+// Server-side validation
+const validateField = useDebounceFn(async (field: 'username' | 'email', value: string) => {
+  if (!value || value.length < 3) {
+    // Clear specific error if it was "Already taken" when user is clearing input
+    if (staffErrors.value[field] === 'Username already taken' || staffErrors.value[field] === 'Email already taken') {
+      delete staffErrors.value[field]
+    }
+    return
+  }
+  
+  // Skip if we have local errors already
+  if (staffErrors.value[field] && staffErrors.value[field] !== 'Username already taken' && staffErrors.value[field] !== 'Email already taken') return
+
+  try {
+    const params = field === 'username' ? { username: value } : { email: value }
+    const response = await checkUserExists(params)
+    
+    if (response.success && response.data) {
+      if (field === 'username' && response.data.username_exists) {
+        staffErrors.value.username = 'Username already taken'
+      } else if (field === 'email' && response.data.email_exists) {
+        staffErrors.value.email = 'Email already taken'
+      } else {
+        // Clear specific error if it was "Already taken"
+        if (staffErrors.value[field] === 'Username already taken' || staffErrors.value[field] === 'Email already taken') {
+          delete staffErrors.value[field]
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Validation check failed', e)
+  }
+}, 500)
+
+watch(() => staffForm.username, (newVal) => {
+  if (newVal) validateField('username', newVal)
+})
+
+watch(() => staffForm.email, (newVal) => {
+  if (newVal) validateField('email', newVal)
+})
 
 onMounted(() => {
   currentStep.value = 0

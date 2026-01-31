@@ -253,10 +253,12 @@ import {
   useCreateStaff,
   useUpdateStaff,
   usePartialUpdateStaff,
-  useDeleteStaff
+  useDeleteStaff,
+  useCheckUserExists
 } from '~/composables/useStaff';
 import { useAPIHelper } from '~/composables/useAPIHelper';
 import { StaffSchema, StaffUpdateSchema } from '~/utils/schemas/staff';
+import { useDebounceFn } from '@vueuse/core';
 
 
 const { staff: staffMembers, isLoading, error, refetch } = useFetchStaff();
@@ -264,6 +266,7 @@ const { createStaff, asyncStatus: createAsyncStatus } = useCreateStaff();
 const { updateStaff, asyncStatus: updateAsyncStatus } = useUpdateStaff();
 const { partialUpdateStaff } = usePartialUpdateStaff();
 const { deleteStaff: deleteStaffAPI, asyncStatus: deleteAsyncStatus } = useDeleteStaff();
+const { checkUserExists } = useCheckUserExists();
 
 const toast = useToast();
 const { getErrorMessage } = useAPIHelper();
@@ -503,6 +506,50 @@ const deleteStaff = async () => {
     }
   }
 };
+
+const validateField = useDebounceFn(async (field: 'username' | 'email', value: string) => {
+  if (!value || value.length < 3) {
+    if (staffErrors.value[field] === 'Username already taken' || staffErrors.value[field] === 'Email already taken') {
+      delete staffErrors.value[field]
+    }
+    return
+  }
+  
+  // Skip if we have local errors already (unless it's our own error we want to re-check)
+  if (staffErrors.value[field] && staffErrors.value[field] !== 'Username already taken' && staffErrors.value[field] !== 'Email already taken') return
+
+  try {
+    const params = field === 'username' ? { username: value } : { email: value }
+    const response = await checkUserExists(params)
+    
+    if (response.success && response.data) {
+      if (field === 'username' && response.data.username_exists) {
+        staffErrors.value.username = 'Username already taken'
+      } else if (field === 'email' && response.data.email_exists) {
+        staffErrors.value.email = 'Email already taken'
+      } else {
+         // Clear specific error if it was "Already taken"
+        if (staffErrors.value[field] === 'Username already taken' || staffErrors.value[field] === 'Email already taken') {
+          delete staffErrors.value[field]
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Validation check failed', e)
+  }
+}, 500)
+
+watch(() => staffForm.username, (newVal) => {
+  // If editing and value hasn't changed from original, don't validate
+  if (editingStaff.value && newVal === editingStaff.value.username) return
+  if (newVal) validateField('username', newVal)
+})
+
+watch(() => staffForm.email, (newVal) => {
+  // If editing and value hasn't changed from original, don't validate
+  if (editingStaff.value && newVal === editingStaff.value.email) return
+  if (newVal) validateField('email', newVal)
+})
 
 onMounted(() => {
   if (error.value) {
