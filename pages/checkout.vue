@@ -7,7 +7,7 @@
 
     <div class="mb-6">
       <span class="p-input-icon-left w-full">
-        <i class="pi pi-search"></i>
+     
         <InputText
           v-model="searchQuery"
           placeholder="Search by guest name or room number..."

@@ -96,11 +96,11 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium mb-1">Check-in Date *</label>
-            <Calendar v-model="checkinDates.check_in" showTime class="w-full" />
+            <Calendar v-model="checkinDates.check_in" showTime dateFormat="dd-mm-yy" class="w-full" />
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Check-out Date *</label>
-            <Calendar v-model="checkinDates.check_out" showTime class="w-full" />
+            <Calendar v-model="checkinDates.check_out" showTime dateFormat="dd-mm-yy" class="w-full" />
           </div>
         </div>
 
@@ -176,6 +176,7 @@
               v-model="stayForm.check_out_date"
               class="w-full"
               showIcon
+              dateFormat="dd-mm-yy"
               :minDate="new Date()"
             />
           </div>
@@ -407,7 +408,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
               <div>
-                <label class="block text-sm font-medium mb-1">Document Type</label>
+                <label class="block text-sm font-medium mb-1">Document Type *</label>
                 <Dropdown
                   v-model="guest.document_type"
                   :options="documentTypes"
@@ -415,15 +416,23 @@
                   optionValue="value"
                   placeholder="Select document type"
                   class="w-full"
+                  :invalid="!!validationErrors.accompanying_guests?.[index]?.document_type"
                 />
+                <small v-if="validationErrors.accompanying_guests?.[index]?.document_type" class="text-red-500">
+                    {{ validationErrors.accompanying_guests?.[index]?.document_type }}
+                </small>
               </div>
               <div>
-                <label class="block text-sm font-medium mb-1">Document Number</label>
+                <label class="block text-sm font-medium mb-1">Document Number *</label>
                 <InputText
                   v-model="guest.document_number"
                   placeholder="Document number"
                   class="w-full"
+                  :invalid="!!validationErrors.accompanying_guests?.[index]?.document_number"
                 />
+                <small v-if="validationErrors.accompanying_guests?.[index]?.document_number" class="text-red-500">
+                    {{ validationErrors.accompanying_guests?.[index]?.document_number }}
+                </small>
               </div>
             </div>
 
@@ -458,6 +467,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useDebounceFn } from "@vueuse/core";
 import { useToast } from 'primevue/usetoast';
 import { useCheckinWorkflow, prepareGuestFormData } from '~/composables/checkin-manager';
@@ -473,7 +483,7 @@ import Badge from 'primevue/badge';
 import type { CreateGuestData, AccompanyingGuestData } from '~/types/guest';
 
 // Import validation schemas
-import { GuestSchema, CheckinOfflineSchema } from '~/utils/schemas/guest';
+import { GuestSchema, CheckinOfflineSchema, ManualWalkinGuestSchema } from '~/utils/schemas/guest';
 
 
 
@@ -482,6 +492,7 @@ const emit = defineEmits<{
   'checkin-success': []
 }>();
 
+const router = useRouter();
 const toast = useToast();
 const { getErrorMessage } = useAPIHelper();
 const { createGuestMutation, checkinOfflineMutation, verifyCheckinMutation } = useCheckinWorkflow();
@@ -539,6 +550,9 @@ const verifyData = ref({
   dinner_reminder: false,
   notes: ''
 });
+
+// Validation Errors
+const validationErrors = ref<any>({});
 
 // Documents
 const primaryDocument = ref<File | null>(null);
@@ -791,6 +805,47 @@ const completeCheckin = async () => {
     isProcessing.value = true;
     errorMessage.value = '';
     successMessage.value = '';
+    validationErrors.value = {};
+
+    // Validate using Zod schema
+    const validationResult = ManualWalkinGuestSchema.safeParse(guestData.value);
+    if (!validationResult.success) {
+        // Map Zod errors to validationErrors object
+        // For accompanying guests array errors, we need a specific structure
+        const formattedErrors: any = {};
+        
+        validationResult.error.issues.forEach((err: any) => {
+            const path = err.path;
+            
+            // Handle pending guests specific structure
+            if (path[0] === 'accompanying_guests' && typeof path[1] === 'number') {
+               const index = path[1];
+               const field = path[2] as string;
+               
+               if (!formattedErrors.accompanying_guests) {
+                   formattedErrors.accompanying_guests = {};
+               }
+               if (!formattedErrors.accompanying_guests[index]) {
+                   formattedErrors.accompanying_guests[index] = {};
+               }
+               formattedErrors.accompanying_guests[index][field] = err.message;
+            } else if (path[0] === 'primary_guest') {
+                // Not focusing on primary guest errors here as they are handled earlier,
+                // but good to have for completeness if we switch to full schema validation later
+            }
+        });
+
+        if (Object.keys(formattedErrors).length > 0) {
+            validationErrors.value = formattedErrors;
+            isProcessing.value = false;
+            toast.add({
+                severity: 'error',
+                summary: 'Validation Error',
+                detail: 'Please correct the errors in the form.'
+            });
+            return;
+        }
+    }
 
     let guestId: number;
 
@@ -814,7 +869,12 @@ const completeCheckin = async () => {
 
       // useCreateGuest expects { documents: FormData } for file uploads
       const guestResult = await createGuestMutation.createGuest({ documents: formData } as any);
-      guestId = guestResult.primary_guest_id;
+      // API returns success: true, data: { primary_guest_id: ... }
+      guestId = guestResult.data?.primary_guest_id || guestResult.primary_guest_id;
+    }
+
+    if (!guestId) {
+        throw new Error('Failed to retrieve guest ID');
     }
 
     // 2. Check-in offline with guest ID using the workflow mutation
@@ -829,7 +889,7 @@ const completeCheckin = async () => {
     const checkinResult = await checkinOfflineMutation.checkinOffline(checkinData);
 
     // 3. Verify check-in for each stay with any modifications using the workflow mutation
-    const stayIds = checkinResult?.stay_ids || [];
+    const stayIds = checkinResult?.stay_ids || checkinResult?.data?.stay_ids || [];
     for (const stayId of stayIds) {
       const verifyRequestData: any = {
         guest_updates: {
@@ -856,7 +916,10 @@ const completeCheckin = async () => {
     // Emit event to switch tab to pending stays
     emit('checkin-success');
 
-    // Reset form after delay
+    // Navigate to checkout page
+    await router.push('/checkout');
+
+    // Reset form after delay (though navigation happens first, good for cleanup if component lives)
     setTimeout(() => {
       resetForm();
     }, 2000);

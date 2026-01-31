@@ -27,6 +27,16 @@ export const CreateGuestSchema = z.object({
     accompanying_guests: z.array(AccompanyingGuestSchema).optional(),
 });
 
+export const EnforcedAccompanyingGuestSchema = AccompanyingGuestSchema.extend({
+    document_type: z.string().min(1, 'Document type is required'),
+    document_number: z.string().min(1, 'Document number is required'),
+});
+
+export const ManualWalkinGuestSchema = z.object({
+    primary_guest: PrimaryGuestSchema,
+    accompanying_guests: z.array(EnforcedAccompanyingGuestSchema).optional(),
+});
+
 export const CheckinOfflineSchema = z.object({
     primary_guest_id: z.number(),
     room_ids: z.array(z.number()).min(1, 'At least one room must be selected'),
