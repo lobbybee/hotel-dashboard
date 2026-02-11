@@ -189,7 +189,7 @@
               <i v-if="editingRoomRangeIndex === idx" class="pi pi-pencil text-green-600 mr-2 text-xs"></i>
               <span class="font-medium text-gray-900">{{ getCategoryNameById(range.category) }}</span>
               <span class="text-gray-600 ml-2">Floor {{ range.floor }}</span>
-              <span class="text-green-600 ml-2">Rooms {{ range.start_number }}-{{ range.end_number }}</span>
+              <span class="text-green-600 ml-2">Rooms {{ formatRoomNumber(range.start_number, range.roomPrefix, range.roomSuffix) }}-{{ formatRoomNumber(range.end_number, range.roomPrefix, range.roomSuffix) }}</span>
               <span class="text-gray-500 ml-2 text-xs">({{ getRangeRoomCount(range) }} rooms)</span>
             </div>
             <button @click.stop="removeRoomRangeFromQueue(idx)" class="text-red-500 hover:text-red-700 p-1">
@@ -238,8 +238,32 @@
             </div>
           </div>
 
+          <div class="space-y-3">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" v-model="showPrefix" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500" />
+              <span class="text-sm font-medium text-gray-700">Add Room Number Prefix</span>
+            </label>
+            <div v-if="showPrefix">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Room Number Prefix</label>
+              <input v-model="roomRangeForm.roomPrefix" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm" placeholder="e.g., A, B, Room" />
+              <small class="text-gray-500">Prefix added before room number</small>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" v-model="showSuffix" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500" />
+              <span class="text-sm font-medium text-gray-700">Add Room Number Suffix</span>
+            </label>
+            <div v-if="showSuffix">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Room Number Suffix</label>
+              <input v-model="roomRangeForm.roomSuffix" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm" placeholder="e.g., A, B, Room" />
+              <small class="text-gray-500">Suffix added after room number</small>
+            </div>
+          </div>
+
           <div v-if="currentRangeRoomCount > 0" class="bg-blue-50 border border-blue-100 rounded-lg p-2 text-center">
-            <p class="text-sm text-blue-800">{{ currentRangeRoomCount }} rooms on floor {{ roomRangeForm.floor }}</p>
+            <p class="text-sm text-blue-800">{{ currentRangeRoomCount }} rooms on floor {{ roomRangeForm.floor }}: {{ formatRoomNumber(roomRangeForm.start_number, roomRangeForm.roomPrefix, roomRangeForm.roomSuffix) }}-{{ formatRoomNumber(roomRangeForm.end_number, roomRangeForm.roomPrefix, roomRangeForm.roomSuffix) }}</p>
           </div>
 
           <div class="flex gap-2">
@@ -328,7 +352,7 @@
                   <span class="font-medium">{{ getCategoryNameById(range.category) }}</span>
                   <span class="text-xs text-gray-500">{{ getRangeRoomCount(range) }} rooms</span>
                 </div>
-                <div class="text-sm text-gray-600">Floor {{ range.floor }}: {{ range.start_number }} - {{ range.end_number }}</div>
+                <div class="text-sm text-gray-600">Floor {{ range.floor }}: {{ formatRoomNumber(range.start_number, range.roomPrefix, range.roomSuffix) }} - {{ formatRoomNumber(range.end_number, range.roomPrefix, range.roomSuffix) }}</div>
               </div>
               <div class="mt-3 p-3 bg-green-50 rounded-lg text-center">
                 <p class="text-green-800 font-semibold">{{ totalQueuedRooms }} rooms will be created</p>
@@ -392,12 +416,14 @@ const editingCategoryIndex = ref<number | null>(null)
 const showCategoryForm = ref(true)
 
 // Room range form & queue
-interface RoomRange { category: number | null; floor: number; start_number: number; end_number: number }
-const roomRangeForm = reactive<RoomRange>({ category: null, floor: 1, start_number: 101, end_number: 105 })
+interface RoomRange { category: number | null; floor: number; start_number: number; end_number: number; roomPrefix?: string; roomSuffix?: string }
+const roomRangeForm = reactive<RoomRange>({ category: null, floor: 1, start_number: 101, end_number: 105, roomPrefix: '', roomSuffix: '' })
 const roomRangeQueue = ref<RoomRange[]>([])
 const roomRangeErrors = ref<Record<string, string>>({})
 const editingRoomRangeIndex = ref<number | null>(null)
 const showRoomRangeForm = ref(true)
+const showPrefix = ref(false)
+const showSuffix = ref(false)
 
 // Computed
 const totalRooms = computed(() => (roomsData.value as any)?.count || (roomsData.value as any)?.total || 0)
@@ -426,6 +452,22 @@ watch([isCategoriesLoading, isRoomsLoading], ([a, b]) => { if (!a && !b) isLoadi
 // Helpers
 const getCategoryNameById = (id: number | null) => allCategories.value.find((c: any) => c.id === id)?.name || 'Unknown'
 const getRangeRoomCount = (range: RoomRange) => Math.max(0, range.end_number - range.start_number + 1)
+
+// Format room number with prefix and suffix for display
+const formatRoomNumber = (number: number, prefix?: string, suffix?: string) => {
+  const prefixTrim = prefix?.trim() || ''
+  const suffixTrim = suffix?.trim() || ''
+  const numberStr = number.toString()
+  
+  if (prefixTrim && suffixTrim) {
+    return `${prefixTrim}-${numberStr}-${suffixTrim}`
+  } else if (prefixTrim) {
+    return `${prefixTrim}-${numberStr}`
+  } else if (suffixTrim) {
+    return `${numberStr}-${suffixTrim}`
+  }
+  return numberStr
+}
 
 const getButtonText = () => {
   if (currentStep.value === 1) {
@@ -502,30 +544,68 @@ const validateRoomRangeForm = () => {
   if (!roomRangeForm.start_number) { roomRangeErrors.value.start_number = 'Required'; return false }
   if (!roomRangeForm.end_number) { roomRangeErrors.value.end_number = 'Required'; return false }
   if (roomRangeForm.start_number > roomRangeForm.end_number) { roomRangeErrors.value.end_number = 'Must be >= start'; return false }
+  
+  // Check for duplicate room ranges
+  const newPrefix = roomRangeForm.roomPrefix?.trim() || ''
+  const newSuffix = roomRangeForm.roomSuffix?.trim() || ''
+  
+  for (let i = 0; i < roomRangeQueue.value.length; i++) {
+    // Skip the range being edited
+    if (editingRoomRangeIndex.value !== null && i === editingRoomRangeIndex.value) {
+      continue
+    }
+    
+    const existingRange = roomRangeQueue.value[i]
+    if (!existingRange) continue
+    const existingPrefix = existingRange.roomPrefix?.trim() || ''
+    const existingSuffix = existingRange.roomSuffix?.trim() || ''
+    
+    // Check if category, floor, prefix, and suffix match
+    if (existingRange.category === roomRangeForm.category &&
+        existingRange.floor === roomRangeForm.floor &&
+        existingPrefix === newPrefix &&
+        existingSuffix === newSuffix) {
+      // Check if room number ranges overlap
+      if (roomRangeForm.start_number <= existingRange.end_number &&
+          roomRangeForm.end_number >= existingRange.start_number) {
+        // Ranges overlap, set error
+        roomRangeErrors.value.start_number = 'Duplicate room range: overlaps with existing rooms'
+        return false
+      }
+    }
+  }
+  
   return true
 }
 
 const addRoomRangeToQueue = () => {
   if (!validateRoomRangeForm()) return
   roomRangeQueue.value.push({ ...roomRangeForm })
-  Object.assign(roomRangeForm, { category: null, floor: roomRangeForm.floor + 1, start_number: (roomRangeForm.floor + 1) * 100 + 1, end_number: (roomRangeForm.floor + 1) * 100 + 5 })
+  Object.assign(roomRangeForm, { category: null, floor: roomRangeForm.floor + 1, start_number: (roomRangeForm.floor + 1) * 100 + 1, end_number: (roomRangeForm.floor + 1) * 100 + 5, roomPrefix: '', roomSuffix: '' })
+  showPrefix.value = false
+  showSuffix.value = false
   roomRangeErrors.value = {}
 }
 
 const addRoomRangeAndDone = () => {
   if (!validateRoomRangeForm()) return
   roomRangeQueue.value.push({ ...roomRangeForm })
-  Object.assign(roomRangeForm, { category: null, floor: 1, start_number: 101, end_number: 105 })
+  Object.assign(roomRangeForm, { category: null, floor: 1, start_number: 101, end_number: 105, roomPrefix: '', roomSuffix: '' })
+  showPrefix.value = false
+  showSuffix.value = false
   roomRangeErrors.value = {}
   showRoomRangeForm.value = false
 }
 
 const editRoomRange = (idx: number) => {
   const range = roomRangeQueue.value[idx]
+  if (!range) return
   Object.assign(roomRangeForm, { ...range })
   editingRoomRangeIndex.value = idx
   roomRangeErrors.value = {}
   showRoomRangeForm.value = true
+  showPrefix.value = !!range.roomPrefix?.trim()
+  showSuffix.value = !!range.roomSuffix?.trim()
 }
 
 const updateRoomRangeInQueue = () => {
@@ -538,7 +618,9 @@ const updateRoomRangeInQueue = () => {
 }
 
 const clearRoomRangeForm = () => {
-  Object.assign(roomRangeForm, { category: null, floor: 1, start_number: 101, end_number: 105 })
+  Object.assign(roomRangeForm, { category: null, floor: 1, start_number: 101, end_number: 105, roomPrefix: '', roomSuffix: '' })
+  showPrefix.value = false
+  showSuffix.value = false
   editingRoomRangeIndex.value = null
   roomRangeErrors.value = {}
 }
@@ -589,11 +671,26 @@ const confirmCreate = async () => {
       await refetchCategories()
     } else {
       // Send array for bulk create
+      const formatRoomNumber = (number: number, prefix?: string, suffix?: string) => {
+        const prefixTrim = prefix?.trim() || ''
+        const suffixTrim = suffix?.trim() || ''
+        const numberStr = number.toString()
+        
+        if (prefixTrim && suffixTrim) {
+          return `${prefixTrim}-${numberStr}-${suffixTrim}`
+        } else if (prefixTrim) {
+          return `${prefixTrim}-${numberStr}`
+        } else if (suffixTrim) {
+          return `${numberStr}-${suffixTrim}`
+        }
+        return numberStr
+      }
+      
       const payload = roomRangeQueue.value.map(r => ({
         category: r.category!,
         floor: r.floor,
-        start_number: r.start_number.toString(),
-        end_number: r.end_number.toString()
+        start_number: formatRoomNumber(r.start_number, r.roomPrefix, r.roomSuffix),
+        end_number: formatRoomNumber(r.end_number, r.roomPrefix, r.roomSuffix)
       }))
       await (bulkCreateRooms as any)(payload)
       toast.add({ severity: 'success', summary: 'Success', detail: `${totalQueuedRooms.value} rooms created!`, life: 3000 })

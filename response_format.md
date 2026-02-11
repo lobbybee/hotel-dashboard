@@ -31,3 +31,14 @@ return forbidden_response("You do not have permission")
 python
 return server_error_response("Database connection failed")
 # → {"success": false, "message": "Database connection failed"}
+# paginated responses
+ {
+  "success": true,
+  "message": "Fetched successfully",
+  "data": {
+    "count": 123,
+    "next": "http://...",
+    "previous": null,
+    "results": [...]
+  }
+} 
