@@ -136,6 +136,9 @@
                       text
                       rounded
                       severity="danger"
+                      v-show="member.id !== currentUser?.id"
+                      :disabled="member.id === currentUser?.id"
+                      :title="member.id === currentUser?.id ? 'You cannot delete yourself' : 'Delete Staff Member'"
                       @click="openDeleteConfirmation(member)"
                     />
                   </div>
@@ -256,12 +259,16 @@ import {
   useDeleteStaff,
   useCheckUserExists
 } from '~/composables/useStaff';
+import { useAuthStore } from '~/stores/auth';
+import { storeToRefs } from 'pinia';
 import { useAPIHelper } from '~/composables/useAPIHelper';
 import { StaffSchema, StaffUpdateSchema } from '~/utils/schemas/staff';
 import { useDebounceFn } from '@vueuse/core';
 
 
 const { staff: staffMembers, isLoading, error, refetch } = useFetchStaff();
+const authStore = useAuthStore();
+const { user: currentUser } = storeToRefs(authStore);
 const { createStaff, asyncStatus: createAsyncStatus } = useCreateStaff();
 const { updateStaff, asyncStatus: updateAsyncStatus } = useUpdateStaff();
 const { partialUpdateStaff } = usePartialUpdateStaff();
