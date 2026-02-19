@@ -94,6 +94,8 @@
                             :selectedRooms="selectedRooms"
                             :totalRooms="totalRooms"
                             :categories="categories"
+                            :currentPage="roomPage"
+                            :rowsPerPage="roomsPerPage"
                             @toggle-room-selection="toggleRoomSelection"
                             @edit-room="openEditRoomDialog"
                             @room-page-change="onRoomPageChange"
@@ -190,6 +192,7 @@ import { RoomCategorySchema, RoomSchema } from '~/utils/schemas/room';
 // State
 const selectedFloor = ref<number>(1);
 const roomPage = ref(1);
+const roomsPerPage = 10;
 const categoryPage = ref(1);
 const categorySearch = ref("");
 const debouncedCategorySearch = refDebounced(categorySearch, 500);
@@ -201,6 +204,7 @@ const debouncedRoomSearch = refDebounced(roomSearch, 2000);
 const roomFilters = computed(() => ({
     floor: selectedFloor.value,
     page: roomPage.value,
+    page_size: roomsPerPage,
     search:
         debouncedRoomSearch.value.length > 1 ? debouncedRoomSearch.value : "",
     status: roomStatusFilter.value,
@@ -722,7 +726,7 @@ const onCategoryPageChange = (event: any) => {
     categoryPage.value = event.page + 1;
 };
 
-watch([debouncedRoomSearch, roomStatusFilter], () => {
+watch([debouncedRoomSearch, roomStatusFilter, selectedFloor], () => {
     roomPage.value = 1;
 });
 

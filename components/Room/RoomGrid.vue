@@ -71,9 +71,10 @@
 
         <!-- Room Pagination -->
         <Paginator
-            v-if="totalRooms > 10"
-            :rows="10"
+            v-if="totalRooms > rowsPerPage"
+            :rows="rowsPerPage"
             :totalRecords="totalRooms"
+            :first="(currentPage - 1) * rowsPerPage"
             @page="$emit('room-page-change', $event)"
             class="mt-4"
         />
@@ -106,6 +107,8 @@ interface Props {
     selectedRooms: number[];
     totalRooms: number;
     categories: Category[];
+    currentPage: number;
+    rowsPerPage: number;
 }
 
 defineProps<Props>();
