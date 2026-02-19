@@ -150,7 +150,11 @@
                     :options="rooms"
                     optionLabel="room_number"
                     optionValue="id"
-                    :placeholder="stay.room ? stay.room.room_number + ' (Current)' : 'Select a Room'"
+                    :placeholder="
+                      stay.room
+                        ? (stay.room.room_number ? `${stay.room.room_number} (Current)` : 'Current room (assigned)')
+                        : 'Select a Room'
+                    "
                     class="w-full"
                     :loading="isRoomsLoading"
                 />
@@ -264,7 +268,13 @@ const { data: categoriesData } = useFetchRoomCategories();
 const categories = computed(() => categoriesData.value?.results || []);
 
 const { data: floorsData } = useFetchHotelRoomFloors();
-const floors = computed(() => floorsData.value?.floors || []);
+const floors = computed(() => {
+  const value = floorsData.value;
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  // Fallback if API returns { floors: [...] }
+  return (value as any).floors || [];
+});
 
 const roomFilters = computed(() => ({
     status: 'available',
