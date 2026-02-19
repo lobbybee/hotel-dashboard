@@ -208,6 +208,7 @@ import Badge from 'primevue/badge';
 import Calendar from 'primevue/calendar';
 import Checkbox from 'primevue/checkbox';
 import Textarea from 'primevue/textarea';
+import { useToast } from 'primevue/usetoast';
 import { useFetchRooms, useFetchRoomCategories, useFetchHotelRoomFloors } from '~/composables/useHotel';
 
 import InputText from 'primevue/inputtext';
@@ -221,6 +222,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:visible', 'confirmed']);
+
+const toast = useToast();
 
 const registerNumber = ref<string>('');
 const selectedCategory = ref<number | null>(null);
@@ -315,6 +318,14 @@ const confirmAndCheckin = () => {
     editGuestMode: editGuestMode.value,
     guestEdits: guestEdits.value
   });
+
+  if (editGuestMode.value && guestEdits.value.email) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(guestEdits.value.email)) {
+      toast.add({ severity: 'error', summary: 'Invalid Email', detail: 'Enter a valid email address or leave it blank.', life: 4000 });
+      return;
+    }
+  }
 
   const verifyData: any = {
     register_number: registerNumber.value

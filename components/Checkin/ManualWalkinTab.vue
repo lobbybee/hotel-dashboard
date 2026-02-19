@@ -70,7 +70,9 @@
                 placeholder="Enter full name"
                 class="w-full"
                 :disabled="isGuestSelected"
+                :invalid="!!validationErrors.primary_guest?.full_name"
               />
+              <small v-if="validationErrors.primary_guest?.full_name" class="text-red-500">{{ validationErrors.primary_guest?.full_name }}</small>
             </div>
             <div>
               <label class="block text-sm font-medium mb-1">WhatsApp Number *</label>
@@ -79,7 +81,9 @@
                 placeholder="+1234567890"
                 class="w-full"
                 :disabled="isGuestSelected"
+                :invalid="!!validationErrors.primary_guest?.whatsapp_number"
               />
+              <small v-if="validationErrors.primary_guest?.whatsapp_number" class="text-red-500">{{ validationErrors.primary_guest?.whatsapp_number }}</small>
             </div>
             <div>
               <label class="block text-sm font-medium mb-1">Email</label>
@@ -88,7 +92,9 @@
                 placeholder="guest@example.com"
                 class="w-full"
                 :disabled="isGuestSelected"
+                :invalid="!!validationErrors.primary_guest?.email"
               />
+              <small v-if="validationErrors.primary_guest?.email" class="text-red-500">{{ validationErrors.primary_guest?.email }}</small>
             </div>
           </div>
         </div>
@@ -120,7 +126,7 @@
       </div>
 
       <div class="flex justify-end mt-6">
-        <Button label="Next" @click="step = 2" :disabled="!isGuestDetailsValid" />
+        <Button label="Next" @click="goToStep2" :disabled="!isGuestDetailsValid" />
       </div>
     </div>
 
@@ -483,7 +489,7 @@ import Badge from 'primevue/badge';
 import type { CreateGuestData, AccompanyingGuestData } from '~/types/guest';
 
 // Import validation schemas
-import { GuestSchema, CheckinOfflineSchema, ManualWalkinGuestSchema } from '~/utils/schemas/guest';
+import { GuestSchema, CheckinOfflineSchema, ManualWalkinGuestSchema, PrimaryGuestSchema } from '~/utils/schemas/guest';
 
 
 
@@ -552,7 +558,7 @@ const verifyData = ref({
 });
 
 // Validation Errors
-const validationErrors = ref<any>({});
+const validationErrors = ref<any>({ primary_guest: {}, accompanying_guests: {} });
 
 // Documents
 const primaryDocument = ref<File | null>(null);
@@ -760,6 +766,37 @@ const clearGuestSelection = () => {
   searchTerm.value = '';
   filteredGuests.value = lastSearchResults.value; // Restore last search results
   flagSummary.value = null; // Clear flag summary
+  validationErrors.value.primary_guest = {};
+};
+
+
+
+const validateStep1 = () => {
+  const result = PrimaryGuestSchema.safeParse(guestData.value.primary_guest);
+  validationErrors.value.primary_guest = {};
+
+  if (!result.success) {
+    result.error.issues.forEach((err: any) => {
+      const field = err.path[0] as string;
+      validationErrors.value.primary_guest[field] = err.message;
+    });
+    return false;
+  }
+
+  return true;
+};
+
+const goToStep2 = () => {
+  const valid = validateStep1();
+  if (!valid) {
+    toast.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: 'Please fix the highlighted fields before continuing.'
+    });
+    return;
+  }
+  step.value = 2;
 };
 
 
@@ -805,14 +842,14 @@ const completeCheckin = async () => {
     isProcessing.value = true;
     errorMessage.value = '';
     successMessage.value = '';
-    validationErrors.value = {};
+    validationErrors.value = { primary_guest: {}, accompanying_guests: {} };
 
     // Validate using Zod schema
     const validationResult = ManualWalkinGuestSchema.safeParse(guestData.value);
     if (!validationResult.success) {
         // Map Zod errors to validationErrors object
         // For accompanying guests array errors, we need a specific structure
-        const formattedErrors: any = {};
+        const formattedErrors: any = { primary_guest: {}, accompanying_guests: {} };
         
         validationResult.error.issues.forEach((err: any) => {
             const path = err.path;
@@ -973,6 +1010,7 @@ const resetForm = () => {
   flagSummary.value = null;
   errorMessage.value = '';
   successMessage.value = '';
+  validationErrors.value = { primary_guest: {}, accompanying_guests: {} };
 };
 
 onMounted(() => {
