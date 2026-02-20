@@ -6,6 +6,7 @@
       <div class="flex items-center justify-center p-6 lg:p-12">
         <div class="w-full max-w-md">
           <div class="mb-10">
+             <img src="/logo.png" alt="LobbyBee" class="w-24 h-24 lg:w-32 lg:h-32 object-contain drop-shadow-lg md:hidden" />
             <h1 class="text-2xl md:text-4xl font-bold text-gray-900 mb-2 font-sans">Welcome Back !</h1>
             <p class="text-gray-600 text-base">Login to your lobbybee account</p>
           </div>
