@@ -47,7 +47,7 @@
         
         <Column field="amount" header="Amount" :sortable="true">
           <template #body="slotProps">
-            <span class="font-semibold">${{ parseFloat(slotProps.data.amount).toFixed(2) }}</span>
+            <span class="font-semibold">₹{{ parseFloat(slotProps.data.amount).toFixed(2) }}</span>
           </template>
         </Column>
         
@@ -112,7 +112,7 @@
           
           <div class="flex justify-between">
             <span class="font-semibold">Amount:</span>
-            <span class="font-semibold">${{ parseFloat(selectedTransaction.amount).toFixed(2) }}</span>
+            <span class="font-semibold">₹{{ parseFloat(selectedTransaction.amount).toFixed(2) }}</span>
           </div>
           
           <div class="flex justify-between">

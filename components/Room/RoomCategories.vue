@@ -3,7 +3,7 @@
         <!-- Collapsible Header -->
         <div class="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors" @click="toggleCollapse">
             <div class="flex items-center gap-3">
-                <i class="pi pi-chevron-down text-gray-500 transition-transform duration-200" :class="{ 'rotate-180': !isCollapsed }"></i>
+                <i class="pi pi-chevron-right text-gray-500 transition-transform duration-200" :class="{ 'rotate-90': !isCollapsed }"></i>
                 <h2 class="text-xl font-bold text-gray-900">Room Categories</h2>
                 <Badge :value="totalCategories" severity="secondary" class="ml-2" />
             </div>

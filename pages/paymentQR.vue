@@ -63,7 +63,7 @@
         <div class="flex flex-col sm:flex-row gap-4">
           <div class="flex-1">
             <div class="relative">
-              <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              <!-- <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i> -->
               <InputText
                 v-model="searchQuery"
                 placeholder="Search by name or UPI ID..."

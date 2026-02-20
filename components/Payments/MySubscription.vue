@@ -37,7 +37,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div class="border border-gray-200 rounded-lg p-4">
             <div class="text-gray-500 text-sm mb-1">Price</div>
-            <div class="font-semibold text-lg">${{ parseFloat(subscription.plan?.price).toFixed(2) }}</div>
+            <div class="font-semibold text-lg">{{ parseFloat(subscription.plan?.price).toFixed(2) }}</div>
           </div>
           
           <div class="border border-gray-200 rounded-lg p-4">

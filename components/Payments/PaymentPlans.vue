@@ -36,7 +36,7 @@
 
             <div class="mb-6">
               <div class="text-3xl font-bold text-gray-800">
-                ${{ parseFloat(plan.price).toFixed(2) }}
+                {{ parseFloat(plan.price).toFixed(2) }}
                 <span class="text-sm font-normal text-gray-500">/ {{ plan.duration_days }} days</span>
               </div>
             </div>
@@ -78,7 +78,7 @@
             <Badge :value="selectedPlan.plan_type" :severity="selectedPlan.plan_type === 'trial' ? 'warning' : 'info'" />
           </div>
           <div class="mt-2">
-            <span class="font-semibold text-xl">${{ parseFloat(selectedPlan.price).toFixed(2) }}</span>
+            <span class="font-semibold text-xl">{{ parseFloat(selectedPlan.price).toFixed(2) }}</span>
             <span class="text-gray-600"> / {{ selectedPlan.duration_days }} days</span>
           </div>
         </div>

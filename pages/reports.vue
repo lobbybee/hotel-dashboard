@@ -304,9 +304,9 @@ const formatNumber = (num: number) => {
 }
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD'
+    currency: 'INR'
   }).format(amount)
 }
 
@@ -476,8 +476,8 @@ const exportToPDF = async () => {
               yPosition = 30
             }
             pdf.text(room.room_number || 'N/A', 25, yPosition)
-            pdf.text(room.room_category || 'N/A', 60, yPosition)
-            pdf.text(String(room.room_floor || 0), 100, yPosition)
+            pdf.text(room.category || 'N/A', 60, yPosition)
+            pdf.text(String(room.floor || 0), 100, yPosition)
             pdf.text(String(room.total_stays || 0), 130, yPosition)
             pdf.text(`${formatPercentage(room.occupancy_rate || 0)}`, 160, yPosition)
             yPosition += 7
@@ -516,9 +516,10 @@ const exportToPDF = async () => {
               pdf.addPage()
               yPosition = 30
             }
-            pdf.text(conv.guest_name || 'N/A', 25, yPosition)
+            pdf.text(conv.guest?.full_name || 'N/A', 25, yPosition)
             pdf.text(String(conv.message_count || 0), 80, yPosition)
-            pdf.text(new Date(conv.last_message_at).toLocaleDateString(), 120, yPosition)
+            const lastActivity = conv.last_message_at || conv.created_at
+            pdf.text(lastActivity ? new Date(lastActivity).toLocaleDateString() : 'N/A', 120, yPosition)
             pdf.text(conv.status || 'N/A', 160, yPosition)
             yPosition += 7
           })
@@ -534,7 +535,7 @@ const exportToPDF = async () => {
         yPosition += 15
 
         // Add feedback details table
-        if (feedbackAnalyticsData.value?.feedback && feedbackAnalyticsData.value.feedback.length > 0) {
+        if (feedbackAnalyticsData.value?.feedbacks && feedbackAnalyticsData.value.feedbacks.length > 0) {
           pdf.setFontSize(12)
           pdf.setFont('helvetica', 'bold')
           pdf.text('Feedback Details:', 25, yPosition)
@@ -552,16 +553,16 @@ const exportToPDF = async () => {
 
           // Table rows
           pdf.setFont('helvetica', 'normal')
-          feedbackAnalyticsData.value.feedback.forEach((feedback: any) => {
+          feedbackAnalyticsData.value.feedbacks.forEach((feedback: any) => {
             if (yPosition > pageHeight - 40) {
               pdf.addPage()
               yPosition = 30
             }
-            pdf.text(feedback.guest_name || 'N/A', 25, yPosition)
+            pdf.text(feedback.guest?.full_name || 'N/A', 25, yPosition)
             pdf.text(String(feedback.rating || 0), 80, yPosition)
-            pdf.text(feedback.category || 'N/A', 100, yPosition)
+            pdf.text(feedback.stay?.room?.category || feedback.category || 'N/A', 100, yPosition)
             pdf.text(new Date(feedback.created_at).toLocaleDateString(), 140, yPosition)
-            pdf.text(feedback.comment?.substring(0, 30) + '...' || '', 160, yPosition)
+            pdf.text(feedback.note?.substring(0, 30) + '...' || '', 160, yPosition)
             yPosition += 7
           })
         }

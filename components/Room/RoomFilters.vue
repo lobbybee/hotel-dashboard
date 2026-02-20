@@ -4,7 +4,7 @@
             <h2 class="text-xl font-bold text-gray-900">Floor Plan</h2>
             <div class="flex flex-col sm:flex-row gap-4">
                 <div class="relative">
-                    <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <!-- <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i> -->
                     <InputText
                         v-model="localRoomSearch"
                         placeholder="Search rooms..."

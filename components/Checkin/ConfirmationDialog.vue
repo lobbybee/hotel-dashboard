@@ -109,7 +109,7 @@
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">Total Amount</label>
-            <p><strong>${{ stay.booking_details?.total_amount || 0 }}</strong></p>
+            <p><strong>₹{{ stay.booking_details?.total_amount || 0 }}</strong></p>
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">Via WhatsApp</label>
