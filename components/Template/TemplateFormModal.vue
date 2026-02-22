@@ -2,7 +2,7 @@
   <Dialog 
     :visible="visible" 
     @update:visible="emit('update:visible', $event)"
-    header="Create Custom Template" 
+    :header="currentEditingTemplate ? 'Edit Custom Template' : 'Create Custom Template'"
     :style="{ width: '90vw', maxWidth: '80rem' }"
     :modal="true"
     :dismissableMask="true"
@@ -19,6 +19,7 @@
             :options="availableGlobalTemplates"
             optionLabel="name"
             optionValue="id"
+            optionDisabled="disabled"
             placeholder="Select a template to customize"
             class="w-full"
             :class="{ 'p-invalid': !selectedGlobalTemplate }"
@@ -69,17 +70,17 @@
           <label>Media (Optional)</label>
           
           <!-- Existing Media Preview -->
-          <div v-if="editingTemplate?.media_url && !formData.media_file" class="mb-3">
+          <div v-if="currentEditingTemplate?.media_url && !formData.media_file" class="mb-3">
             <div class="relative">
               <img 
-                v-if="isImage(editingTemplate.media_url)"
-                :src="editingTemplate.media_url" 
+                v-if="isImage(currentEditingTemplate.media_url)"
+                :src="currentEditingTemplate.media_url" 
                 alt="Current media" 
                 class="w-full h-32 object-cover rounded border border-gray-200"
               />
               <video 
-                v-else-if="isVideo(editingTemplate.media_url)"
-                :src="editingTemplate.media_url" 
+                v-else-if="isVideo(currentEditingTemplate.media_url)"
+                :src="currentEditingTemplate.media_url" 
                 controls
                 class="w-full h-32 rounded border border-gray-200"
               />
@@ -116,7 +117,7 @@
           <TemplatePreview 
             :content="formData.text_content || 'Select a template to see preview'"
             :media="formData.media_file"
-            :media-url="editingTemplate?.media_url"
+            :media-url="currentEditingTemplate?.media_url"
             :variables="extractedTemplateVars"
             :template-variables="computedTemplateVariables"
             :is-loading="isVariablesLoading.value"
@@ -133,7 +134,7 @@
         class="p-button-text"
       />
       <Button 
-        label="Save Template" 
+        :label="currentEditingTemplate ? 'Update Template' : 'Save Template'" 
         icon="pi pi-check"
         @click="saveTemplate" 
         :loading="isSaving"
@@ -144,9 +145,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, watchEffect } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import { useConfirm } from 'primevue/useconfirm'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
@@ -159,8 +159,8 @@ import {
   useFetchGlobalTemplates, 
   useFetchCustomTemplates,
   useCreateCustomTemplate,
+  usePartialUpdateCustomTemplate,
   useFetchTemplateVariables,
-  type GlobalMessageTemplate,
   type CustomMessageTemplate 
 } from '~/composables/useMessageTemplate'
 import { useAPIHelper } from '~/composables/useAPIHelper'
@@ -186,6 +186,7 @@ const { getErrorMessage } = useAPIHelper()
 const { globalTemplates } = useFetchGlobalTemplates()
 const { refetch: refetchCustom } = useFetchCustomTemplates()
 const { createCustomTemplate } = useCreateCustomTemplate()
+const { partialUpdateCustomTemplate } = usePartialUpdateCustomTemplate()
 const { templateVariables, isLoading: isVariablesLoading } = useFetchTemplateVariables()
 
 
@@ -193,6 +194,8 @@ const { templateVariables, isLoading: isVariablesLoading } = useFetchTemplateVar
 const selectedGlobalTemplate = ref<number | null>(null)
 const isSaving = ref(false)
 const extractedTemplateVars = ref<string[]>([])
+const skipNextAutoFillFromGlobalTemplate = ref(false)
+const currentEditingTemplate = ref<CustomMessageTemplate | null>(null)
 
 const formData = ref({
   name: '',
@@ -204,8 +207,23 @@ const formData = ref({
 
 // Computed
 const availableGlobalTemplates = computed(() => {
-  // Only show templates that are customizable
-  return globalTemplates.value.filter(t => t.is_customizable)
+  // Show customizable global templates and disable those that already have deactivated custom templates.
+  return globalTemplates.value
+    .filter(t => t.is_customizable)
+    .map((globalTemplate) => {
+      const existingCustomTemplate = (props.existingTemplates || []).find(
+        (customTemplate: any) => customTemplate.base_template === globalTemplate.id
+      )
+
+      const isCurrentTemplate =
+        !!currentEditingTemplate.value &&
+        (currentEditingTemplate.value as any).base_template === globalTemplate.id
+
+      return {
+        ...globalTemplate,
+        disabled: !!existingCustomTemplate && !existingCustomTemplate.is_active && !isCurrentTemplate
+      }
+    })
 })
 
 const availableVariables = computed(() => {
@@ -222,6 +240,9 @@ const computedTemplateVariables = computed(() => {
 // Watch for editing template changes
 watch(() => props.editingTemplate, (template) => {
   if (template) {
+    // Prevent edit hydration from being overwritten by the global-template watcher.
+    skipNextAutoFillFromGlobalTemplate.value = true
+    currentEditingTemplate.value = template
     formData.value = {
       name: template.name,
       text_content: template.text_content,
@@ -236,6 +257,10 @@ watch(() => props.editingTemplate, (template) => {
 
 // Watch for global template selection changes
 watch(selectedGlobalTemplate, (templateId) => {
+  if (skipNextAutoFillFromGlobalTemplate.value) {
+    skipNextAutoFillFromGlobalTemplate.value = false
+    return
+  }
   if (templateId) {
     onGlobalTemplateSelect(templateId)
   }
@@ -254,6 +279,7 @@ watch(() => props.visible, (newValue) => {
 
 // Methods
 const resetForm = () => {
+  currentEditingTemplate.value = null
   formData.value = {
     name: '',
     text_content: '',
@@ -266,6 +292,26 @@ const resetForm = () => {
 }
 
 const onGlobalTemplateSelect = (templateId: number) => {
+  const existingCustomTemplate = (props.existingTemplates || []).find(
+    (template: any) => template.base_template === templateId
+  ) as CustomMessageTemplate | undefined
+
+  // If a custom template already exists for this base template, always load it.
+  // This keeps create/edit in the same flow and avoids duplicate custom templates.
+  if (existingCustomTemplate) {
+    currentEditingTemplate.value = existingCustomTemplate
+    formData.value = {
+      name: existingCustomTemplate.name,
+      text_content: existingCustomTemplate.text_content,
+      media_file: null,
+      is_active: existingCustomTemplate.is_active,
+      base_template: (existingCustomTemplate as any).base_template || templateId
+    }
+    extractVariables()
+    return
+  }
+
+  currentEditingTemplate.value = null
   const template = globalTemplates.value.find(t => t.id === templateId)
   if (template) {
     // Auto-generate name with conflict resolution
@@ -346,8 +392,8 @@ const isVideo = (url: string) => {
 }
 
 const removeExistingMedia = () => {
-  if (editingTemplate.value) {
-    editingTemplate.value.media_url = undefined
+  if (currentEditingTemplate.value) {
+    currentEditingTemplate.value.media_url = undefined
   }
 }
 
@@ -384,12 +430,19 @@ const saveTemplate = async () => {
       media_file: formData.value.media_file
     }
 
-    await createCustomTemplate(templateData)
+    if (currentEditingTemplate.value) {
+      await partialUpdateCustomTemplate({
+        id: currentEditingTemplate.value.id,
+        data: templateData
+      })
+    } else {
+      await createCustomTemplate(templateData)
+    }
     
     toast.add({
       severity: 'success',
       summary: 'Success',
-      detail: 'Template created successfully',
+      detail: currentEditingTemplate.value ? 'Template updated successfully' : 'Template created successfully',
       life: 3000
     })
     
