@@ -687,6 +687,7 @@ const handleConfirmCheckout = async () => {
 
   try {
     const checkoutPayload: any = {
+      amount_paid: checkoutData.value.final_charge,
       ...(checkoutData.value.internal_rating && { internal_rating: checkoutData.value.internal_rating }),
       ...(checkoutData.value.internal_note && { internal_note: checkoutData.value.internal_note })
     };
