@@ -443,7 +443,12 @@ const formatDecimal = (num: number) => {
 
 const formatDate = (dateString: string) => {
   if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString()
+  const d = new Date(dateString);
+  const day = d.getDate();
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const year = d.getFullYear();
+  const time = d.toLocaleString('en-US', { hour: 'numeric', hour12: true });
+  return `${day} ${month} ${year} ${time}`;
 }
 
 const calculateFulfillmentRate = () => {

@@ -444,7 +444,12 @@ const formatCurrency = (amount: number) => {
 }
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString()
+  const d = new Date(dateString);
+  const day = d.getDate();
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const year = d.getFullYear();
+  const time = d.toLocaleString('en-US', { hour: 'numeric', hour12: true });
+  return `${day} ${month} ${year} ${time}`;
 }
 
 const getCurrentDate = () => {

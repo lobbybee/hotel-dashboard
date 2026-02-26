@@ -162,7 +162,7 @@
 
             <div v-if="!stay.room">
                 <label for="checkout" class="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
-                <Calendar id="checkout" v-model="checkOutDate" class="w-full" showIcon />
+                <Calendar id="checkout" v-model="checkOutDate" class="w-full" showIcon showTime />
             </div>
 
             <div>

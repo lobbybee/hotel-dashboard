@@ -67,6 +67,7 @@
                     @update:modelValue="updateStay('check_out_date', $event)"
                     class="w-full"
                     showIcon
+                    showTime
                     :minDate="new Date()"
                 />
             </div>

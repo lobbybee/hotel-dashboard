@@ -55,13 +55,13 @@
             <div class="flex items-center gap-2 text-sm">
               <i class="pi pi-calendar text-gray-400"></i>
               <span class="text-gray-600">Check-in:</span>
-              <strong class="text-gray-900">{{ new Date(stay.check_in_date).toLocaleDateString() }}</strong>
+              <strong class="text-gray-900">{{ formatDateTime(stay.check_in_date) }}</strong>
             </div>
 
             <div class="flex items-center gap-2 text-sm">
               <i class="pi pi-calendar-times text-gray-400"></i>
               <span class="text-gray-600">Check-out:</span>
-              <strong class="text-gray-900">{{ new Date(stay.check_out_date).toLocaleDateString() }}</strong>
+              <strong class="text-gray-900">{{ formatDateTime(stay.check_out_date) }}</strong>
             </div>
 
             <div class="flex items-center gap-2 text-sm">
@@ -181,12 +181,12 @@
           <div class="flex items-center gap-2">
             <i class="pi pi-calendar text-gray-400"></i>
             <span class="text-gray-600">Check-in:</span>
-            <strong class="text-gray-900">{{ new Date(selectedStayForReject.check_in_date).toLocaleDateString() }}</strong>
+            <strong class="text-gray-900">{{ formatDateTime(selectedStayForReject.check_in_date) }}</strong>
           </div>
           <div class="flex items-center gap-2">
             <i class="pi pi-calendar-times text-gray-400"></i>
             <span class="text-gray-600">Check-out:</span>
-            <strong class="text-gray-900">{{ new Date(selectedStayForReject.check_out_date).toLocaleDateString() }}</strong>
+            <strong class="text-gray-900">{{ formatDateTime(selectedStayForReject.check_out_date) }}</strong>
           </div>
         </div>
       </div>
@@ -335,6 +335,16 @@ const handleInitiateWhatsappCheckin = async (stayId: number) => {
   } catch (err) {
     toast.add({ severity: 'error', summary: 'Initiation Failed', detail: 'Could not start the WhatsApp check-in process.', life: 5000 });
   }
+};
+
+// Helper function to format date with time e.g. "24 May 2026 5 PM"
+const formatDateTime = (dateString: string): string => {
+  const d = new Date(dateString);
+  const day = d.getDate();
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const year = d.getFullYear();
+  const time = d.toLocaleString('en-US', { hour: 'numeric', hour12: true });
+  return `${day} ${month} ${year} ${time}`;
 };
 
 // Helper function to format document type

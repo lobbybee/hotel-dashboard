@@ -182,6 +182,7 @@
               v-model="stayForm.check_out_date"
               class="w-full"
               showIcon
+              showTime
               dateFormat="dd-mm-yy"
               :minDate="new Date()"
             />
