@@ -140,11 +140,19 @@
         :dismissableMask="true"
     >
         <div class="space-y-6">
-            <!-- Room Number Prefix and Suffix -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Prefix / Suffix Toggle -->
+            <div class="flex items-center gap-2">
+                <Checkbox inputId="show_prefix_suffix" v-model="showPrefixSuffix" binary />
+                <label for="show_prefix_suffix" class="text-sm font-medium text-gray-700 cursor-pointer">
+                    Add prefix / suffix to room numbers
+                </label>
+            </div>
+
+            <!-- Room Number Prefix and Suffix (conditional) -->
+            <div v-if="showPrefixSuffix" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label for="room_prefix" class="block text-sm font-medium text-gray-700 mb-2">
-                        Room Number Prefix (Optional)
+                        Room Number Prefix
                     </label>
                     <InputText
                         id="room_prefix"
@@ -154,10 +162,10 @@
                     />
                     <small class="text-gray-500">Prefix added before room number</small>
                 </div>
-                
+
                 <div>
                     <label for="room_suffix" class="block text-sm font-medium text-gray-700 mb-2">
-                        Room Number Suffix (Optional)
+                        Room Number Suffix
                     </label>
                     <InputText
                         id="room_suffix"
@@ -168,7 +176,7 @@
                     <small class="text-gray-500">Suffix added after room number</small>
                 </div>
             </div>
-            
+
             <div class="text-center text-sm text-gray-600">
                 Example format: <span class="font-medium">{{ formatRoomPreview(bulkAddForm.startRoomNumber) }}</span>
             </div>
@@ -484,7 +492,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import Dialog from "primevue/dialog";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -579,6 +587,20 @@ const emit = defineEmits<{
     'close-bulk-delete-confirmation': [];
     'delete-selected-rooms': [];
 }>();
+
+// Prefix/suffix toggle — hidden by default, reset when dialog closes
+const showPrefixSuffix = ref(false);
+
+watch(showPrefixSuffix, (val) => {
+    if (!val) {
+        props.bulkAddForm.roomPrefix = '';
+        props.bulkAddForm.roomSuffix = '';
+    }
+});
+
+watch(() => props.bulkAddDialogVisible, (val) => {
+    if (!val) showPrefixSuffix.value = false;
+});
 
 // Generate floor options (Floor 1 to Floor 100 with values 1 to 100)
 const floorOptions = computed(() => {
