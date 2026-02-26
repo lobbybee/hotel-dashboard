@@ -281,6 +281,8 @@
           <div class="space-y-1 text-sm">
             <p><strong>Guest:</strong> {{ selectedStayForCheckout.guest.full_name }}</p>
             <p><strong>Room:</strong> {{ selectedStayForCheckout.room_details.room_number }}</p>
+            <p><strong>Check-in:</strong> {{ formatDate(selectedStayForCheckout.check_in_date) }}</p>
+            <p><strong>Check-out:</strong> {{ formatDate(selectedStayForCheckout.check_out_date) }}</p>
             <p><strong>Duration:</strong> {{ getDaysStayed(selectedStayForCheckout) }} night(s)</p>
           </div>
         </div>

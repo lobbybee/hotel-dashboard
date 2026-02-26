@@ -105,7 +105,7 @@
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">Booking Date</label>
-            <p><strong>{{ new Date(stay.booking_details?.booking_date).toLocaleDateString() }}</strong></p>
+            <p><strong>{{ formatDateTime(stay.booking_details?.booking_date) }}</strong></p>
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">Total Amount</label>
@@ -290,6 +290,16 @@ const rooms = computed(() => {
     }
     return availableRooms;
 });
+
+const formatDateTime = (dateString: string) => {
+  if (!dateString) return 'N/A';
+  const d = new Date(dateString);
+  const day = d.getDate();
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const year = d.getFullYear();
+  const time = d.toLocaleString('en-US', { hour: 'numeric', hour12: true });
+  return `${day} ${month} ${year} ${time}`;
+};
 
 const formatDocumentType = (type: string) => {
     if (!type) return '';
