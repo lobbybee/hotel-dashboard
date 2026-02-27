@@ -24,12 +24,17 @@ export interface Hotel {
     pincode?: string;
     phone?: string;
     email?: string;
+    wifi_password?: string;
     google_review_link?: string;
+    google_map_link?: string;
     latitude?: string;
     longitude?: string;
     qr_code_url?: string;
     unique_qr_code?: string;
     check_in_time?: string;
+    breakfast_time?: string;
+    lunch_time?: string;
+    dinner_time?: string;
     time_zone?: string;
     breakfast_reminder?: boolean;
     dinner_reminder?: boolean;

@@ -140,6 +140,19 @@
         />
         <small v-if="errors.google_review_link" class="text-red-500 text-sm mt-1 block">{{ errors.google_review_link }}</small>
       </div>
+
+      <!-- Google Map Link - Full Width -->
+      <div>
+        <label for="google_map_link" class="block text-sm font-medium text-gray-700 mb-2">Google Map Link</label>
+        <InputText
+          id="google_map_link"
+          v-model="hotelForm.google_map_link"
+          class="w-full"
+          :class="{'p-invalid': errors.google_map_link}"
+          placeholder="Enter Google map link (e.g., https://maps.google.com/?q=your-hotel-location)"
+        />
+        <small v-if="errors.google_map_link" class="text-red-500 text-sm mt-1 block">{{ errors.google_map_link }}</small>
+      </div>
     </div>
   </div>
 </template>

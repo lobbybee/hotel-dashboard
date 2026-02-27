@@ -13,11 +13,56 @@
           v-model="timeValue"
           time-only
           hour-format="24"
+          stepMinute="15"
           class="w-full"
           :class="{'p-invalid': errors.check_in_time}"
-          @update:model-value="onTimeChange"
         />
         <small v-if="errors.check_in_time" class="text-red-500 text-sm mt-1 block">{{ errors.check_in_time }}</small>
+      </div>
+
+      <!-- Breakfast Time -->
+      <div>
+        <label for="breakfast_time" class="block text-sm font-medium text-gray-700 mb-2">Breakfast Time</label>
+        <DatePicker
+          id="breakfast_time"
+          v-model="breakfastTimeValue"
+          time-only
+          hour-format="24"
+          stepMinute="15"
+          class="w-full"
+          :class="{'p-invalid': errors.breakfast_time}"
+        />
+        <small v-if="errors.breakfast_time" class="text-red-500 text-sm mt-1 block">{{ errors.breakfast_time }}</small>
+      </div>
+
+      <!-- Lunch Time -->
+      <div>
+        <label for="lunch_time" class="block text-sm font-medium text-gray-700 mb-2">Lunch Time</label>
+        <DatePicker
+          id="lunch_time"
+          v-model="lunchTimeValue"
+          time-only
+          hour-format="24"
+          stepMinute="15"
+          class="w-full"
+          :class="{'p-invalid': errors.lunch_time}"
+        />
+        <small v-if="errors.lunch_time" class="text-red-500 text-sm mt-1 block">{{ errors.lunch_time }}</small>
+      </div>
+
+      <!-- Dinner Time -->
+      <div>
+        <label for="dinner_time" class="block text-sm font-medium text-gray-700 mb-2">Dinner Time</label>
+        <DatePicker
+          id="dinner_time"
+          v-model="dinnerTimeValue"
+          time-only
+          hour-format="24"
+          stepMinute="15"
+          class="w-full"
+          :class="{'p-invalid': errors.dinner_time}"
+        />
+        <small v-if="errors.dinner_time" class="text-red-500 text-sm mt-1 block">{{ errors.dinner_time }}</small>
       </div>
 
       <!-- Timezone -->
@@ -86,6 +131,19 @@ const props = defineProps({
 // Define emits
 const emit = defineEmits(['update:hotelForm', 'save']);
 
+// Helper function to convert string time to Date object
+const stringToDate = (timeStr: string | undefined): Date | null => {
+  if (!timeStr) return null;
+  // Type assertion: after the null check, timeStr is guaranteed to be a string
+  const timeStrTyped = timeStr as string;
+  const timeParts = timeStrTyped.split(':');
+  const hours = parseInt((timeParts[0] as string), 10);
+  const minutes = parseInt((timeParts[1] as string), 10);
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+};
+
 // Computed property to convert string time to Date object for DatePicker
 const timeValue = computed({
   get: () => {
@@ -104,7 +162,55 @@ const timeValue = computed({
       const minutes = value.getMinutes().toString().padStart(2, '0');
       const updatedForm = {
         ...props.hotelForm,
-        check_in_time: `${hours}:${minutes}`
+        check_in_time: `${hours}:${minutes}:00`
+      };
+      emit('update:hotelForm', updatedForm);
+    }
+  }
+});
+
+// Computed property for breakfast time
+const breakfastTimeValue = computed({
+  get: () => stringToDate(props.hotelForm.breakfast_time),
+  set: (value) => {
+    if (value instanceof Date) {
+      const hours = value.getHours().toString().padStart(2, '0');
+      const minutes = value.getMinutes().toString().padStart(2, '0');
+      const updatedForm = {
+        ...props.hotelForm,
+        breakfast_time: `${hours}:${minutes}:00`
+      };
+      emit('update:hotelForm', updatedForm);
+    }
+  }
+});
+
+// Computed property for lunch time
+const lunchTimeValue = computed({
+  get: () => stringToDate(props.hotelForm.lunch_time),
+  set: (value) => {
+    if (value instanceof Date) {
+      const hours = value.getHours().toString().padStart(2, '0');
+      const minutes = value.getMinutes().toString().padStart(2, '0');
+      const updatedForm = {
+        ...props.hotelForm,
+        lunch_time: `${hours}:${minutes}:00`
+      };
+      emit('update:hotelForm', updatedForm);
+    }
+  }
+});
+
+// Computed property for dinner time
+const dinnerTimeValue = computed({
+  get: () => stringToDate(props.hotelForm.dinner_time),
+  set: (value) => {
+    if (value instanceof Date) {
+      const hours = value.getHours().toString().padStart(2, '0');
+      const minutes = value.getMinutes().toString().padStart(2, '0');
+      const updatedForm = {
+        ...props.hotelForm,
+        dinner_time: `${hours}:${minutes}:00`
       };
       emit('update:hotelForm', updatedForm);
     }
@@ -150,21 +256,10 @@ const timezones = [
   { label: 'Sydney', value: 'Australia/Sydney' }
 ];
 
-// Handle time change
-const onTimeChange = (value) => {
-  if (value instanceof Date) {
-    const hours = value.getHours().toString().padStart(2, '0');
-    const minutes = value.getMinutes().toString().padStart(2, '0');
-    const updatedForm = {
-      ...props.hotelForm,
-      check_in_time: `${hours}:${minutes}`
-    };
-    emit('update:hotelForm', updatedForm);
-  }
-};
+
 
 // Handle timezone change
-const onTimezoneChange = (value) => {
+const onTimezoneChange = (value: string) => {
   const updatedForm = {
     ...props.hotelForm,
     time_zone: value
@@ -172,8 +267,10 @@ const onTimezoneChange = (value) => {
   emit('update:hotelForm', updatedForm);
 };
 
+
+
 // Handle breakfast reminder change
-const onBreakfastReminderChange = (value) => {
+const onBreakfastReminderChange = (value: boolean) => {
   const updatedForm = {
     ...props.hotelForm,
     breakfast_reminder: value
@@ -182,7 +279,7 @@ const onBreakfastReminderChange = (value) => {
 };
 
 // Handle dinner reminder change
-const onDinnerReminderChange = (value) => {
+const onDinnerReminderChange = (value: boolean) => {
   const updatedForm = {
     ...props.hotelForm,
     dinner_reminder: value

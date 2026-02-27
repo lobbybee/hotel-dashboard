@@ -119,6 +119,10 @@ const hotelForm = ref({
   time_zone: 'UTC',
   wifi_password: '',
   google_review_link: '',
+  google_map_link: '',
+  breakfast_time: '',
+  lunch_time: '',
+  dinner_time: '',
   breakfast_reminder: true,
   dinner_reminder: true
 });
@@ -153,6 +157,10 @@ watch(hotel, (newHotelData) => {
       time_zone: newHotelData.time_zone || 'UTC',
       wifi_password: newHotelData.wifi_password || '',
       google_review_link: newHotelData.google_review_link || '',
+      google_map_link: newHotelData.google_map_link || '',
+      breakfast_time: newHotelData.breakfast_time || '',
+      lunch_time: newHotelData.lunch_time || '',
+      dinner_time: newHotelData.dinner_time || '',
       breakfast_reminder: newHotelData.breakfast_reminder ?? true,
       dinner_reminder: newHotelData.dinner_reminder ?? true
     };

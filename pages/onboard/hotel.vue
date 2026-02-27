@@ -136,6 +136,14 @@
             <div class="absolute left-4 top-3.5 text-gray-400"><i class="pi pi-google"></i></div>
           </div>
         </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Google Map Link</label>
+          <div class="relative">
+            <input v-model="hotelForm.google_map_link" type="url" class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="https://maps.google.com/?q=your-hotel-location" />
+            <div class="absolute left-4 top-3.5 text-gray-400"><i class="pi pi-map"></i></div>
+          </div>
+        </div>
       </div>
     </template>
 
@@ -198,7 +206,7 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Check-in Time *</label>
           <div class="relative">
-            <input v-model="hotelForm.check_in_time" type="time" class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :class="{ 'border-red-500': errors.check_in_time }" />
+            <input v-model="hotelForm.check_in_time" type="time" step="900" class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :class="{ 'border-red-500': errors.check_in_time }" />
             <div class="absolute left-4 top-3.5 text-gray-400"><i class="pi pi-clock"></i></div>
           </div>
           <span v-if="errors.check_in_time" class="text-red-500 text-sm mt-1 block">{{ errors.check_in_time }}</span>
@@ -216,6 +224,33 @@
             <option value="Asia/Tokyo">Tokyo</option>
           </select>
           <span v-if="errors.time_zone" class="text-red-500 text-sm mt-1 block">{{ errors.time_zone }}</span>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Breakfast Time</label>
+          <div class="relative">
+            <input v-model="hotelForm.breakfast_time" type="time" step="900" class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :class="{ 'border-red-500': errors.breakfast_time }" />
+            <div class="absolute left-4 top-3.5 text-gray-400"><i class="pi pi-clock"></i></div>
+          </div>
+          <span v-if="errors.breakfast_time" class="text-red-500 text-sm mt-1 block">{{ errors.breakfast_time }}</span>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Lunch Time</label>
+          <div class="relative">
+            <input v-model="hotelForm.lunch_time" type="time" step="900" class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :class="{ 'border-red-500': errors.lunch_time }" />
+            <div class="absolute left-4 top-3.5 text-gray-400"><i class="pi pi-clock"></i></div>
+          </div>
+          <span v-if="errors.lunch_time" class="text-red-500 text-sm mt-1 block">{{ errors.lunch_time }}</span>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Dinner Time</label>
+          <div class="relative">
+            <input v-model="hotelForm.dinner_time" type="time" step="900" class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :class="{ 'border-red-500': errors.dinner_time }" />
+            <div class="absolute left-4 top-3.5 text-gray-400"><i class="pi pi-clock"></i></div>
+          </div>
+          <span v-if="errors.dinner_time" class="text-red-500 text-sm mt-1 block">{{ errors.dinner_time }}</span>
         </div>
       </div>
     </template>
@@ -370,7 +405,8 @@ const hotelFormSchema = HotelSchema;
 
 const hotelForm = ref({
   name: '', description: '', address: '', city: '', state: '', country: '', pincode: '',
-  phone: '', email: '', check_in_time: '14:00', time_zone: 'Asia/Kolkata', google_review_link: ''
+  phone: '', email: '', check_in_time: '14:00', time_zone: 'Asia/Kolkata', google_review_link: '',
+  google_map_link: '', breakfast_time: '', lunch_time: '', dinner_time: ''
 })
 
 const errors = ref<Record<string, string>>({})
@@ -432,7 +468,17 @@ const confirmAndSave = async () => {
   try {
     const { mutate: updateHotelProfile } = usePatchHotel()
     if (!hotelId.value) throw new Error("Hotel ID is missing");
-    await updateHotelProfile({ id: hotelId.value, ...result.data })
+    
+    // Convert time format from hh:mm to hh:mm:ss for API
+    const dataToSend = {
+      ...result.data,
+      check_in_time: result.data.check_in_time ? `${result.data.check_in_time}:00` : result.data.check_in_time,
+      breakfast_time: result.data.breakfast_time ? `${result.data.breakfast_time}:00` : result.data.breakfast_time,
+      lunch_time: result.data.lunch_time ? `${result.data.lunch_time}:00` : result.data.lunch_time,
+      dinner_time: result.data.dinner_time ? `${result.data.dinner_time}:00` : result.data.dinner_time,
+    }
+    
+    await updateHotelProfile({ id: hotelId.value, ...dataToSend })
     toast.add({ severity: 'success', summary: 'Success', detail: 'Hotel profile saved!', life: 3000 })
 
     showConfirmation.value = false
@@ -469,7 +515,11 @@ watch(hotel, (data) => {
         state: data.state || '', country: data.country || '',
         pincode: data.pincode || '', phone: data.phone || '',
         email: data.email || '', check_in_time: checkInTime,
-        time_zone: data.time_zone || 'Asia/Kolkata', google_review_link: data.google_review_link || ''
+        time_zone: data.time_zone || 'Asia/Kolkata', google_review_link: data.google_review_link || '',
+        google_map_link: data.google_map_link || '', 
+        breakfast_time: data.breakfast_time ? data.breakfast_time.substring(0, 5) : '',
+        lunch_time: data.lunch_time ? data.lunch_time.substring(0, 5) : '',
+        dinner_time: data.dinner_time ? data.dinner_time.substring(0, 5) : ''
       }
       formInitialized.value = true
     }
