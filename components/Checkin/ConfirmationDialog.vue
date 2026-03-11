@@ -384,10 +384,7 @@ const confirmAndCheckin = () => {
     if (guestEdits.value.notes !== props.stay?.guest?.notes) {
       guestUpdates.notes = guestEdits.value.notes;
     }
-    // Always check these fields since they're always editable
-    if (guestEdits.value.hours_24 !== props.stay?.guest?.hours_24) {
-      guestUpdates.hours_24 = guestEdits.value.hours_24;
-    }
+    // Keep reminder preferences sync'd when changed in dialog
     if (guestEdits.value.breakfast_reminder !== props.stay?.guest?.breakfast_reminder) {
       guestUpdates.breakfast_reminder = guestEdits.value.breakfast_reminder;
     }
@@ -399,6 +396,12 @@ const confirmAndCheckin = () => {
       verifyData.guest_updates = guestUpdates;
     }
   }
+
+  // Always send 24-hour preference, even when guest edit mode is off.
+  verifyData.guest_updates = {
+    ...(verifyData.guest_updates || {}),
+    hours_24: guestEdits.value.hours_24
+  };
 
   console.log('Emitting confirmed with unified data:', verifyData);
   emit('confirmed', verifyData);

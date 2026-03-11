@@ -36,6 +36,7 @@
                     optionValue="value"
                     placeholder="All Floors"
                     class="w-full"
+                    :loading="isFloorsLoading"
                     showClear
                 />
             </div>
@@ -227,11 +228,16 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Floor</label>
-                            <InputNumber
+                            <Dropdown
                                 v-model="form.floor"
-                                placeholder="Floor number"
-                                :min="1"
+                                :options="floorOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Select floor"
                                 class="w-full"
+                                :loading="isFloorsLoading"
+                                :disabled="isFloorsLoading"
+                                showClear
                             />
                         </div>
 
@@ -309,7 +315,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useDebounceFn } from '@vueuse/core';
 
@@ -326,10 +332,10 @@ import {
     useCreateWifiCredential,
     useUpdateWifiCredential,
     useDeleteWifiCredential,
-    useToggleWifiCredentialActive,
-    useFetchAvailableFloors
+    useToggleWifiCredentialActive
 } from '~/composables/useWifiCredentials';
 import { useAPIHelper } from '~/composables/useAPIHelper';
+import { useFetchHotelRoomFloors } from '~/composables/useHotel';
 
 // Import validation schema
 import { WifiCredentialSchema } from '~/utils/schemas/room';
@@ -339,7 +345,6 @@ import { WifiCredentialSchema } from '~/utils/schemas/room';
 // Import PrimeVue components
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
-import InputNumber from 'primevue/inputnumber';
 import Dropdown from 'primevue/dropdown';
 import Checkbox from 'primevue/checkbox';
 import Tag from 'primevue/tag';
@@ -408,6 +413,11 @@ const isDeletingAPI = deleteWifiCredentialResult.isLoading;
 const toggleActiveResult = useToggleWifiCredentialActive();
 const toggleActive = toggleActiveResult.toggleActive;
 const isToggling = toggleActiveResult.isLoading;
+const {
+    data: floorsData,
+    isLoading: floorsLoading,
+    asyncStatus: floorsAsyncStatus
+} = useFetchHotelRoomFloors();
 
 // Form
 const form = reactive<WifiCredentialCreateData & { id?: number }>({
@@ -422,11 +432,16 @@ const errors = ref<Record<string, string>>({});
 
 // Options
 const floorOptions = computed(() => {
-    const floors = Array.from({ length: 20 }, (_, i) => i + 1); // 1-20 floors
+    const floors = (floorsData.value || []) as number[];
     return floors.map(floor => ({
         label: `Floor ${floor}`,
         value: floor
     }));
+});
+
+const isFloorsLoading = computed(() => {
+    const status = floorsAsyncStatus?.value;
+    return floorsLoading.value || status === 'loading' || status === 'pending';
 });
 
 const categoryOptions = computed(() => {
