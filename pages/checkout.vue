@@ -7,7 +7,7 @@
 
     <div class="mb-6">
       <span class="p-input-icon-left w-full">
-     
+
         <InputText
           v-model="searchQuery"
           placeholder="Search by guest name or room number..."
@@ -96,6 +96,12 @@
             <i class="pi pi-clock text-blue-600"></i>
             <span class="font-medium text-blue-600">{{ getDaysStayed(stay) }} night(s)</span>
           </div>
+          <p
+            v-if="isCheckoutTimePassed(stay.check_out_date)"
+            class="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-2 py-1"
+          >
+            Checkout time is in the past. You can extend the stay or proceed with checkout.
+          </p>
         </div>
 
         <Button
@@ -253,6 +259,12 @@
                   />
                 </div>
               </div>
+              <p
+                v-if="isCheckoutTimePassed(selectedStayForGuestInfo.check_out_date)"
+                class="mt-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-2 py-1"
+              >
+                Checkout time is in the past. You can extend the stay or proceed with checkout.
+              </p>
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-500 mb-1">Duration</label>
@@ -282,9 +294,59 @@
             <p><strong>Guest:</strong> {{ selectedStayForCheckout.guest.full_name }}</p>
             <p><strong>Room:</strong> {{ selectedStayForCheckout.room_details.room_number }}</p>
             <p><strong>Check-in:</strong> {{ formatDate(selectedStayForCheckout.check_in_date) }}</p>
-            <p><strong>Check-out:</strong> {{ formatDate(selectedStayForCheckout.check_out_date) }}</p>
+            <div class="flex items-center gap-2">
+              <p v-if="!isEditingCheckoutDateInCheckoutModal" class="m-0">
+                <strong>Check-out:</strong> {{ formatDate(selectedStayForCheckout.check_out_date) }}
+              </p>
+              <div v-else class="flex-1 min-w-0">
+                <Calendar
+                  v-model="editedCheckoutDateInCheckoutModal"
+                  showTime
+                  hourFormat="24"
+                  dateFormat="dd/mm/yy"
+                  class="w-full"
+                />
+              </div>
+              <Button
+                v-if="!isEditingCheckoutDateInCheckoutModal"
+                icon="pi pi-sign-out"
+                size="small"
+                rounded
+                severity="primary"
+                @click="startEditingCheckoutDateInCheckoutModal"
+                v-tooltip="'Extend checkout date'"
+              />
+              <div v-else class="flex items-center gap-1">
+                <Button
+                  icon="pi pi-check"
+                  size="small"
+                  text
+                  rounded
+                  severity="success"
+                  @click="saveCheckoutDateFromCheckoutModal"
+                  :loading="isExtendingStay"
+                  v-tooltip="'Save new checkout date'"
+                />
+                <Button
+                  icon="pi pi-times"
+                  size="small"
+                  text
+                  rounded
+                  severity="danger"
+                  @click="cancelEditingCheckoutDateInCheckoutModal"
+                  v-tooltip="'Cancel edit'"
+                />
+              </div>
+            </div>
+
             <p><strong>Duration:</strong> {{ getDaysStayed(selectedStayForCheckout) }} night(s)</p>
           </div>
+          <p
+                       v-if="isCheckoutTimePassed(selectedStayForCheckout.check_out_date)"
+                       class="mt-2 max-w-xs text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-2 py-1"
+                     >
+                       Checkout time is in the past. You can extend the stay or proceed with checkout.
+                     </p>
         </div>
 
         <!-- Billing Information -->
@@ -463,7 +525,9 @@ const checkoutData = ref({
 const isGuestInfoDialogVisible = ref(false);
 const selectedStayForGuestInfo = ref<any>(null);
 const isEditingCheckoutDate = ref(false);
-const editedCheckoutDate = ref('');
+const editedCheckoutDate = ref<Date | null>(null);
+const isEditingCheckoutDateInCheckoutModal = ref(false);
+const editedCheckoutDateInCheckoutModal = ref<Date | null>(null);
 const { extendGuestStay, isLoading: isExtendingStay } = useExtendGuestStay();
 
 const handleCheckout = (stay: any) => {
@@ -474,6 +538,8 @@ const handleCheckout = (stay: any) => {
     flag_user: false,
     final_charge: stay.billing?.current_bill || 0
   };
+  isEditingCheckoutDateInCheckoutModal.value = false;
+  editedCheckoutDateInCheckoutModal.value = null;
   isCheckoutDialogVisible.value = true;
 };
 
@@ -489,7 +555,7 @@ const startEditingCheckoutDate = () => {
 
 const cancelEditingCheckoutDate = () => {
   isEditingCheckoutDate.value = false;
-  editedCheckoutDate.value = '';
+  editedCheckoutDate.value = null;
 };
 
 const saveCheckoutDate = async () => {
@@ -523,7 +589,7 @@ const saveCheckoutDate = async () => {
     });
 
     isEditingCheckoutDate.value = false;
-    editedCheckoutDate.value = '';
+    editedCheckoutDate.value = null;
 
   } catch (err: any) {
     const errorMessage = getErrorMessage(err);
@@ -536,9 +602,55 @@ const saveCheckoutDate = async () => {
   }
 };
 
-const handleExtendStay = () => {
-  // This function can still be used for the original extend button if needed
-  // or can be removed since we now have inline editing
+const startEditingCheckoutDateInCheckoutModal = () => {
+  if (!selectedStayForCheckout.value) return;
+  isEditingCheckoutDateInCheckoutModal.value = true;
+  editedCheckoutDateInCheckoutModal.value = new Date(selectedStayForCheckout.value.check_out_date);
+};
+
+const cancelEditingCheckoutDateInCheckoutModal = () => {
+  isEditingCheckoutDateInCheckoutModal.value = false;
+  editedCheckoutDateInCheckoutModal.value = null;
+};
+
+const saveCheckoutDateFromCheckoutModal = async () => {
+  if (!selectedStayForCheckout.value || !editedCheckoutDateInCheckoutModal.value) return;
+
+  try {
+    const newCheckoutDate = new Date(editedCheckoutDateInCheckoutModal.value).toISOString();
+
+    await extendGuestStay({
+      stayId: selectedStayForCheckout.value.id,
+      checkOutDate: newCheckoutDate
+    });
+
+    selectedStayForCheckout.value.check_out_date = newCheckoutDate;
+
+    const stayIndex = (checkedInUsers.value || []).findIndex(
+      stay => stay.id === selectedStayForCheckout.value.id
+    );
+    if (stayIndex !== -1) {
+      checkedInUsers.value[stayIndex].check_out_date = newCheckoutDate;
+    }
+
+    toast.add({
+      severity: 'success',
+      summary: 'Stay Extended',
+      detail: `Checkout date extended to ${formatDate(newCheckoutDate)}`,
+      life: 4000
+    });
+
+    isEditingCheckoutDateInCheckoutModal.value = false;
+    editedCheckoutDateInCheckoutModal.value = null;
+  } catch (err: any) {
+    const errorMessage = getErrorMessage(err);
+    toast.add({
+      severity: 'error',
+      summary: 'Extension Failed',
+      detail: errorMessage,
+      life: 5000
+    });
+  }
 };
 
 const printCheckoutSummary = () => {
@@ -735,6 +847,10 @@ const getDaysStayed = (stay: any) => {
   const diff = checkOut.getTime() - checkIn.getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
+
+const isCheckoutTimePassed = (checkoutDate: string) => {
+  return new Date(checkoutDate).getTime() < Date.now();
+};
 
 const formatDocumentType = (type: string) => {
   if (!type) return '';
