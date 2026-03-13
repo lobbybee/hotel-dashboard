@@ -12,7 +12,7 @@
           id="check_in_time"
           v-model="timeValue"
           time-only
-          hour-format="24"
+          hour-format="12"
           stepMinute="15"
           class="w-full"
           :class="{'p-invalid': errors.check_in_time}"
@@ -27,7 +27,7 @@
           id="breakfast_time"
           v-model="breakfastTimeValue"
           time-only
-          hour-format="24"
+          hour-format="12"
           stepMinute="15"
           class="w-full"
           :class="{'p-invalid': errors.breakfast_time}"
@@ -42,7 +42,7 @@
           id="lunch_time"
           v-model="lunchTimeValue"
           time-only
-          hour-format="24"
+          hour-format="12"
           stepMinute="15"
           class="w-full"
           :class="{'p-invalid': errors.lunch_time}"
@@ -57,7 +57,7 @@
           id="dinner_time"
           v-model="dinnerTimeValue"
           time-only
-          hour-format="24"
+          hour-format="12"
           stepMinute="15"
           class="w-full"
           :class="{'p-invalid': errors.dinner_time}"

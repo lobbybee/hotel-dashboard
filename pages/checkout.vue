@@ -74,13 +74,6 @@
             </span>
             <span class="font-medium text-gray-900">{{ stay.guest.whatsapp_number || 'N/A' }}</span>
           </div>
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-gray-600 flex items-center gap-2">
-              <i class="pi pi-clock"></i>
-              Billing Cycle
-            </span>
-            <Badge value="12 Hour" severity="secondary" />
-          </div>
         </div>
 
         <div class="space-y-2 mb-4">
@@ -223,7 +216,7 @@
                   v-else
                   v-model="editedCheckoutDate"
                   showTime
-                  hourFormat="24"
+                  hourFormat="12"
                   dateFormat="dd/mm/yy"
                   class="flex-1"
                 />
@@ -302,7 +295,7 @@
                 <Calendar
                   v-model="editedCheckoutDateInCheckoutModal"
                   showTime
-                  hourFormat="24"
+                  hourFormat="12"
                   dateFormat="dd/mm/yy"
                   class="w-full"
                 />
@@ -356,10 +349,6 @@
             Billing Summary
           </h4>
           <div class="space-y-3 text-sm">
-            <div class="flex justify-between">
-              <span class="text-gray-600">Billing Cycle:</span>
-              <Badge value="12 Hour" severity="secondary" />
-            </div>
             <div>
               <label for="final_charge" class="block text-sm font-medium text-gray-700 mb-2">
                 Final Charge
@@ -730,9 +719,6 @@ const printCheckoutSummary = () => {
 
     // Bill items
     pdf.text(`${selectedStayForCheckout.value.room_details.category} Room - ${selectedStayForCheckout.value.room_details.room_number}`, 20, yPosition);
-    yPosition += 7;
-    pdf.text('12 Hour Billing Cycle', 20, yPosition);
-
     // Add some space
     yPosition += 10;
 

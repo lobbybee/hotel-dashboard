@@ -68,6 +68,7 @@
                     class="w-full"
                     showIcon
                     showTime
+                    hourFormat="12"
                     :minDate="new Date()"
                 />
             </div>

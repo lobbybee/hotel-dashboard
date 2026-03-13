@@ -102,11 +102,11 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium mb-1">Check-in Date *</label>
-            <Calendar v-model="checkinDates.check_in" showTime dateFormat="dd-mm-yy" class="w-full" />
+            <Calendar v-model="checkinDates.check_in" showTime hourFormat="12" dateFormat="dd-mm-yy" class="w-full" />
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Check-out Date *</label>
-            <Calendar v-model="checkinDates.check_out" showTime dateFormat="dd-mm-yy" class="w-full" />
+            <Calendar v-model="checkinDates.check_out" showTime hourFormat="12" dateFormat="dd-mm-yy" class="w-full" />
           </div>
         </div>
 
@@ -183,6 +183,7 @@
               class="w-full"
               showIcon
               showTime
+              hourFormat="12"
               dateFormat="dd-mm-yy"
               :minDate="new Date()"
             />
