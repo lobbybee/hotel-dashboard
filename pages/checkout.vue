@@ -79,7 +79,7 @@
               <i class="pi pi-clock"></i>
               Billing Cycle
             </span>
-            <Badge :value="stay.billing?.hours_24 ? '24 Hour' : '12 Hour'" :severity="stay.billing?.hours_24 ? 'info' : 'secondary'" />
+            <Badge value="12 Hour" severity="secondary" />
           </div>
         </div>
 
@@ -358,7 +358,7 @@
           <div class="space-y-3 text-sm">
             <div class="flex justify-between">
               <span class="text-gray-600">Billing Cycle:</span>
-              <Badge :value="selectedStayForCheckout.billing?.hours_24 ? '24 Hour' : '12 Hour'" :severity="selectedStayForCheckout.billing?.hours_24 ? 'info' : 'secondary'" />
+              <Badge value="12 Hour" severity="secondary" />
             </div>
             <div>
               <label for="final_charge" class="block text-sm font-medium text-gray-700 mb-2">
@@ -731,7 +731,7 @@ const printCheckoutSummary = () => {
     // Bill items
     pdf.text(`${selectedStayForCheckout.value.room_details.category} Room - ${selectedStayForCheckout.value.room_details.room_number}`, 20, yPosition);
     yPosition += 7;
-    pdf.text(`${selectedStayForCheckout.value.billing?.hours_24 ? '24 Hour' : '12 Hour'} Billing Cycle`, 20, yPosition);
+    pdf.text('12 Hour Billing Cycle', 20, yPosition);
 
     // Add some space
     yPosition += 10;

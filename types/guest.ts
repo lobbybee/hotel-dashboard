@@ -47,7 +47,6 @@ export interface VerifyCheckinData {
         nationality?: string;
         preferred_language?: string;
         notes?: string;
-        hours_24?: boolean;
         breakfast_reminder?: boolean;
         dinner_reminder?: boolean;
     };

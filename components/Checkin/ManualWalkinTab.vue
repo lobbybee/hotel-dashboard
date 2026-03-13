@@ -207,18 +207,7 @@
         <!-- Guest Preferences -->
         <div class="border-t pt-4">
           <h4 class="font-medium mb-3">Guest Preferences</h4>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <div class="flex items-center gap-2">
-                <Checkbox
-                  inputId="hours_24"
-                  v-model="verifyData.hours_24"
-                  binary
-                />
-                <label for="hours_24" class="text-sm cursor-pointer font-medium">24 hours stay</label>
-              </div>
-              <small class="text-xs text-gray-500 mt-1 block">Full 24-hour stay instead of 12 hours</small>
-            </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <div class="flex items-center gap-2">
                 <Checkbox
@@ -552,7 +541,6 @@ const flagSummary = ref<any>(null);
 
 // Verification data for guest preferences
 const verifyData = ref({
-  hours_24: false,
   breakfast_reminder: true,
   dinner_reminder: false,
   notes: ''
@@ -931,7 +919,6 @@ const completeCheckin = async () => {
     for (const stayId of stayIds) {
       const verifyRequestData: any = {
         guest_updates: {
-          hours_24: verifyData.value.hours_24 || false,
           breakfast_reminder: verifyData.value.breakfast_reminder !== undefined ? verifyData.value.breakfast_reminder : true,
           dinner_reminder: verifyData.value.dinner_reminder || false,
           notes: verifyData.value.notes || ''
@@ -1003,7 +990,6 @@ const resetForm = () => {
   accompanyingDocuments.value = [];
   uploadBackSide.value = false;
   verifyData.value = {
-    hours_24: false,
     breakfast_reminder: true,
     dinner_reminder: false,
     notes: ''

@@ -169,13 +169,6 @@
                 <label for="register_number" class="block text-sm font-medium text-gray-700 mb-1">Register Number</label>
                 <InputText id="register_number" v-model="registerNumber" class="w-full" />
             </div>
-            <div>
-                     <label class="block text-xs font-medium text-gray-500 mb-1">12hrs or 24 hrs</label>
-                     <div class="flex items-center gap-2">
-                       <Checkbox inputId="hours_24" v-model="guestEdits.hours_24" binary />
-                       <label for="hours_24" class="text-sm cursor-pointer font-bold">24 hours</label>
-                     </div>
-                   </div>
             <div class="grid grid-cols-2 gap-4 mt-4">
                 <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">Breakfast Reminder</label>
@@ -244,7 +237,6 @@ const guestEdits = ref({
   date_of_birth: null as Date | null,
   preferred_language: '',
   notes: '',
-  hours_24: false,
   breakfast_reminder: false,
   dinner_reminder: false
 });
@@ -397,12 +389,6 @@ const confirmAndCheckin = () => {
     }
   }
 
-  // Always send 24-hour preference, even when guest edit mode is off.
-  verifyData.guest_updates = {
-    ...(verifyData.guest_updates || {}),
-    hours_24: guestEdits.value.hours_24
-  };
-
   console.log('Emitting confirmed with unified data:', verifyData);
   emit('confirmed', verifyData);
 };
@@ -441,7 +427,6 @@ watch(() => props.visible, async (newValue) => {
         date_of_birth: props.stay.guest.date_of_birth ? new Date(props.stay.guest.date_of_birth) : null,
         preferred_language: props.stay.guest.preferred_language || '',
         notes: props.stay.guest.notes || '',
-        hours_24: props.stay.guest.hours_24 || false,
         breakfast_reminder: props.stay.guest.breakfast_reminder || false,
         dinner_reminder: props.stay.guest.dinner_reminder || false
       };
