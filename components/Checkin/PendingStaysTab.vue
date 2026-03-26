@@ -54,14 +54,8 @@
 
             <div class="flex items-center gap-2 text-sm">
               <i class="pi pi-calendar text-gray-400"></i>
-              <span class="text-gray-600">Check-in:</span>
-              <strong class="text-gray-900">{{ formatDateTime(stay.check_in_date) }}</strong>
-            </div>
-
-            <div class="flex items-center gap-2 text-sm">
-              <i class="pi pi-calendar-times text-gray-400"></i>
-              <span class="text-gray-600">Check-out:</span>
-              <strong class="text-gray-900">{{ formatDateTime(stay.check_out_date) }}</strong>
+              <span class="text-gray-600">Booking Date:</span>
+              <strong class="text-gray-900">{{ formatDateTime(stay.booking_details?.booking_date || stay.check_in_date) }}</strong>
             </div>
 
             <div class="flex items-center gap-2 text-sm">
