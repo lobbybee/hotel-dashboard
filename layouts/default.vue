@@ -353,6 +353,7 @@ import { useFetchHotel, useFetchRooms } from '~/composables/useHotel';
 import { useFetchStaff } from '~/composables/useStaff';
 import { useFetchNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from '~/composables/useNotification';
 import { useWebSocket, type NewCheckinMessage } from '~/composables/useWebSocket';
+import { clearHotelTimezone, setHotelTimezone } from '~/composables/useHotelTimezone';
 
 const router = useRouter();
 const route = useRoute();
@@ -457,6 +458,9 @@ const { staff: StaffData } = useFetchStaff();
 watch(HotelData, (newHotel) => {
   if (newHotel) {
     hotel.value = newHotel;
+    if (newHotel.time_zone) {
+      setHotelTimezone(newHotel.time_zone);
+    }
   }
 });
 
@@ -639,11 +643,13 @@ const handleLogout = async () => {
     // Clear onboarding cache to ensure fresh check on next login
     onboardingStore.clearCache();
     await logout();
+    clearHotelTimezone();
     // Use window.location.replace to bypass middleware completely
     window.location.replace('/login');
   } catch (error) {
     console.error('Logout failed:', error);
     onboardingStore.clearCache();
+    clearHotelTimezone();
     // Use window.location.replace even if logout API fails
     window.location.replace('/login');
   }

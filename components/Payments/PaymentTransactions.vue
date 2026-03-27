@@ -163,6 +163,7 @@ import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import Badge from 'primevue/badge';
 import type { Transaction } from '~/composables/usePayments';
+import { formatDateOnlyInHotelTz } from '~/utils/dateFormat';
 
 // Props
 const props = defineProps<{
@@ -198,7 +199,7 @@ const getTransactionStatusSeverity = (status: string) => {
 };
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString();
+  return formatDateOnlyInHotelTz(dateString);
 };
 
 // Dialog actions

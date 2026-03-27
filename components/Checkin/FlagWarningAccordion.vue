@@ -86,6 +86,7 @@
 import { ref, computed } from 'vue';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
+import { formatDateOnlyInHotelTz } from '~/utils/dateFormat';
 
 interface Flag {
   id: number;
@@ -132,7 +133,7 @@ const remainingFlags = computed(() => {
 
 const formatDate = (dateString: string) => {
   try {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return formatDateOnlyInHotelTz(dateString, 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

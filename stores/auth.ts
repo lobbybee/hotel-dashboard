@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { HOTEL_TIMEZONE_KEY } from '~/composables/useHotelTimezone';
 
 interface User {
   id: number;
@@ -43,6 +44,7 @@ export const useAuthStore = defineStore('auth', {
         } else {
           localStorage.removeItem('auth_user');
           localStorage.removeItem('hotel_name');
+          localStorage.removeItem(HOTEL_TIMEZONE_KEY);
         }
       }
     },

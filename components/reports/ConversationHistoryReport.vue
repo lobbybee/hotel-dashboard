@@ -357,6 +357,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useFetchConversationHistory } from '@/composables/useReporting'
+import { formatDateTimeCompactInHotelTz } from '~/utils/dateFormat'
 
 // Props
 const props = defineProps<{
@@ -443,12 +444,7 @@ const formatDecimal = (num: number) => {
 
 const formatDate = (dateString: string) => {
   if (!dateString) return 'N/A'
-  const d = new Date(dateString);
-  const day = d.getDate();
-  const month = d.toLocaleString('en-US', { month: 'short' });
-  const year = d.getFullYear();
-  const time = d.toLocaleString('en-US', { hour: 'numeric', hour12: true });
-  return `${day} ${month} ${year} ${time}`;
+  return formatDateTimeCompactInHotelTz(dateString);
 }
 
 const calculateFulfillmentRate = () => {

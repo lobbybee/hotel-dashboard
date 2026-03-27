@@ -112,6 +112,7 @@ import Dialog from 'primevue/dialog';
 import { useToast } from 'primevue/usetoast';
 import type { SubscriptionPlan } from '~/composables/usePayments';
 import { useSubscribeToPlan } from '~/composables/usePayments';
+import { formatDateOnlyInHotelTz } from '~/utils/dateFormat';
 
 // Props
 const props = defineProps<{
@@ -140,7 +141,7 @@ const getPlanTypeIcon = (type: string) => {
 };
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString();
+  return formatDateOnlyInHotelTz(dateString);
 };
 
 const selectPlan = async (plan: SubscriptionPlan) => {

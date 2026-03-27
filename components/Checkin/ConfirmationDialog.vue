@@ -207,6 +207,7 @@ import Checkbox from 'primevue/checkbox';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import { useFetchRooms, useFetchRoomCategories, useFetchHotelRoomFloors } from '~/composables/useHotel';
+import { formatDateTimeCompactInHotelTz } from '~/utils/dateFormat';
 
 import InputText from 'primevue/inputtext';
 import FlagWarningAccordion from './FlagWarningAccordion.vue';
@@ -284,13 +285,7 @@ const rooms = computed(() => {
 });
 
 const formatDateTime = (dateString: string) => {
-  if (!dateString) return 'N/A';
-  const d = new Date(dateString);
-  const day = d.getDate();
-  const month = d.toLocaleString('en-US', { month: 'short' });
-  const year = d.getFullYear();
-  const time = d.toLocaleString('en-US', { hour: 'numeric', hour12: true });
-  return `${day} ${month} ${year} ${time}`;
+  return formatDateTimeCompactInHotelTz(dateString);
 };
 
 const formatDocumentType = (type: string) => {

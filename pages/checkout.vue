@@ -140,7 +140,7 @@
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-500 mb-1">Date of Birth</label>
-              <p class="font-medium text-gray-900">{{ selectedStayForGuestInfo.guest.date_of_birth ? new Date(selectedStayForGuestInfo.guest.date_of_birth).toLocaleDateString() : 'Not provided' }}</p>
+              <p class="font-medium text-gray-900">{{ selectedStayForGuestInfo.guest.date_of_birth ? formatDateOnlyInHotelTz(selectedStayForGuestInfo.guest.date_of_birth) : 'Not provided' }}</p>
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-500 mb-1">Preferred Language</label>
@@ -461,6 +461,7 @@ import { z } from 'zod';
 
 import { useListCheckedInUsers, useCheckoutUser, useExtendGuestStay } from '~/composables/checkin-manager';
 import { useAPIHelper } from '~/composables/useAPIHelper';
+import { formatDateOnlyInHotelTz, formatDateTimeCompactInHotelTz } from '~/utils/dateFormat';
 
 // Import shared types
 import type { Stay, Guest } from '~/types/guest';
@@ -660,7 +661,7 @@ const printCheckoutSummary = () => {
     yPosition += 15;
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`Date: ${new Date().toLocaleDateString('en-US', {
+    pdf.text(`Date: ${formatDateOnlyInHotelTz(new Date(), 'en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -819,12 +820,7 @@ const handleConfirmCheckout = async () => {
 };
 
 const formatDate = (dateString: string) => {
-  const d = new Date(dateString);
-  const day = d.getDate();
-  const month = d.toLocaleString('en-US', { month: 'short' });
-  const year = d.getFullYear();
-  const time = d.toLocaleString('en-US', { hour: 'numeric', hour12: true });
-  return `${day} ${month} ${year} ${time}`;
+  return formatDateTimeCompactInHotelTz(dateString);
 }
 
 const getDaysStayed = (stay: any) => {

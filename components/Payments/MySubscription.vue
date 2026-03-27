@@ -77,6 +77,7 @@
 import Button from 'primevue/button';
 import Badge from 'primevue/badge';
 import type { HotelSubscription } from '~/composables/usePayments';
+import { formatDateOnlyInHotelTz } from '~/utils/dateFormat';
 
 // Props
 const props = defineProps<{
@@ -90,7 +91,7 @@ const emit = defineEmits<{
 
 // Helper functions
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString();
+  return formatDateOnlyInHotelTz(dateString);
 };
 
 const scrollToPlans = () => {

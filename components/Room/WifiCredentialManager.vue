@@ -336,6 +336,7 @@ import {
 } from '~/composables/useWifiCredentials';
 import { useAPIHelper } from '~/composables/useAPIHelper';
 import { useFetchHotelRoomFloors } from '~/composables/useHotel';
+import { formatDateOnlyInHotelTz } from '~/utils/dateFormat';
 
 // Import validation schema
 import { WifiCredentialSchema } from '~/utils/schemas/room';
@@ -658,7 +659,7 @@ const onPageChange = (event: any) => {
 };
 
 const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return formatDateOnlyInHotelTz(dateString, 'en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',

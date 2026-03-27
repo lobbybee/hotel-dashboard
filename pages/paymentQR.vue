@@ -488,6 +488,7 @@ import { useSendPaymentQRCodeToWhatsApp } from '~/composables/usePaymentQRCodes'
 import { useListGuests } from '~/composables/checkin-manager';
 import { useAuthStore } from '~/stores/auth';
 import { useAPIHelper } from '~/composables/useAPIHelper';
+import { formatDateOnlyInHotelTz } from '~/utils/dateFormat';
 
 // Composables
 const toast = useToast();
@@ -694,7 +695,7 @@ const handleImageError = (event: Event) => {
 };
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
+  return formatDateOnlyInHotelTz(dateString, 'en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'

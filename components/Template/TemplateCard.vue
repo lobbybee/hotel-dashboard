@@ -68,6 +68,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import type { CustomMessageTemplate } from '~/composables/useMessageTemplate'
+import { formatDateOnlyInHotelTz } from '~/utils/dateFormat'
 
 defineProps<{
   template: CustomMessageTemplate
@@ -80,8 +81,7 @@ defineEmits<{
 }>()
 
 const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
+  return formatDateOnlyInHotelTz(dateString, 'en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'

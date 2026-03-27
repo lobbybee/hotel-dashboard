@@ -205,6 +205,7 @@ import {
   useFetchConversationHistory,
   useFetchFeedbackAnalytics
 } from '@/composables/useReporting'
+import { formatDateInHotelTz, formatDateOnlyInHotelTz } from '~/utils/dateFormat'
 
 // Import child components
 import GuestHistoryReport from '@/components/reports/GuestHistoryReport.vue'
@@ -519,7 +520,7 @@ const exportToPDF = async () => {
             pdf.text(conv.guest?.full_name || 'N/A', 25, yPosition)
             pdf.text(String(conv.message_count || 0), 80, yPosition)
             const lastActivity = conv.last_message_at || conv.created_at
-            pdf.text(lastActivity ? new Date(lastActivity).toLocaleDateString() : 'N/A', 120, yPosition)
+            pdf.text(lastActivity ? formatDateOnlyInHotelTz(lastActivity) : 'N/A', 120, yPosition)
             pdf.text(conv.status || 'N/A', 160, yPosition)
             yPosition += 7
           })
@@ -561,7 +562,7 @@ const exportToPDF = async () => {
             pdf.text(feedback.guest?.full_name || 'N/A', 25, yPosition)
             pdf.text(String(feedback.rating || 0), 80, yPosition)
             pdf.text(feedback.stay?.room?.category || feedback.category || 'N/A', 100, yPosition)
-            pdf.text(new Date(feedback.created_at).toLocaleDateString(), 140, yPosition)
+            pdf.text(formatDateOnlyInHotelTz(feedback.created_at), 140, yPosition)
             pdf.text(feedback.note?.substring(0, 30) + '...' || '', 160, yPosition)
             yPosition += 7
           })
@@ -578,7 +579,7 @@ const exportToPDF = async () => {
     // Footer
     yPosition += 10
     pdf.setFont('helvetica', 'normal')
-    pdf.text(`Generated on ${new Date().toLocaleString()}`, pageWidth / 2, yPosition, { align: 'center' })
+    pdf.text(`Generated on ${formatDateInHotelTz(new Date())}`, pageWidth / 2, yPosition, { align: 'center' })
 
     // Save PDF
     const hotelNameSlug = hotelDetails?.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'hotel'

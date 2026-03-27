@@ -437,6 +437,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useFetchRoomHistory } from '@/composables/useReporting'
+import { formatDateTimeCompactInHotelTz } from '~/utils/dateFormat'
 
 // Props
 const props = defineProps<{
@@ -529,12 +530,7 @@ const formatCurrency = (amount: number) => {
 }
 
 const formatDate = (dateString: string) => {
-  const d = new Date(dateString);
-  const day = d.getDate();
-  const month = d.toLocaleString('en-US', { month: 'short' });
-  const year = d.getFullYear();
-  const time = d.toLocaleString('en-US', { hour: 'numeric', hour12: true });
-  return `${day} ${month} ${year} ${time}`;
+  return formatDateTimeCompactInHotelTz(dateString);
 }
 
 const getRoomsByStatus = (status: string) => {

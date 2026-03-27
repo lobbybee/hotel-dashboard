@@ -213,6 +213,7 @@ import { useListPendingStays, useVerifyCheckin, useRejectCheckin } from '~/compo
 
 import { useFetchRooms } from '~/composables/useHotel';
 import { useAPIHelper } from '~/composables/useAPIHelper';
+import { formatDateTimeCompactInHotelTz } from '~/utils/dateFormat';
 
 import CheckinConfirmationDialog from './ConfirmationDialog.vue';
 
@@ -333,12 +334,7 @@ const handleInitiateWhatsappCheckin = async (stayId: number) => {
 
 // Helper function to format date with time e.g. "24 May 2026 5 PM"
 const formatDateTime = (dateString: string): string => {
-  const d = new Date(dateString);
-  const day = d.getDate();
-  const month = d.toLocaleString('en-US', { month: 'short' });
-  const year = d.getFullYear();
-  const time = d.toLocaleString('en-US', { hour: 'numeric', hour12: true });
-  return `${day} ${month} ${year} ${time}`;
+  return formatDateTimeCompactInHotelTz(dateString);
 };
 
 // Helper function to format document type

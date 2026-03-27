@@ -77,6 +77,7 @@
 import { computed, ref } from 'vue';
 import { useFetchOverviewStats } from '~/composables/useStats';
 import DashboardQRCode from '~/components/DashboardQRCode.vue';
+import { formatDateInHotelTz } from '~/utils/dateFormat';
 
 const { stats, isLoading, error } = useFetchOverviewStats();
 
@@ -84,14 +85,14 @@ const now = ref(new Date());
 setInterval(() => (now.value = new Date()), 60_000);
 
 const nowString = computed(() =>
-  now.value.toLocaleString('en-US', {
+  formatDateInHotelTz(now.value, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  })
+  }, 'en-US')
 );
 
 // Extract hotel data from the new API response structure
