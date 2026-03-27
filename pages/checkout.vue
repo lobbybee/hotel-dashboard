@@ -824,10 +824,14 @@ const formatDate = (dateString: string) => {
 }
 
 const getDaysStayed = (stay: any) => {
-  const checkIn = new Date(stay.check_in_date)
-  const checkOut = new Date(stay.check_out_date)
-  const diff = checkOut.getTime() - checkIn.getTime()
-  return Math.ceil(diff / (1000 * 60 * 60 * 24))
+  const checkIn = new Date(stay.check_in_date);
+  const checkOut = new Date(stay.check_out_date);
+
+  const checkInDateOnly = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
+  const checkOutDateOnly = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
+
+  const diffInDays = Math.round((checkOutDateOnly.getTime() - checkInDateOnly.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.max(1, diffInDays);
 }
 
 const isCheckoutTimePassed = (checkoutDate: string) => {
