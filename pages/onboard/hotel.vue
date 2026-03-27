@@ -217,11 +217,28 @@
           <select v-model="hotelForm.time_zone" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :class="{ 'border-red-500': errors.time_zone }">
             <option value="">Select timezone</option>
             <option value="UTC">UTC</option>
-            <option value="Asia/Kolkata">India (IST)</option>
-            <option value="America/New_York">Eastern Time</option>
-            <option value="America/Los_Angeles">Pacific Time</option>
-            <option value="Europe/London">London</option>
-            <option value="Asia/Tokyo">Tokyo</option>
+            <option value="Asia/Kolkata">Asia/Kolkata (IST India)</option>
+            <option value="Asia/Dubai">Asia/Dubai</option>
+            <option value="Asia/Singapore">Asia/Singapore</option>
+            <option value="Asia/Bangkok">Asia/Bangkok</option>
+            <option value="Asia/Tokyo">Asia/Tokyo</option>
+            <option value="Asia/Shanghai">Asia/Shanghai</option>
+            <option value="Asia/Hong_Kong">Asia/Hong_Kong</option>
+            <option value="Europe/London">Europe/London</option>
+            <option value="Europe/Paris">Europe/Paris</option>
+            <option value="Europe/Berlin">Europe/Berlin</option>
+            <option value="Europe/Moscow">Europe/Moscow</option>
+            <option value="America/New_York">America/New_York (ET)</option>
+            <option value="America/Chicago">America/Chicago (CT)</option>
+            <option value="America/Denver">America/Denver (MT)</option>
+            <option value="America/Los_Angeles">America/Los_Angeles (PT)</option>
+            <option value="America/Phoenix">America/Phoenix (no DST)</option>
+            <option value="America/Toronto">America/Toronto</option>
+            <option value="America/Vancouver">America/Vancouver</option>
+            <option value="Australia/Sydney">Australia/Sydney</option>
+            <option value="Australia/Melbourne">Australia/Melbourne</option>
+            <option value="Australia/Perth">Australia/Perth</option>
+            <option value="Pacific/Auckland">Pacific/Auckland</option>
           </select>
           <span v-if="errors.time_zone" class="text-red-500 text-sm mt-1 block">{{ errors.time_zone }}</span>
         </div>
@@ -405,7 +422,7 @@ const hotelFormSchema = HotelSchema;
 
 const hotelForm = ref({
   name: '', description: '', address: '', city: '', state: '', country: '', pincode: '',
-  phone: '', email: '', check_in_time: '14:00', time_zone: 'Asia/Kolkata', google_review_link: '',
+  phone: '', email: '', check_in_time: '14:00', time_zone: 'UTC', google_review_link: '',
   google_map_link: '', breakfast_time: '', lunch_time: '', dinner_time: ''
 })
 
@@ -515,7 +532,7 @@ watch(hotel, (data) => {
         state: data.state || '', country: data.country || '',
         pincode: data.pincode || '', phone: data.phone || '',
         email: data.email || '', check_in_time: checkInTime,
-        time_zone: data.time_zone || 'Asia/Kolkata', google_review_link: data.google_review_link || '',
+        time_zone: data.time_zone || 'UTC', google_review_link: data.google_review_link || '',
         google_map_link: data.google_map_link || '', 
         breakfast_time: data.breakfast_time ? data.breakfast_time.substring(0, 5) : '',
         lunch_time: data.lunch_time ? data.lunch_time.substring(0, 5) : '',
