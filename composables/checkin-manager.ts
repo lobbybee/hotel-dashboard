@@ -270,7 +270,7 @@ export const useListCheckedInUsers = () => {
     if (route.query.page) queryKeyParams.page = route.query.page;
     if (route.query.page_size) queryKeyParams.page_size = route.query.page_size;
     if (route.query.search) queryKeyParams.search = route.query.search;
-    if (route.query.include_history) queryKeyParams.include_history = route.query.include_history;
+    queryKeyParams.include_history = route.query.include_history === 'true';
     return queryKeyParams;
   });
 
@@ -286,7 +286,7 @@ export const useListCheckedInUsers = () => {
         page: Number(route.query.page) || undefined,
         page_size: Number(route.query.page_size) || undefined,
         search: (route.query.search as string) || undefined,
-        include_history: route.query.include_history === 'true' ? true : undefined
+        include_history: route.query.include_history === 'true'
       };
 
       Object.keys(params).forEach((key) => {

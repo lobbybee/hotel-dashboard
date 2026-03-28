@@ -561,7 +561,7 @@ watch(
 
 watch(showHistory, (value) => {
   updateRouteQuery({
-    include_history: value ? 'true' : undefined,
+    include_history: value ? 'true' : 'false',
     page: 1
   });
 });
