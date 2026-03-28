@@ -462,7 +462,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import jsPDF from 'jspdf';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
@@ -517,6 +517,7 @@ const currentPage = computed(() => Number(route.query.page) || 1);
 // --- SEARCH ---
 const searchQuery = ref((route.query.search as string) || '');
 const showHistory = ref(route.query.include_history === 'true');
+const searchDebounceTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
 const updateRouteQuery = async (updates: Record<string, any>) => {
   const nextQuery: Record<string, any> = { ...route.query, ...updates };
@@ -545,12 +546,17 @@ watch(
 
 watch(
   searchQuery,
-  useDebounceFn((value: string) => {
-    updateRouteQuery({
-      search: value.trim() || undefined,
-      page: 1
-    });
-  }, 350)
+  (value) => {
+    if (searchDebounceTimer.value) {
+      clearTimeout(searchDebounceTimer.value);
+    }
+    searchDebounceTimer.value = setTimeout(() => {
+      updateRouteQuery({
+        search: value.trim() || undefined,
+        page: 1
+      });
+    }, 350);
+  }
 );
 
 watch(showHistory, (value) => {
@@ -566,6 +572,11 @@ const onPageChange = (event: any) => {
     page_size: event.rows || pageSize.value
   });
 };
+onBeforeUnmount(() => {
+  if (searchDebounceTimer.value) {
+    clearTimeout(searchDebounceTimer.value);
+  }
+});
 
 // --- CHECKOUT LOGIC ---
 const { checkoutUser, isLoading: isCheckingOut } = useCheckoutUser();
