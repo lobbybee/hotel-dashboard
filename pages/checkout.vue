@@ -510,13 +510,17 @@ const pageSize = computed(() => Number(route.query.page_size) || 10);
 
 // --- DATA FETCHING ---
 const { checkedInUsers, isLoading, error, refetch } = useListCheckedInUsers();
-const stays = computed(() => checkedInUsers.value?.results || []);
+const stays = computed(() => {
+  const results = checkedInUsers.value?.results || [];
+  if (showHistory.value) return results;
+  return results.filter(stay => stay.isCheckedIn === true);
+});
 const totalRecords = computed(() => checkedInUsers.value?.count || 0);
 const currentPage = computed(() => Number(route.query.page) || 1);
 
 // --- SEARCH ---
 const searchQuery = ref((route.query.search as string) || '');
-const showHistory = ref(route.query.include_history === 'true');
+const showHistory = ref(false);
 const searchDebounceTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
 const updateRouteQuery = async (updates: Record<string, any>) => {
@@ -538,13 +542,6 @@ watch(
 );
 
 watch(
-  () => route.query.include_history,
-  (value) => {
-    showHistory.value = value === 'true';
-  }
-);
-
-watch(
   searchQuery,
   (value) => {
     if (searchDebounceTimer.value) {
@@ -558,13 +555,6 @@ watch(
     }, 350);
   }
 );
-
-watch(showHistory, (value) => {
-  updateRouteQuery({
-    include_history: value ? 'true' : 'false',
-    page: 1
-  });
-});
 
 const onPageChange = (event: any) => {
   updateRouteQuery({
