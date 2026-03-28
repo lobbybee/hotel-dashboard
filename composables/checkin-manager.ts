@@ -261,8 +261,18 @@ export const useCheckRoomAvailability = () => {
 
 // List Checked-in Users - Lists all guests who are currently checked-in (active stays)
 export const useListCheckedInUsers = () => {
+  const route = useRoute();
   const { API } = useAPI();
-  const { getResults } = useAPIHelper();
+  const { getPaginatedResults } = useAPIHelper();
+
+  const queryParams = computed(() => {
+    const queryKeyParams: Record<string, any> = {};
+    if (route.query.page) queryKeyParams.page = route.query.page;
+    if (route.query.page_size) queryKeyParams.page_size = route.query.page_size;
+    if (route.query.search) queryKeyParams.search = route.query.search;
+    if (route.query.include_history) queryKeyParams.include_history = route.query.include_history;
+    return queryKeyParams;
+  });
 
   const {
     data,
@@ -270,11 +280,25 @@ export const useListCheckedInUsers = () => {
     error,
     refetch
   } = useQuery({
-    key: ['checked-in-users'],
+    key: computed(() => ['checked-in-users', queryParams.value]),
     query: async () => {
-      const response = await API('/stay-management/checked-in-users/');
-      return getResults(response);
-    }
+      const params: Record<string, any> = {
+        page: Number(route.query.page) || undefined,
+        page_size: Number(route.query.page_size) || undefined,
+        search: (route.query.search as string) || undefined,
+        include_history: route.query.include_history === 'true' ? true : undefined
+      };
+
+      Object.keys(params).forEach((key) => {
+        if (params[key] === undefined || params[key] === null || params[key] === '') {
+          delete params[key];
+        }
+      });
+
+      const response = await API('/stay-management/checked-in-users/', { params });
+      return getPaginatedResults(response);
+    },
+    placeholderData: (previousData) => previousData
   });
 
   return {

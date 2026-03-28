@@ -5,51 +5,60 @@
       <p class="text-gray-600">Manage guest departures and room turnover</p>
     </div>
 
-    <div class="mb-6">
-      <span class="p-input-icon-left w-full">
-
+    <div class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <span class="p-input-icon-left w-full md:max-w-lg">
         <InputText
           v-model="searchQuery"
-          placeholder="Search by guest name or room number..."
+          placeholder="Search by name, phone, or ID number..."
           class="w-full"
         />
       </span>
+      <div class="flex items-center gap-3 self-start md:self-auto">
+        <label for="show-history" class="text-sm font-medium text-gray-700">Show stay history</label>
+        <InputSwitch id="show-history" v-model="showHistory" />
+      </div>
     </div>
 
-        <div v-if="isLoading" class="text-center py-16 bg-white rounded-lg border border-gray-200">
+    <div v-if="isLoading" class="text-center py-16 bg-white rounded-lg border border-gray-200">
       <ProgressSpinner style="width: 48px; height: 48px" strokeWidth="6" />
-      <p class="text-gray-500 mt-4">Loading active stays...</p>
+      <p class="text-gray-500 mt-4">{{ showHistory ? 'Loading stays...' : 'Loading active stays...' }}</p>
     </div>
 
     <div v-else-if="error" class="bg-white rounded-lg border border-gray-200 p-8 text-center">
       <i class="pi pi-exclamation-triangle text-6xl text-red-300 mb-4"></i>
-      <h3 class="text-lg font-medium text-gray-900 mb-2">Error loading active stays</h3>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Error loading stays</h3>
       <p class="text-gray-500 mb-4">{{ error?.message }}</p>
       <Button label="Retry" icon="pi pi-refresh" @click="refetch" />
     </div>
 
-    <div v-else-if="filteredStays && filteredStays.length === 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
+    <div v-else-if="stays.length === 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
       <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
-      <p class="text-gray-500 text-lg mb-2">No active stays</p>
-      <p class="text-gray-400 text-sm">All rooms are currently available</p>
+      <p class="text-gray-500 text-lg mb-2">{{ showHistory ? 'No stays found' : 'No active stays' }}</p>
+      <p class="text-gray-400 text-sm">{{ showHistory ? 'Try changing search or page.' : 'All rooms are currently available' }}</p>
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div v-else class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
-        v-for="stay in filteredStays"
+        v-for="stay in stays"
         :key="stay.id"
-        class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all"
+        class="rounded-lg border p-6 transition-all"
+        :class="stay.isCheckedIn ? 'bg-white border-gray-200 hover:shadow-lg' : 'bg-gray-50 border-gray-300 opacity-95'"
       >
         <div class="flex items-start justify-between mb-4">
           <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-              <i class="pi pi-user text-primary-600 text-xl"></i>
+            <div
+              class="w-12 h-12 rounded-full flex items-center justify-center"
+              :class="stay.isCheckedIn ? 'bg-primary-100' : 'bg-gray-200'"
+            >
+              <i class="pi pi-user text-xl" :class="stay.isCheckedIn ? 'text-primary-600' : 'text-gray-600'"></i>
             </div>
             <div>
               <h3 class="font-semibold text-lg text-gray-900">{{ stay.guest.full_name }}</h3>
               <p class="text-sm text-gray-500">{{ stay.guest.email }}</p>
             </div>
           </div>
+          <Tag :value="stay.isCheckedIn ? 'Active' : 'Past Stay'" :severity="stay.isCheckedIn ? 'success' : 'secondary'" />
         </div>
 
         <div class="space-y-2 mb-4 p-4 bg-gray-50 rounded-lg">
@@ -90,7 +99,7 @@
             <span class="font-medium text-blue-600">{{ getDaysStayed(stay) }} night(s)</span>
           </div>
           <p
-            v-if="isCheckoutTimePassed(stay.check_out_date)"
+            v-if="stay.isCheckedIn && isCheckoutTimePassed(stay.check_out_date)"
             class="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-2 py-1"
           >
             Checkout time is in the past. You can extend the stay or proceed with checkout.
@@ -98,6 +107,7 @@
         </div>
 
         <Button
+          v-if="stay.isCheckedIn"
           label="Check Out"
           icon="pi pi-sign-out"
           class="w-full"
@@ -107,12 +117,21 @@
         <Button
           label="View Guest"
           icon="pi pi-user"
-          class="w-full mt-3"
-          severity="info"
+          class="w-full"
+          :class="stay.isCheckedIn ? 'mt-3' : ''"
+          :severity="stay.isCheckedIn ? 'info' : 'secondary'"
           outlined
           @click="handleViewGuest(stay)"
         />
       </div>
+    </div>
+      <Paginator
+        v-if="totalRecords > pageSize"
+        :rows="pageSize"
+        :totalRecords="totalRecords"
+        :first="(currentPage - 1) * pageSize"
+        @page="onPageChange"
+      />
     </div>
 
     <!-- Guest Info Dialog -->
@@ -443,13 +462,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import jsPDF from 'jspdf';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import Badge from 'primevue/badge';
 import ProgressSpinner from 'primevue/progressspinner';
 import InputText from 'primevue/inputtext';
+import Paginator from 'primevue/paginator';
+import InputSwitch from 'primevue/inputswitch';
 import Dialog from 'primevue/dialog';
 import Rating from 'primevue/rating';
 import Textarea from 'primevue/textarea';
@@ -483,22 +504,68 @@ const { getErrorMessage } = useAPIHelper();
 
 
 const toast = useToast();
+const route = useRoute();
+const router = useRouter();
+const pageSize = computed(() => Number(route.query.page_size) || 10);
 
 // --- DATA FETCHING ---
 const { checkedInUsers, isLoading, error, refetch } = useListCheckedInUsers();
+const stays = computed(() => checkedInUsers.value?.results || []);
+const totalRecords = computed(() => checkedInUsers.value?.count || 0);
+const currentPage = computed(() => Number(route.query.page) || 1);
 
 // --- SEARCH ---
-const searchQuery = ref('');
-const filteredStays = computed(() => {
-  if (!searchQuery.value) {
-    return checkedInUsers.value || [];
+const searchQuery = ref((route.query.search as string) || '');
+const showHistory = ref(route.query.include_history === 'true');
+
+const updateRouteQuery = async (updates: Record<string, any>) => {
+  const nextQuery: Record<string, any> = { ...route.query, ...updates };
+  Object.keys(nextQuery).forEach((key) => {
+    const value = nextQuery[key];
+    if (value === undefined || value === null || value === '') {
+      delete nextQuery[key];
+    }
+  });
+  await router.replace({ query: nextQuery });
+};
+
+watch(
+  () => route.query.search,
+  (value) => {
+    searchQuery.value = (value as string) || '';
   }
-  const lowerCaseQuery = searchQuery.value.toLowerCase();
-  return (checkedInUsers.value || []).filter(stay =>
-    stay.guest.full_name.toLowerCase().includes(lowerCaseQuery) ||
-    stay.room_details.room_number.toLowerCase().includes(lowerCaseQuery)
-  );
+);
+
+watch(
+  () => route.query.include_history,
+  (value) => {
+    showHistory.value = value === 'true';
+  }
+);
+
+watch(
+  searchQuery,
+  useDebounceFn((value: string) => {
+    updateRouteQuery({
+      search: value.trim() || undefined,
+      page: 1
+    });
+  }, 350)
+);
+
+watch(showHistory, (value) => {
+  updateRouteQuery({
+    include_history: value ? 'true' : undefined,
+    page: 1
+  });
 });
+
+const onPageChange = (event: any) => {
+  updateRouteQuery({
+    page: event.page + 1,
+    page_size: event.rows || pageSize.value
+  });
+};
 
 // --- CHECKOUT LOGIC ---
 const { checkoutUser, isLoading: isCheckingOut } = useCheckoutUser();
@@ -564,11 +631,11 @@ const saveCheckoutDate = async () => {
     selectedStayForGuestInfo.value.check_out_date = newCheckoutDate;
 
     // Find and update the stay in the main checkedInUsers array
-    const stayIndex = (checkedInUsers.value || []).findIndex(
+    const stayIndex = (checkedInUsers.value?.results || []).findIndex(
       stay => stay.id === selectedStayForGuestInfo.value.id
     );
-    if (stayIndex !== -1) {
-      checkedInUsers.value[stayIndex].check_out_date = newCheckoutDate;
+    if (stayIndex !== -1 && checkedInUsers.value?.results) {
+      checkedInUsers.value.results[stayIndex].check_out_date = newCheckoutDate;
     }
 
     toast.add({
@@ -616,11 +683,11 @@ const saveCheckoutDateFromCheckoutModal = async () => {
 
     selectedStayForCheckout.value.check_out_date = newCheckoutDate;
 
-    const stayIndex = (checkedInUsers.value || []).findIndex(
+    const stayIndex = (checkedInUsers.value?.results || []).findIndex(
       stay => stay.id === selectedStayForCheckout.value.id
     );
-    if (stayIndex !== -1) {
-      checkedInUsers.value[stayIndex].check_out_date = newCheckoutDate;
+    if (stayIndex !== -1 && checkedInUsers.value?.results) {
+      checkedInUsers.value.results[stayIndex].check_out_date = newCheckoutDate;
     }
 
     toast.add({
