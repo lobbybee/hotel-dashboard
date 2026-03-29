@@ -366,7 +366,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useFetchGuestHistory } from '@/composables/useReporting'
 import { formatDateTimeCompactInHotelTz } from '~/utils/dateFormat'
 
@@ -385,6 +385,8 @@ const emit = defineEmits<{
 
 // State
 const searchTerm = ref('')
+const debouncedSearchTerm = ref('')
+const searchDebounceTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const nationalityFilter = ref('')
 const selectedGuest = ref(null)
 const showGuestModal = ref(false)
@@ -399,6 +401,7 @@ const {
   computed(() => ({
     start_date: props.dateRange.start || undefined,
     end_date: props.dateRange.end || undefined,
+    search: debouncedSearchTerm.value.trim() || undefined,
     guest_whatsapp: undefined // Can be added as prop if needed for filtering
   }))
 )
@@ -415,13 +418,10 @@ const filteredGuests = computed(() => {
   if (!guestHistoryData.value?.guests) return []
 
   return guestHistoryData.value.guests.filter(guest => {
-    const matchesSearch = !searchTerm.value ||
-      guest.full_name.toLowerCase().includes(searchTerm.value.toLowerCase())
-
     const matchesNationality = !nationalityFilter.value ||
       guest.nationality === nationalityFilter.value
 
-    return matchesSearch && matchesNationality
+    return matchesNationality
   })
 })
 
@@ -492,6 +492,22 @@ const clearFilters = () => {
   searchTerm.value = ''
   nationalityFilter.value = ''
 }
+
+watch(searchTerm, (value) => {
+  if (searchDebounceTimer.value) {
+    clearTimeout(searchDebounceTimer.value)
+  }
+
+  searchDebounceTimer.value = setTimeout(() => {
+    debouncedSearchTerm.value = value
+  }, 350)
+})
+
+onBeforeUnmount(() => {
+  if (searchDebounceTimer.value) {
+    clearTimeout(searchDebounceTimer.value)
+  }
+})
 
 
 

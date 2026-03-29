@@ -15,6 +15,7 @@ export const useFetchGuestHistory = (options?: Ref<{
   start_date?: string;
   end_date?: string;
   guest_whatsapp?: string;
+  search?: string;
 }>) => {
   const { API } = useAPI();
   const { getData } = useAPIHelper();
@@ -27,7 +28,7 @@ export const useFetchGuestHistory = (options?: Ref<{
   } = useQuery({
     key: computed(() => ['reporting', 'guest-history', options?.value ?? null]),
     query: async () => {
-      const response = await API('/hotel_stat/guest-history/', { params: options?.value });
+      const response = await API('/hotel_stat/hotel/guest-history/', { params: options?.value });
       return getData(response);
     },
   });
@@ -116,6 +117,7 @@ export const useFetchFeedbackAnalytics = (options?: Ref<{
   end_date?: string;
   room_id?: number;
   guest_whatsapp?: string;
+  search?: string;
 }>) => {
   const { API } = useAPI();
   const { getData } = useAPIHelper();
@@ -128,7 +130,7 @@ export const useFetchFeedbackAnalytics = (options?: Ref<{
   } = useQuery({
     key: computed(() => ['reporting', 'feedback-analytics', options?.value ?? null]),
     query: async () => {
-      const response = await API('/hotel_stat/feedback-analytics/', { params: options?.value });
+      const response = await API('/hotel_stat/hotel/feedback-analytics/', { params: options?.value });
       return getData(response);
     },
   });

@@ -424,7 +424,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useFetchFeedbackAnalytics } from '@/composables/useReporting'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
@@ -445,6 +445,8 @@ const emit = defineEmits<{
 
 // State
 const searchTerm = ref('')
+const debouncedSearchTerm = ref('')
+const searchDebounceTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const ratingFilter = ref('')
 const showFeedbackModal = ref(false)
 const selectedFeedback = ref<any>(null)
@@ -459,6 +461,7 @@ const {
   computed(() => ({
     start_date: props.dateRange.start || undefined,
     end_date: props.dateRange.end || undefined,
+    search: debouncedSearchTerm.value.trim() || undefined,
     room_id: undefined, // Can be added as prop if needed for filtering
     guest_whatsapp: undefined // Can be added as prop if needed for filtering
   }))
@@ -476,14 +479,10 @@ const filteredFeedbacks = computed(() => {
   if (!feedbackAnalyticsData.value?.feedbacks) return []
 
   return feedbackAnalyticsData.value.feedbacks.filter(feedback => {
-    const matchesSearch = !searchTerm.value ||
-      feedback.guest?.full_name?.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-      feedback.note?.toLowerCase().includes(searchTerm.value.toLowerCase())
-
     const matchesRating = !ratingFilter.value ||
       feedback.rating.toString() === ratingFilter.value
 
-    return matchesSearch && matchesRating
+    return matchesRating
   })
 })
 
@@ -554,6 +553,22 @@ const clearFilters = () => {
   searchTerm.value = ''
   ratingFilter.value = ''
 }
+
+watch(searchTerm, (value) => {
+  if (searchDebounceTimer.value) {
+    clearTimeout(searchDebounceTimer.value)
+  }
+
+  searchDebounceTimer.value = setTimeout(() => {
+    debouncedSearchTerm.value = value
+  }, 350)
+})
+
+onBeforeUnmount(() => {
+  if (searchDebounceTimer.value) {
+    clearTimeout(searchDebounceTimer.value)
+  }
+})
 
 // Watch for date range changes
 watch(() => props.dateRange, () => {
