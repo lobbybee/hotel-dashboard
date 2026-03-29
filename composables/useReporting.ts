@@ -31,6 +31,7 @@ export const useFetchGuestHistory = (options?: Ref<{
       const response = await API('/hotel_stat/guest-history/', { params: options?.value });
       return getData(response);
     },
+    placeholderData: (previousData) => previousData,
   });
 
   return { guestHistory, isLoading, error, refetch };
@@ -133,6 +134,7 @@ export const useFetchFeedbackAnalytics = (options?: Ref<{
       const response = await API('/hotel_stat/feedback-analytics/', { params: options?.value });
       return getData(response);
     },
+    placeholderData: (previousData) => previousData,
   });
 
   return { feedbackAnalytics, isLoading, error, refetch };

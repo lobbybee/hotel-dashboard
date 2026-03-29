@@ -100,7 +100,7 @@
     </div>
 
     <!-- Feedback Analytics Content -->
-    <div v-else>
+    <div>
       <!-- Filter Controls -->
       <div class="card p-4 mb-6">
         <div class="flex flex-wrap gap-3">
