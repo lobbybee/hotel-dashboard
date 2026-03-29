@@ -46,7 +46,7 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="flex items-center justify-center py-12">
+    <div v-if="isLoading && !guestHistoryData" class="flex items-center justify-center py-12">
       <div class="text-center">
         <Icon name="fa:spinner" class="text-4xl text-blue-600 mb-4"/>
         <p class="text-gray-600">Loading guest history...</p>
@@ -54,7 +54,7 @@
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-6">
+    <div v-else-if="error && !guestHistoryData" class="bg-red-50 border border-red-200 rounded-lg p-6">
       <div class="flex">
         <i class="fas fa-exclamation-triangle text-red-600 text-xl mr-3"></i>
         <div>

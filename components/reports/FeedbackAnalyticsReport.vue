@@ -74,7 +74,7 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="flex items-center justify-center py-12">
+    <div v-if="isLoading && !feedbackAnalyticsData" class="flex items-center justify-center py-12">
       <div class="text-center">
         <Icon name="fa:spinner" class="fa-spin text-4xl text-blue-600 mb-4"/>
         <Icon name="fa:spinner" class="fa-spin text-4xl text-blue-600 mb-4"/>
@@ -83,7 +83,7 @@
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-6">
+    <div v-else-if="error && !feedbackAnalyticsData" class="bg-red-50 border border-red-200 rounded-lg p-6">
       <div class="flex">
         <Icon name="fa:exclamation-triangle" class="text-red-600 text-xl mr-3"/>
         <div>
