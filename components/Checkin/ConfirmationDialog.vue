@@ -141,22 +141,26 @@
 
             <div>
                 <label for="room" class="block text-sm font-medium text-gray-700 mb-1">
-                    {{ stay.room ? 'Room' : 'Assign Room' }}
-                    <span v-if="stay.room && selectedRoom !== stay.room.id" class="text-amber-500 text-xs ml-2">(Change Room)</span>
+                    {{ stay.room ? 'Rooms' : 'Assign Rooms' }}
+                    <span
+                      v-if="stay.room && (selectedRoomIds.length !== 1 || selectedRoomIds[0] !== stay.room.id)"
+                      class="text-amber-500 text-xs ml-2"
+                    >(Change Room Selection)</span>
                 </label>
-                <Dropdown
+                <MultiSelect
                     id="room"
-                    v-model="selectedRoom"
+                    v-model="selectedRoomIds"
                     :options="rooms"
                     optionLabel="room_number"
                     optionValue="id"
                     :placeholder="
                       stay.room
                         ? (stay.room.room_number ? `${stay.room.room_number} (Current)` : 'Current room (assigned)')
-                        : 'Select a Room'
+                        : 'Select Rooms'
                     "
                     class="w-full"
                     :loading="isRoomsLoading"
+                    display="chip"
                 />
             </div>
 
@@ -191,7 +195,7 @@
 
     <template #footer>
       <Button label="Cancel" icon="pi pi-times" @click="emit('update:visible', false)" class="p-button-text" />
-      <Button label="Confirm & Check-in" icon="pi pi-check" @click="confirmAndCheckin" :loading="isConfirming" :disabled="!selectedRoom || (!stay.room && !checkOutDate)" />
+      <Button label="Confirm & Check-in" icon="pi pi-check" @click="confirmAndCheckin" :loading="isConfirming" :disabled="selectedRoomIds.length === 0 || (!stay.room && !checkOutDate)" />
     </template>
   </Dialog>
 </template>
@@ -201,6 +205,7 @@ import { ref, computed, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import Dropdown from 'primevue/dropdown';
+import MultiSelect from 'primevue/multiselect';
 import Badge from 'primevue/badge';
 import Calendar from 'primevue/calendar';
 import Checkbox from 'primevue/checkbox';
@@ -226,7 +231,7 @@ const toast = useToast();
 const registerNumber = ref<string>('');
 const selectedCategory = ref<number | null>(null);
 const selectedFloor = ref<number | null>(null);
-const selectedRoom = ref<number | null>(null);
+const selectedRoomIds = ref<number[]>([]);
 const checkOutDate = ref<Date | null>(null);
 
 // Guest editing mode
@@ -318,7 +323,7 @@ const getBookingStatusSeverity = (status: string) => {
 
 const confirmAndCheckin = () => {
   console.log('confirmAndCheckin called', {
-    selectedRoom: selectedRoom.value,
+    selectedRoomIds: selectedRoomIds.value,
     stayRoom: props.stay?.room?.id,
     hasRoom: !!props.stay?.room,
     checkOutDate: checkOutDate.value,
@@ -338,9 +343,13 @@ const confirmAndCheckin = () => {
     register_number: registerNumber.value
   };
 
-  // Always include room_id for the verify-checkin endpoint
-  if (selectedRoom.value) {
-    verifyData.room_id = selectedRoom.value;
+  if (selectedRoomIds.value.length > 0) {
+    verifyData.room_ids = selectedRoomIds.value;
+  }
+
+  // Backward compatibility for APIs expecting single room_id
+  if (selectedRoomIds.value.length === 1) {
+    verifyData.room_id = selectedRoomIds.value[0];
   }
 
   // For stays without existing room assignments, include check_out_date
@@ -393,12 +402,12 @@ watch(() => props.visible, async (newValue) => {
     // Initialize room selection
     if (props.stay?.room?.id) {
       // Stay already has a room assigned
-      selectedRoom.value = props.stay.room.id;
+      selectedRoomIds.value = [props.stay.room.id];
       selectedCategory.value = props.stay.room.category || null;
       selectedFloor.value = props.stay.room.floor || null;
     } else {
       // Stay needs room assignment
-      selectedRoom.value = null;
+      selectedRoomIds.value = [];
       selectedCategory.value = null;
       selectedFloor.value = null;
     }

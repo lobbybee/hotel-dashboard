@@ -39,6 +39,7 @@ export interface CheckinOfflineData {
 export interface VerifyCheckinData {
     register_number?: string;
     room_id?: number; // For room assignment or changes during verification
+    room_ids?: number[]; // For assigning multiple rooms during verification
     check_out_date?: string; // ISO datetime string for stays without room assignments
     guest_updates?: {
         full_name?: string;
@@ -56,4 +57,3 @@ export interface Stay {
     id: number;
     // Add stay fields
 }
-
