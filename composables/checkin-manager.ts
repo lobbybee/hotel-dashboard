@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { ref, computed, type Ref } from 'vue';
 import { useAPI } from './useAPI';
 import { useAPIHelper } from './useAPIHelper';
 
@@ -260,10 +260,11 @@ export const useCheckRoomAvailability = () => {
 };
 
 // List Checked-in Users - Lists all guests who are currently checked-in (active stays)
-export const useListCheckedInUsers = () => {
+export const useListCheckedInUsers = (showHistory?: Ref<boolean>) => {
   const route = useRoute();
   const { API } = useAPI();
   const { getPaginatedResults } = useAPIHelper();
+  const isHistoryMode = computed(() => Boolean(showHistory?.value));
 
   const queryParams = computed(() => {
     const queryKeyParams: Record<string, any> = {};
@@ -279,7 +280,7 @@ export const useListCheckedInUsers = () => {
     error,
     refetch
   } = useQuery({
-    key: computed(() => ['checked-in-users', queryParams.value]),
+    key: computed(() => ['checked-in-users', queryParams.value, isHistoryMode.value ? 'history' : 'active']),
     query: async () => {
       const params: Record<string, any> = {
         page: Number(route.query.page) || undefined,
@@ -293,7 +294,10 @@ export const useListCheckedInUsers = () => {
         }
       });
 
-      const response = await API('/stay-management/checked-in-users-grouped/', { params });
+      const endpoint = isHistoryMode.value
+        ? '/stay-management/stays-history-grouped/'
+        : '/stay-management/checked-in-users-grouped/';
+      const response = await API(endpoint, { params });
       return getPaginatedResults(response);
     },
     placeholderData: (previousData) => previousData

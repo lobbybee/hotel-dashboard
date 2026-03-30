@@ -67,7 +67,7 @@
               <i class="pi pi-home"></i>
               Rooms
             </span>
-            <span class="font-semibold text-gray-900">{{ guestCard.activeStays.length }}</span>
+            <span class="font-semibold text-gray-900">{{ guestCard.visibleStays.length }}</span>
           </div>
           <div class="flex items-center justify-between text-sm">
             <span class="text-gray-600 flex items-center gap-2">
@@ -75,7 +75,7 @@
               Category
             </span>
             <Tag
-              :value="guestCard.activeStays.length > 1 ? 'Multiple' : (guestCard.primaryStay?.room_details?.category || 'N/A')"
+              :value="guestCard.visibleStays.length > 1 ? 'Multiple' : (guestCard.primaryStay?.room_details?.category || 'N/A')"
               severity="info"
             />
           </div>
@@ -110,12 +110,12 @@
         </div>
 
         <Button
-          v-if="guestCard.isCheckedIn && guestCard.primaryStay"
+          v-if="guestCard.checkoutStay"
           label="Check Out"
           icon="pi pi-sign-out"
           class="w-full"
           severity="danger"
-          @click="handleCheckout(guestCard.primaryStay)"
+          @click="handleCheckout(guestCard.checkoutStay)"
         />
         <Button
           label="View Guest"
@@ -518,6 +518,9 @@ const toast = useToast();
 const route = useRoute();
 const router = useRouter();
 const pageSize = computed(() => Number(route.query.page_size) || 10);
+const searchQuery = ref((route.query.search as string) || '');
+const showHistory = ref(false);
+const searchDebounceTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
 type GuestWithDetails = Guest & {
   status?: string;
@@ -596,13 +599,13 @@ type StayWithGuestContext = GroupedStay & {
 };
 
 // --- DATA FETCHING ---
-const { checkedInUsers, isLoading, error, refetch } = useListCheckedInUsers();
+const { checkedInUsers, isLoading, error, refetch } = useListCheckedInUsers(showHistory);
 const groupedCheckedInUsers = computed<CheckedInGuestGroup[]>(() => {
   return (checkedInUsers.value?.results || []) as CheckedInGuestGroup[];
 });
 const checkoutGuestCards = computed(() => {
   const grouped = groupedCheckedInUsers.value.map((group) => {
-    const activeStays = (group.stays || [])
+    const mappedStays = (group.stays || [])
       .map((stay) => ({
         ...stay,
         guest: group.guest,
@@ -613,14 +616,17 @@ const checkoutGuestCards = computed(() => {
         pending_stay_ids: group.pending_stay_ids,
         completed_stay_ids: group.completed_stay_ids,
         flag_summary: group.flag_summary
-      }))
-      .filter((stay) => stay.isCheckedIn === true);
+      }));
+    const activeStays = mappedStays.filter((stay) => stay.isCheckedIn === true);
+    const visibleStays = showHistory.value ? mappedStays : activeStays;
 
     return {
       guest: group.guest,
       isCheckedIn: group.is_checked_in,
       activeStays,
-      primaryStay: activeStays[0] || null
+      visibleStays,
+      primaryStay: visibleStays[0] || activeStays[0] || null,
+      checkoutStay: activeStays[0] || null
     };
   });
 
@@ -631,9 +637,6 @@ const totalRecords = computed(() => checkedInUsers.value?.count || 0);
 const currentPage = computed(() => Number(route.query.page) || 1);
 
 // --- SEARCH ---
-const searchQuery = ref((route.query.search as string) || '');
-const showHistory = ref(false);
-const searchDebounceTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
 const updateRouteQuery = async (updates: Record<string, any>) => {
   const nextQuery: Record<string, any> = { ...route.query, ...updates };
