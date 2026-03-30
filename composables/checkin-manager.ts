@@ -293,7 +293,7 @@ export const useListCheckedInUsers = () => {
         }
       });
 
-      const response = await API('/stay-management/checked-in-users/', { params });
+      const response = await API('/stay-management/checked-in-users-grouped/', { params });
       return getPaginatedResults(response);
     },
     placeholderData: (previousData) => previousData
@@ -318,10 +318,16 @@ export const useCheckoutUser = () => {
     isLoading,
     asyncStatus
   } = useMutation({
-    mutation: async ({ stayId, data }: { stayId: string | number; data?: { internal_rating?: number; internal_note?: string } }) => {
-      const response = await API(`/stay-management/${stayId}/checkout/`, {
+    mutation: async (data: {
+      guest_id: string | number;
+      stay_ids: Array<string | number>;
+      internal_rating?: number;
+      internal_note?: string;
+      flag_user?: boolean;
+    }) => {
+      const response = await API('/stay-management/checkout-bulk/', {
         method: 'POST',
-        body: data || {}
+        body: data
       });
       return response;
     }

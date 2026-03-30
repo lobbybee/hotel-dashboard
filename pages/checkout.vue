@@ -304,7 +304,7 @@
           </p>
           <div class="space-y-1 text-sm">
             <p><strong>Guest:</strong> {{ selectedStayForCheckout.guest.full_name }}</p>
-            <p><strong>Room:</strong> {{ selectedStayForCheckout.room_details.room_number }}</p>
+            <p><strong>Primary Room:</strong> {{ selectedStayForCheckout.room_details.room_number }}</p>
             <p><strong>Check-in:</strong> {{ formatDate(selectedStayForCheckout.check_in_date) }}</p>
             <div class="flex items-center gap-2">
               <p v-if="!isEditingCheckoutDateInCheckoutModal" class="m-0">
@@ -361,34 +361,56 @@
                      </p>
         </div>
 
+        <!-- Stay Selection -->
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+          <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <i class="pi pi-list-check"></i>
+            Select Rooms To Check Out
+          </h4>
+          <div v-if="checkoutStayOptions.length > 0" class="space-y-3">
+            <div
+              v-for="stayOption in checkoutStayOptions"
+              :key="stayOption.id"
+              class="flex items-start gap-3 rounded-md border border-gray-200 p-3"
+            >
+              <Checkbox
+                :inputId="`checkout-stay-${stayOption.id}`"
+                v-model="selectedCheckoutStayIds"
+                :value="stayOption.id"
+              />
+              <label :for="`checkout-stay-${stayOption.id}`" class="flex-1 cursor-pointer text-sm">
+                <p class="font-medium text-gray-900">
+                  Room {{ stayOption.room_details?.room_number || 'N/A' }}
+                  <span class="text-gray-500 font-normal">({{ stayOption.room_details?.category || 'N/A' }})</span>
+                </p>
+                <p class="text-gray-600 mt-1">
+                  {{ formatDate(stayOption.check_in_date) }} to {{ formatDate(stayOption.check_out_date) }}
+                </p>
+                <p class="text-gray-700 mt-1">
+                  Current Bill: Rs {{ Number(stayOption.billing?.current_bill || 0).toFixed(2) }}
+                </p>
+              </label>
+            </div>
+          </div>
+          <p v-else class="text-sm text-gray-500">No active stays available for this guest.</p>
+        </div>
+
         <!-- Billing Information -->
         <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
           <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <i class="pi pi-file-text"></i>
             Billing Summary
           </h4>
-          <div class="space-y-3 text-sm">
-            <div>
-              <label for="final_charge" class="block text-sm font-medium text-gray-700 mb-2">
-                Final Charge
-              </label>
-              <InputNumber
-                id="final_charge"
-                v-model="checkoutData.final_charge"
-                mode="currency"
-                currency="INR"
-                locale="en-IN"
-                class="w-full"
-                placeholder="Enter final charge"
-              />
-            </div>
+          <div class="space-y-2 text-sm">
+            <p><strong>Selected Rooms:</strong> {{ selectedCheckoutStayIds.length }}</p>
+            <p><strong>Selected Total:</strong> Rs {{ selectedCheckoutTotal.toFixed(2) }}</p>
           </div>
         </div>
 
         <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <p class="text-sm text-amber-900">
             <i class="pi pi-exclamation-triangle mr-2"></i>
-            Room {{ selectedStayForCheckout.room_details.room_number }} will be marked as "Cleaning" after checkout.
+            {{ selectedCheckoutStayIds.length > 1 ? 'Selected rooms' : 'Selected room' }} will be marked as "Cleaning" after checkout.
           </p>
         </div>
 
@@ -475,30 +497,15 @@ import Dialog from 'primevue/dialog';
 import Rating from 'primevue/rating';
 import Textarea from 'primevue/textarea';
 import Checkbox from 'primevue/checkbox';
-import InputNumber from 'primevue/inputnumber';
 import Calendar from 'primevue/calendar';
 import { useToast } from 'primevue/usetoast';
-import { z } from 'zod';
 
 import { useListCheckedInUsers, useCheckoutUser, useExtendGuestStay } from '~/composables/checkin-manager';
 import { useAPIHelper } from '~/composables/useAPIHelper';
 import { formatDateOnlyInHotelTz, formatDateTimeCompactInHotelTz } from '~/utils/dateFormat';
 
 // Import shared types
-import type { Stay, Guest } from '~/types/guest';
-
-// Checkout data validation schema
-const CheckoutDataSchema = z.object({
-  internal_rating: z.number().min(1).max(5).nullable(),
-  internal_note: z.string(),
-  flag_user: z.boolean(),
-  final_charge: z.number().min(0)
-}).refine(
-  (data) => !data.flag_user || (data.flag_user && data.internal_note.trim().length > 0),
-  { message: 'Internal note is required when flagging a user' }
-);
-
-type CheckoutData = z.infer<typeof CheckoutDataSchema>;
+import type { Guest } from '~/types/guest';
 
 const { getErrorMessage } = useAPIHelper();
 
@@ -508,12 +515,104 @@ const route = useRoute();
 const router = useRouter();
 const pageSize = computed(() => Number(route.query.page_size) || 10);
 
+type GuestWithDetails = Guest & {
+  status?: string;
+  nationality?: string;
+  date_of_birth?: string;
+  preferred_language?: string;
+  is_whatsapp_active?: boolean;
+  notes?: string;
+  documents?: Array<{
+    id: number;
+    document_type?: string;
+    document_number?: string;
+    is_verified?: boolean;
+    document_file_url?: string;
+    document_file_back_url?: string;
+  }>;
+  [key: string]: any;
+};
+
+type GroupedStay = {
+  id: number;
+  check_in_date: string;
+  check_out_date: string;
+  isCheckedIn?: boolean;
+  room_details: {
+    room_number?: string;
+    category?: string;
+    [key: string]: any;
+  };
+  billing?: {
+    current_bill?: number;
+    expected_bill?: number;
+    [key: string]: any;
+  };
+  [key: string]: any;
+};
+
+type CheckedInGuestGroup = {
+  guest: GuestWithDetails;
+  is_checked_in: boolean;
+  stays: GroupedStay[];
+  billing?: {
+    current_bill_total?: number;
+    expected_bill_total?: number;
+    rooms?: Array<{
+      stay_id: number;
+      room_id: number;
+      current_bill: number;
+      expected_bill: number;
+    }>;
+  };
+  active_stay_ids?: number[];
+  pending_stay_ids?: number[];
+  completed_stay_ids?: number[];
+  flag_summary?: {
+    is_flagged?: boolean;
+    police_flagged?: boolean;
+    flags?: Array<{
+      id: number;
+      global_note?: string;
+      is_active?: boolean;
+      created_at?: string;
+    }>;
+  };
+};
+
+type StayWithGuestContext = GroupedStay & {
+  guest: GuestWithDetails;
+  isCheckedIn: boolean;
+  groupedIsCheckedIn: boolean;
+  groupedBilling?: CheckedInGuestGroup['billing'];
+  active_stay_ids?: number[];
+  pending_stay_ids?: number[];
+  completed_stay_ids?: number[];
+  flag_summary?: CheckedInGuestGroup['flag_summary'];
+};
+
 // --- DATA FETCHING ---
 const { checkedInUsers, isLoading, error, refetch } = useListCheckedInUsers();
-const stays = computed(() => {
-  const results = checkedInUsers.value?.results || [];
-  if (showHistory.value) return results;
-  return results.filter(stay => stay.isCheckedIn === true);
+const groupedCheckedInUsers = computed<CheckedInGuestGroup[]>(() => {
+  return (checkedInUsers.value?.results || []) as CheckedInGuestGroup[];
+});
+const stays = computed<StayWithGuestContext[]>(() => {
+  const flattenedStays = groupedCheckedInUsers.value.flatMap((group) =>
+    (group.stays || []).map((stay) => ({
+      ...stay,
+      guest: group.guest,
+      isCheckedIn: typeof stay.isCheckedIn === 'boolean' ? stay.isCheckedIn : group.is_checked_in,
+      groupedIsCheckedIn: group.is_checked_in,
+      groupedBilling: group.billing,
+      active_stay_ids: group.active_stay_ids,
+      pending_stay_ids: group.pending_stay_ids,
+      completed_stay_ids: group.completed_stay_ids,
+      flag_summary: group.flag_summary
+    }))
+  );
+
+  if (showHistory.value) return flattenedStays;
+  return flattenedStays.filter((stay) => stay.isCheckedIn === true);
 });
 const totalRecords = computed(() => checkedInUsers.value?.count || 0);
 const currentPage = computed(() => Number(route.query.page) || 1);
@@ -572,11 +671,12 @@ onBeforeUnmount(() => {
 const { checkoutUser, isLoading: isCheckingOut } = useCheckoutUser();
 const isCheckoutDialogVisible = ref(false);
 const selectedStayForCheckout = ref<any>(null);
+const checkoutStayOptions = ref<StayWithGuestContext[]>([]);
+const selectedCheckoutStayIds = ref<number[]>([]);
 const checkoutData = ref({
   internal_rating: null as number | null,
   internal_note: '',
-  flag_user: false,
-  final_charge: 0 as number
+  flag_user: false
 });
 
 // --- GUEST INFO LOGIC ---
@@ -588,13 +688,58 @@ const isEditingCheckoutDateInCheckoutModal = ref(false);
 const editedCheckoutDateInCheckoutModal = ref<Date | null>(null);
 const { extendGuestStay, isLoading: isExtendingStay } = useExtendGuestStay();
 
+const updateLocalStayCheckoutDate = (stayId: number, newCheckoutDate: string) => {
+  for (const group of groupedCheckedInUsers.value) {
+    const stayToUpdate = (group.stays || []).find((stay) => stay.id === stayId);
+    if (stayToUpdate) {
+      stayToUpdate.check_out_date = newCheckoutDate;
+      return;
+    }
+  }
+};
+
+const selectedCheckoutStays = computed(() => {
+  const selectedIds = new Set(selectedCheckoutStayIds.value.map((id) => Number(id)));
+  return checkoutStayOptions.value.filter((stay) => selectedIds.has(Number(stay.id)));
+});
+
+const selectedCheckoutTotal = computed(() => {
+  return selectedCheckoutStays.value.reduce((sum, stay) => {
+    return sum + Number(stay.billing?.current_bill || 0);
+  }, 0);
+});
+
 const handleCheckout = (stay: any) => {
   selectedStayForCheckout.value = stay;
+  const guestGroup = groupedCheckedInUsers.value.find(
+    (group) => Number(group.guest?.id) === Number(stay?.guest?.id)
+  );
+  const activeStaysForGuest: StayWithGuestContext[] = guestGroup
+    ? (guestGroup.stays || [])
+      .map((guestStay) => ({
+        ...guestStay,
+        guest: guestGroup.guest,
+        isCheckedIn: typeof guestStay.isCheckedIn === 'boolean' ? guestStay.isCheckedIn : guestGroup.is_checked_in,
+        groupedIsCheckedIn: guestGroup.is_checked_in,
+        groupedBilling: guestGroup.billing,
+        active_stay_ids: guestGroup.active_stay_ids,
+        pending_stay_ids: guestGroup.pending_stay_ids,
+        completed_stay_ids: guestGroup.completed_stay_ids,
+        flag_summary: guestGroup.flag_summary
+      }))
+      .filter((guestStay) => guestStay.isCheckedIn === true)
+    : [];
+
+  checkoutStayOptions.value = activeStaysForGuest;
+  selectedCheckoutStayIds.value = activeStaysForGuest.some((guestStay) => guestStay.id === stay.id)
+    ? [stay.id]
+    : activeStaysForGuest.length > 0
+      ? [activeStaysForGuest[0].id]
+      : [];
   checkoutData.value = {
     internal_rating: null,
     internal_note: '',
-    flag_user: false,
-    final_charge: stay.billing?.current_bill || 0
+    flag_user: false
   };
   isEditingCheckoutDateInCheckoutModal.value = false;
   editedCheckoutDateInCheckoutModal.value = null;
@@ -630,14 +775,7 @@ const saveCheckoutDate = async () => {
 
     // Update the local data with the new checkout date
     selectedStayForGuestInfo.value.check_out_date = newCheckoutDate;
-
-    // Find and update the stay in the main checkedInUsers array
-    const stayIndex = (checkedInUsers.value?.results || []).findIndex(
-      stay => stay.id === selectedStayForGuestInfo.value.id
-    );
-    if (stayIndex !== -1 && checkedInUsers.value?.results) {
-      checkedInUsers.value.results[stayIndex].check_out_date = newCheckoutDate;
-    }
+    updateLocalStayCheckoutDate(selectedStayForGuestInfo.value.id, newCheckoutDate);
 
     toast.add({
       severity: 'success',
@@ -683,13 +821,7 @@ const saveCheckoutDateFromCheckoutModal = async () => {
     });
 
     selectedStayForCheckout.value.check_out_date = newCheckoutDate;
-
-    const stayIndex = (checkedInUsers.value?.results || []).findIndex(
-      stay => stay.id === selectedStayForCheckout.value.id
-    );
-    if (stayIndex !== -1 && checkedInUsers.value?.results) {
-      checkedInUsers.value.results[stayIndex].check_out_date = newCheckoutDate;
-    }
+    updateLocalStayCheckoutDate(selectedStayForCheckout.value.id, newCheckoutDate);
 
     toast.add({
       severity: 'success',
@@ -713,6 +845,15 @@ const saveCheckoutDateFromCheckoutModal = async () => {
 
 const printCheckoutSummary = () => {
   if (!selectedStayForCheckout.value) return;
+  if (selectedCheckoutStayIds.value.length === 0) {
+    toast.add({
+      severity: 'warn',
+      summary: 'No Rooms Selected',
+      detail: 'Select at least one room to print checkout summary.',
+      life: 4000
+    });
+    return;
+  }
 
   try {
     const pdf = new jsPDF('p', 'mm', 'a4');
@@ -762,19 +903,20 @@ const printCheckoutSummary = () => {
     yPosition += 10;
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`Room Number: ${selectedStayForCheckout.value.room_details.room_number}`, 20, yPosition);
+    const primaryPrintedStay = selectedCheckoutStays.value[0] || selectedStayForCheckout.value;
+    pdf.text(`Primary Room: ${primaryPrintedStay.room_details.room_number}`, 20, yPosition);
 
     yPosition += 7;
-    pdf.text(`Room Category: ${selectedStayForCheckout.value.room_details.category}`, 20, yPosition);
+    pdf.text(`Room Category: ${primaryPrintedStay.room_details.category}`, 20, yPosition);
 
     yPosition += 7;
-    pdf.text(`Check-in Date: ${formatDate(selectedStayForCheckout.value.check_in_date)}`, 20, yPosition);
+    pdf.text(`Check-in Date: ${formatDate(primaryPrintedStay.check_in_date)}`, 20, yPosition);
 
     yPosition += 7;
-    pdf.text(`Check-out Date: ${formatDate(selectedStayForCheckout.value.check_out_date)}`, 20, yPosition);
+    pdf.text(`Check-out Date: ${formatDate(primaryPrintedStay.check_out_date)}`, 20, yPosition);
 
     yPosition += 7;
-    pdf.text(`Duration: ${getDaysStayed(selectedStayForCheckout.value)} night(s)`, 20, yPosition);
+    pdf.text(`Duration: ${getDaysStayed(primaryPrintedStay)} night(s)`, 20, yPosition);
 
     // Billing Information
     yPosition += 15;
@@ -787,9 +929,17 @@ const printCheckoutSummary = () => {
     pdf.setFont('helvetica', 'normal');
 
     // Bill items
-    pdf.text(`${selectedStayForCheckout.value.room_details.category} Room - ${selectedStayForCheckout.value.room_details.room_number}`, 20, yPosition);
-    // Add some space
-    yPosition += 10;
+    selectedCheckoutStays.value.forEach((stayItem) => {
+      if (yPosition > pageHeight - 50) return;
+      pdf.text(
+        `${stayItem.room_details?.category || 'Room'} - ${stayItem.room_details?.room_number || 'N/A'}`,
+        20,
+        yPosition
+      );
+      yPosition += 7;
+    });
+
+    yPosition += 3;
 
     // Draw line before total
     pdf.setLineWidth(0.5);
@@ -801,13 +951,13 @@ const printCheckoutSummary = () => {
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Total:', pageWidth - 60, yPosition);
-    pdf.text(`Rs ${checkoutData.value.final_charge.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+    pdf.text(`Rs ${selectedCheckoutTotal.value.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
 
     // Payment Status
     yPosition += 15;
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'italic');
-    pdf.text(`Payment Status: PENDING (Rs ${checkoutData.value.final_charge.toFixed(2)})`, 20, yPosition);
+    pdf.text(`Payment Status: PENDING (Rs ${selectedCheckoutTotal.value.toFixed(2)})`, 20, yPosition);
 
     // Footer
     yPosition = pageHeight - 30;
@@ -819,7 +969,7 @@ const printCheckoutSummary = () => {
     pdf.text('Please settle the payment at the front desk', pageWidth / 2, yPosition, { align: 'center' });
 
     // Save the PDF
-    const fileName = `checkout-summary-${selectedStayForCheckout.value.room_details.room_number}-${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `checkout-summary-guest-${selectedStayForCheckout.value.guest.id}-${new Date().toISOString().split('T')[0]}.pdf`;
     pdf.save(fileName);
 
     toast.add({
@@ -842,6 +992,15 @@ const printCheckoutSummary = () => {
 
 const handleConfirmCheckout = async () => {
   if (!selectedStayForCheckout.value) return;
+  if (selectedCheckoutStayIds.value.length === 0) {
+    toast.add({
+      severity: 'warn',
+      summary: 'No Rooms Selected',
+      detail: 'Select at least one room to check out.',
+      life: 5000
+    });
+    return;
+  }
 
   // Validation: internal note is required when flag_user is true
   if (checkoutData.value.flag_user && !checkoutData.value.internal_note.trim()) {
@@ -856,7 +1015,8 @@ const handleConfirmCheckout = async () => {
 
   try {
     const checkoutPayload: any = {
-      amount_paid: checkoutData.value.final_charge,
+      guest_id: selectedStayForCheckout.value.guest.id,
+      stay_ids: selectedCheckoutStayIds.value,
       ...(checkoutData.value.internal_rating && { internal_rating: checkoutData.value.internal_rating }),
       ...(checkoutData.value.internal_note && { internal_note: checkoutData.value.internal_note })
     };
@@ -866,16 +1026,16 @@ const handleConfirmCheckout = async () => {
       checkoutPayload.flag_user = true;
     }
 
-    await checkoutUser({
-      stayId: selectedStayForCheckout.value.id,
-      data: checkoutPayload
-    });
+    const response: any = await checkoutUser(checkoutPayload);
+    const checkoutResult = response?.data || {};
+    const wasFullyCheckedOut = checkoutResult.guest_has_active_stays === false;
 
     toast.add({
       severity: 'success',
       summary: 'Checked Out',
-      detail: `${selectedStayForCheckout.value.guest.full_name} has been checked out successfully${checkoutData.value.flag_user ? ' and flagged for future attention.' : '.'}`,
-      life: 4000
+      detail: checkoutResult.message
+        || `${selectedStayForCheckout.value.guest.full_name} checked out for ${selectedCheckoutStayIds.value.length} room(s). ${wasFullyCheckedOut ? 'No active stays remain.' : 'Active stays still remain.'}`,
+      life: 4500
     });
 
     isCheckoutDialogVisible.value = false;
