@@ -31,7 +31,7 @@
       <Button label="Retry" icon="pi pi-refresh" @click="refetch" />
     </div>
 
-    <div v-else-if="stays.length === 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
+    <div v-else-if="checkoutGuestCards.length === 0" class="text-center py-16 bg-white rounded-lg border border-gray-200">
       <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
       <p class="text-gray-500 text-lg mb-2">{{ showHistory ? 'No stays found' : 'No active stays' }}</p>
       <p class="text-gray-400 text-sm">{{ showHistory ? 'Try changing search or page.' : 'All rooms are currently available' }}</p>
@@ -40,66 +40,69 @@
     <div v-else class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
-        v-for="stay in stays"
-        :key="stay.id"
+        v-for="guestCard in checkoutGuestCards"
+        :key="guestCard.guest.id"
         class="rounded-lg border p-6 transition-all"
-        :class="stay.isCheckedIn ? 'bg-white border-gray-200 hover:shadow-lg' : 'bg-gray-50 border-gray-300 opacity-95'"
+        :class="guestCard.isCheckedIn ? 'bg-white border-gray-200 hover:shadow-lg' : 'bg-gray-50 border-gray-300 opacity-95'"
       >
         <div class="flex items-start justify-between mb-4">
           <div class="flex items-center gap-3">
             <div
               class="w-12 h-12 rounded-full flex items-center justify-center"
-              :class="stay.isCheckedIn ? 'bg-primary-100' : 'bg-gray-200'"
+              :class="guestCard.isCheckedIn ? 'bg-primary-100' : 'bg-gray-200'"
             >
-              <i class="pi pi-user text-xl" :class="stay.isCheckedIn ? 'text-primary-600' : 'text-gray-600'"></i>
+              <i class="pi pi-user text-xl" :class="guestCard.isCheckedIn ? 'text-primary-600' : 'text-gray-600'"></i>
             </div>
             <div>
-              <h3 class="font-semibold text-lg text-gray-900">{{ stay.guest.full_name }}</h3>
-              <p class="text-sm text-gray-500">{{ stay.guest.email }}</p>
+              <h3 class="font-semibold text-lg text-gray-900">{{ guestCard.guest.full_name }}</h3>
+              <p class="text-sm text-gray-500">{{ guestCard.guest.email }}</p>
             </div>
           </div>
-          <Tag :value="stay.isCheckedIn ? 'Active' : 'Past Stay'" :severity="stay.isCheckedIn ? 'success' : 'secondary'" />
+          <Tag :value="guestCard.isCheckedIn ? 'Active' : 'Past Stay'" :severity="guestCard.isCheckedIn ? 'success' : 'secondary'" />
         </div>
 
         <div class="space-y-2 mb-4 p-4 bg-gray-50 rounded-lg">
           <div class="flex items-center justify-between text-sm">
             <span class="text-gray-600 flex items-center gap-2">
               <i class="pi pi-home"></i>
-              Room
+              Rooms
             </span>
-            <span class="font-semibold text-gray-900">{{ stay.room_details.room_number }}</span>
+            <span class="font-semibold text-gray-900">{{ guestCard.activeStays.length }}</span>
           </div>
           <div class="flex items-center justify-between text-sm">
             <span class="text-gray-600 flex items-center gap-2">
               <i class="pi pi-tag"></i>
               Category
             </span>
-            <Tag :value="stay.room_details.category" severity="info" />
+            <Tag
+              :value="guestCard.activeStays.length > 1 ? 'Multiple' : (guestCard.primaryStay?.room_details?.category || 'N/A')"
+              severity="info"
+            />
           </div>
           <div class="flex items-center justify-between text-sm">
             <span class="text-gray-600 flex items-center gap-2">
               <i class="pi pi-phone"></i>
               WhatsApp
             </span>
-            <span class="font-medium text-gray-900">{{ stay.guest.whatsapp_number || 'N/A' }}</span>
+            <span class="font-medium text-gray-900">{{ guestCard.guest.whatsapp_number || 'N/A' }}</span>
           </div>
         </div>
 
-        <div class="space-y-2 mb-4">
+        <div v-if="guestCard.primaryStay" class="space-y-2 mb-4">
           <div class="flex items-center gap-2 text-sm text-gray-600">
             <i class="pi pi-calendar-plus text-green-600"></i>
-            <span>Check-in: {{ formatDate(stay.check_in_date) }}</span>
+            <span>Check-in: {{ formatDate(guestCard.primaryStay.check_in_date) }}</span>
           </div>
           <div class="flex items-center gap-2 text-sm text-gray-600">
             <i class="pi pi-calendar-minus text-red-600"></i>
-            <span>Check-out: {{ formatDate(stay.check_out_date) }}</span>
+            <span>Check-out: {{ formatDate(guestCard.primaryStay.check_out_date) }}</span>
           </div>
           <div class="flex items-center gap-2 text-sm">
             <i class="pi pi-clock text-blue-600"></i>
-            <span class="font-medium text-blue-600">{{ getDaysStayed(stay) }} night(s)</span>
+            <span class="font-medium text-blue-600">{{ getDaysStayed(guestCard.primaryStay) }} night(s)</span>
           </div>
           <p
-            v-if="stay.isCheckedIn && isCheckoutTimePassed(stay.check_out_date)"
+            v-if="guestCard.isCheckedIn && isCheckoutTimePassed(guestCard.primaryStay.check_out_date)"
             class="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-2 py-1"
           >
             Checkout time is in the past. You can extend the stay or proceed with checkout.
@@ -107,21 +110,22 @@
         </div>
 
         <Button
-          v-if="stay.isCheckedIn"
+          v-if="guestCard.isCheckedIn && guestCard.primaryStay"
           label="Check Out"
           icon="pi pi-sign-out"
           class="w-full"
           severity="danger"
-          @click="handleCheckout(stay)"
+          @click="handleCheckout(guestCard.primaryStay)"
         />
         <Button
           label="View Guest"
           icon="pi pi-user"
           class="w-full"
-          :class="stay.isCheckedIn ? 'mt-3' : ''"
-          :severity="stay.isCheckedIn ? 'info' : 'secondary'"
+          :class="guestCard.isCheckedIn ? 'mt-3' : ''"
+          :severity="guestCard.isCheckedIn ? 'info' : 'secondary'"
           outlined
-          @click="handleViewGuest(stay)"
+          :disabled="!guestCard.primaryStay"
+          @click="guestCard.primaryStay && handleViewGuest(guestCard.primaryStay)"
         />
       </div>
     </div>
@@ -596,23 +600,32 @@ const { checkedInUsers, isLoading, error, refetch } = useListCheckedInUsers();
 const groupedCheckedInUsers = computed<CheckedInGuestGroup[]>(() => {
   return (checkedInUsers.value?.results || []) as CheckedInGuestGroup[];
 });
-const stays = computed<StayWithGuestContext[]>(() => {
-  const flattenedStays = groupedCheckedInUsers.value.flatMap((group) =>
-    (group.stays || []).map((stay) => ({
-      ...stay,
-      guest: group.guest,
-      isCheckedIn: typeof stay.isCheckedIn === 'boolean' ? stay.isCheckedIn : group.is_checked_in,
-      groupedIsCheckedIn: group.is_checked_in,
-      groupedBilling: group.billing,
-      active_stay_ids: group.active_stay_ids,
-      pending_stay_ids: group.pending_stay_ids,
-      completed_stay_ids: group.completed_stay_ids,
-      flag_summary: group.flag_summary
-    }))
-  );
+const checkoutGuestCards = computed(() => {
+  const grouped = groupedCheckedInUsers.value.map((group) => {
+    const activeStays = (group.stays || [])
+      .map((stay) => ({
+        ...stay,
+        guest: group.guest,
+        isCheckedIn: typeof stay.isCheckedIn === 'boolean' ? stay.isCheckedIn : group.is_checked_in,
+        groupedIsCheckedIn: group.is_checked_in,
+        groupedBilling: group.billing,
+        active_stay_ids: group.active_stay_ids,
+        pending_stay_ids: group.pending_stay_ids,
+        completed_stay_ids: group.completed_stay_ids,
+        flag_summary: group.flag_summary
+      }))
+      .filter((stay) => stay.isCheckedIn === true);
 
-  if (showHistory.value) return flattenedStays;
-  return flattenedStays.filter((stay) => stay.isCheckedIn === true);
+    return {
+      guest: group.guest,
+      isCheckedIn: group.is_checked_in,
+      activeStays,
+      primaryStay: activeStays[0] || null
+    };
+  });
+
+  if (showHistory.value) return grouped;
+  return grouped.filter((group) => group.isCheckedIn && group.activeStays.length > 0);
 });
 const totalRecords = computed(() => checkedInUsers.value?.count || 0);
 const currentPage = computed(() => Number(route.query.page) || 1);
