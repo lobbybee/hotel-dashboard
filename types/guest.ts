@@ -41,6 +41,9 @@ export interface VerifyCheckinData {
     room_id?: number; // For room assignment or changes during verification
     room_ids?: number[]; // For assigning multiple rooms during verification
     check_out_date?: string; // ISO datetime string for stays without room assignments
+    breakfast_reminder?: boolean;
+    lunch_reminder?: boolean;
+    dinner_reminder?: boolean;
     guest_updates?: {
         full_name?: string;
         email?: string;
@@ -49,6 +52,7 @@ export interface VerifyCheckinData {
         preferred_language?: string;
         notes?: string;
         breakfast_reminder?: boolean;
+        lunch_reminder?: boolean;
         dinner_reminder?: boolean;
     };
 }

@@ -182,6 +182,13 @@
                     </div>
                 </div>
                 <div>
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Lunch Reminder</label>
+                    <div class="flex items-center gap-2">
+                        <Checkbox inputId="lunch_reminder" v-model="guestEdits.lunch_reminder" binary />
+                        <label for="lunch_reminder" class="text-sm cursor-pointer">Enable</label>
+                    </div>
+                </div>
+                <div>
                     <label class="block text-xs font-medium text-gray-500 mb-1">Dinner Reminder</label>
                     <div class="flex items-center gap-2">
                         <Checkbox inputId="dinner_reminder" v-model="guestEdits.dinner_reminder" binary />
@@ -244,6 +251,7 @@ const guestEdits = ref({
   preferred_language: '',
   notes: '',
   breakfast_reminder: false,
+  lunch_reminder: false,
   dinner_reminder: false
 });
 
@@ -340,7 +348,10 @@ const confirmAndCheckin = () => {
   }
 
   const verifyData: any = {
-    register_number: registerNumber.value
+    register_number: registerNumber.value,
+    breakfast_reminder: guestEdits.value.breakfast_reminder,
+    lunch_reminder: guestEdits.value.lunch_reminder,
+    dinner_reminder: guestEdits.value.dinner_reminder
   };
 
   if (selectedRoomIds.value.length > 0) {
@@ -358,9 +369,13 @@ const confirmAndCheckin = () => {
   }
 
   // Include guest updates if edit mode is enabled and there are changes
-  if (editGuestMode.value) {
-    const guestUpdates: any = {};
+  const guestUpdates: any = {
+    breakfast_reminder: guestEdits.value.breakfast_reminder,
+    lunch_reminder: guestEdits.value.lunch_reminder,
+    dinner_reminder: guestEdits.value.dinner_reminder
+  };
 
+  if (editGuestMode.value) {
     // Only include fields that have changed
     if (guestEdits.value.full_name && guestEdits.value.full_name !== props.stay?.guest?.full_name) {
       guestUpdates.full_name = guestEdits.value.full_name;
@@ -380,18 +395,9 @@ const confirmAndCheckin = () => {
     if (guestEdits.value.notes !== props.stay?.guest?.notes) {
       guestUpdates.notes = guestEdits.value.notes;
     }
-    // Keep reminder preferences sync'd when changed in dialog
-    if (guestEdits.value.breakfast_reminder !== props.stay?.guest?.breakfast_reminder) {
-      guestUpdates.breakfast_reminder = guestEdits.value.breakfast_reminder;
-    }
-    if (guestEdits.value.dinner_reminder !== props.stay?.guest?.dinner_reminder) {
-      guestUpdates.dinner_reminder = guestEdits.value.dinner_reminder;
-    }
-
-    if (Object.keys(guestUpdates).length > 0) {
-      verifyData.guest_updates = guestUpdates;
-    }
   }
+
+  verifyData.guest_updates = guestUpdates;
 
   console.log('Emitting confirmed with unified data:', verifyData);
   emit('confirmed', verifyData);
@@ -432,6 +438,7 @@ watch(() => props.visible, async (newValue) => {
         preferred_language: props.stay.guest.preferred_language || '',
         notes: props.stay.guest.notes || '',
         breakfast_reminder: props.stay.guest.breakfast_reminder || false,
+        lunch_reminder: props.stay.guest.lunch_reminder || false,
         dinner_reminder: props.stay.guest.dinner_reminder || false
       };
     }
