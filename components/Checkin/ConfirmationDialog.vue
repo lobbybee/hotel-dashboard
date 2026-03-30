@@ -358,11 +358,6 @@ const confirmAndCheckin = () => {
     verifyData.room_ids = selectedRoomIds.value;
   }
 
-  // Backward compatibility for APIs expecting single room_id
-  if (selectedRoomIds.value.length === 1) {
-    verifyData.room_id = selectedRoomIds.value[0];
-  }
-
   // For stays without existing room assignments, include check_out_date
   if (!props.stay?.room && checkOutDate.value) {
     verifyData.check_out_date = checkOutDate.value.toISOString();
