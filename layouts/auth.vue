@@ -5,6 +5,8 @@
         <slot />
       </div>
     </div>
+    <!-- Watermark -->
+    <BuildWatermark />
   </div>
 </template>
 
