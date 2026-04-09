@@ -47,14 +47,25 @@ export const formatDateOnlyInHotelTz = (
   return date.toLocaleDateString(locale, withTimezone({ ...defaultOptions, ...options }));
 };
 
-export const formatDateTimeCompactInHotelTz = (dateInput: DateInput): string => {
+export const formatDateTimeCompactInHotelTz = (
+  dateInput: DateInput,
+  options: Intl.DateTimeFormatOptions = {}
+): string => {
   const date = toValidDate(dateInput);
   if (!date) return 'N/A';
 
   const day = formatDateInHotelTz(date, { day: 'numeric' }, 'en-US');
   const month = formatDateInHotelTz(date, { month: 'short' }, 'en-US');
   const year = formatDateInHotelTz(date, { year: 'numeric' }, 'en-US');
-  const time = formatDateInHotelTz(date, { hour: 'numeric', hour12: true }, 'en-US');
+  const time = formatDateInHotelTz(
+    date,
+    {
+      hour: 'numeric',
+      hour12: true,
+      ...options,
+    },
+    'en-US'
+  );
 
   return `${day} ${month} ${year} ${time}`;
 };

@@ -332,9 +332,9 @@ const handleInitiateWhatsappCheckin = async (stayId: number) => {
   }
 };
 
-// Helper function to format date with time e.g. "24 May 2026 5 PM"
+// Helper function to format date with time e.g. "24 May 2026 5:30 PM"
 const formatDateTime = (dateString: string): string => {
-  return formatDateTimeCompactInHotelTz(dateString);
+  return formatDateTimeCompactInHotelTz(dateString, { minute: '2-digit' });
 };
 
 // Helper function to format document type

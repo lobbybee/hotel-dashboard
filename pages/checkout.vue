@@ -1064,7 +1064,7 @@ const handleConfirmCheckout = async () => {
 };
 
 const formatDate = (dateString: string) => {
-  return formatDateTimeCompactInHotelTz(dateString);
+  return formatDateTimeCompactInHotelTz(dateString, { minute: '2-digit' });
 }
 
 const getDaysStayed = (stay: any) => {
