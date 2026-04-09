@@ -68,6 +68,7 @@ export const useUpdateHotel = () => {
 
 export const usePatchHotel = () => {
   const { API } = useAPI();
+  const queryCache = useQueryCache();
   return useMutation({
     mutation: async (patchedHotel: Partial<Hotel>) => {
       if (!patchedHotel.id) throw new Error('Hotel ID is required for patch');
@@ -76,6 +77,11 @@ export const usePatchHotel = () => {
         method: 'PATCH',
         body: patchedHotel,
       });
+    },
+    onSettled: async (_data, _error, variables) => {
+      if (!variables?.id) return;
+      await queryCache.invalidateQueries({ key: ['hotel', variables.id], exact: true });
+      await queryCache.invalidateQueries({ key: ['hotels'], exact: false });
     },
   });
 };
@@ -111,6 +117,7 @@ export const useUpdateHotelProfile = () => {
 
 export const useUploadHotelDocument = () => {
   const { API } = useAPI();
+  const queryCache = useQueryCache();
   return useMutation({
     mutation: async (documentData: { document_type: string; document_file: File }) => {
       const formData = new FormData();
@@ -122,11 +129,16 @@ export const useUploadHotelDocument = () => {
         body: formData,
       });
     },
+    onSettled: async () => {
+      await queryCache.invalidateQueries({ key: ['hotel'], exact: false });
+      await queryCache.invalidateQueries({ key: ['hotels'], exact: false });
+    },
   });
 };
 
 export const useUpdateHotelDocument = () => {
   const { API } = useAPI();
+  const queryCache = useQueryCache();
   return useMutation({
     mutation: async (documentData: { id: string; document_type?: string; document_file?: File }) => {
       const formData = new FormData();
@@ -141,6 +153,10 @@ export const useUpdateHotelDocument = () => {
         method: 'PATCH',
         body: formData,
       });
+    },
+    onSettled: async () => {
+      await queryCache.invalidateQueries({ key: ['hotel'], exact: false });
+      await queryCache.invalidateQueries({ key: ['hotels'], exact: false });
     },
   });
 };

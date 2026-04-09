@@ -96,9 +96,9 @@ const { hotelId } = storeToRefs(authStore);
 const toast = useToast();
 
 const { data: hotel, isLoading: isHotelLoading, error: hotelError, refetch: refetchHotel  } = useFetchHotel(hotelId);
-const { mutate: updateHotelProfile, isPending: isUpdateLoading } = usePatchHotel();
-const { mutate: uploadHotelDocument, isPending: isUploadLoading } = useUploadHotelDocument();
-const { mutate: updateHotelDocument, isPending: isUpdateDocumentLoading } = useUpdateHotelDocument();
+const { mutateAsync: updateHotelProfile, isLoading: isUpdateLoading } = usePatchHotel();
+const { mutateAsync: uploadHotelDocument, isLoading: isUploadLoading } = useUploadHotelDocument();
+const { mutateAsync: updateHotelDocument, isLoading: isUpdateDocumentLoading } = useUpdateHotelDocument();
 
 // Import centralized validation schema
 import { HotelSchema } from '~/utils/schemas/hotel';
@@ -208,7 +208,7 @@ const saveHotelProfile = async () => {
     });
     
     // Refresh hotel data
-    refetchHotel();
+    await refetchHotel();
   } catch (error) {
     // Show error toast
     toast.add({
@@ -278,7 +278,7 @@ const updateDocument = async (payload: { id: string, document_file: File }) => {
     });
 
     // Refresh hotel data to show updated documents
-    refetchHotel();
+    await refetchHotel();
   } catch (error) {
     // Show error toast
     toast.add({

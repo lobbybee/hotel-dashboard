@@ -11,6 +11,7 @@ export const HotelSchema = z.object({
     phone: z.string().min(10, 'Valid phone number is required').max(15),
     email: z.string().email('Invalid email address'),
     check_in_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Invalid time format (HH:MM or HH:MM:SS)'),
+    check_out_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Invalid time format (HH:MM or HH:MM:SS)').optional().or(z.literal('')),
     time_zone: z.string().min(2, 'Time zone is required').max(50),
     google_review_link: z.string().url('Invalid URL').optional().or(z.literal('')),
     google_map_link: z.string().url('Invalid URL').optional().or(z.literal('')),

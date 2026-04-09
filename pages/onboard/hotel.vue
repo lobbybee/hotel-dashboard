@@ -213,6 +213,15 @@
         </div>
 
         <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Check-out Time</label>
+          <div class="relative">
+            <input v-model="hotelForm.check_out_time" type="time" step="900" class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :class="{ 'border-red-500': errors.check_out_time }" />
+            <div class="absolute left-4 top-3.5 text-gray-400"><i class="pi pi-clock"></i></div>
+          </div>
+          <span v-if="errors.check_out_time" class="text-red-500 text-sm mt-1 block">{{ errors.check_out_time }}</span>
+        </div>
+
+        <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Timezone *</label>
           <select v-model="hotelForm.time_zone" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :class="{ 'border-red-500': errors.time_zone }">
             <option value="">Select timezone</option>
@@ -268,6 +277,18 @@
             <div class="absolute left-4 top-3.5 text-gray-400"><i class="pi pi-clock"></i></div>
           </div>
           <span v-if="errors.dinner_time" class="text-red-500 text-sm mt-1 block">{{ errors.dinner_time }}</span>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label class="flex items-center justify-between rounded-xl border border-gray-300 px-4 py-3">
+            <span class="text-sm font-medium text-gray-700">Breakfast Reminder</span>
+            <input v-model="hotelForm.breakfast_reminder" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+          </label>
+
+          <label class="flex items-center justify-between rounded-xl border border-gray-300 px-4 py-3">
+            <span class="text-sm font-medium text-gray-700">Dinner Reminder</span>
+            <input v-model="hotelForm.dinner_reminder" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+          </label>
         </div>
       </div>
     </template>
@@ -359,8 +380,21 @@
                   <p class="text-gray-900 text-sm font-medium">{{ hotelForm.check_in_time }}</p>
                 </div>
                 <div class="p-3 bg-gray-50 rounded-xl">
+                  <p class="text-xs text-gray-500 font-medium flex items-center"><i class="pi pi-clock mr-1 text-orange-600"></i> Check-out</p>
+                  <p class="text-gray-900 text-sm font-medium">{{ hotelForm.check_out_time || 'Not set' }}</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 bg-gray-50 rounded-xl">
                   <p class="text-xs text-gray-500 font-medium flex items-center"><i class="pi pi-globe mr-1 text-orange-600"></i> Timezone</p>
                   <p class="text-gray-900 text-sm font-medium truncate">{{ hotelForm.time_zone }}</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-xl">
+                  <p class="text-xs text-gray-500 font-medium flex items-center"><i class="pi pi-bell mr-1 text-orange-600"></i> Reminders</p>
+                  <p class="text-gray-900 text-sm font-medium">
+                    {{ hotelForm.breakfast_reminder ? 'Breakfast on' : 'Breakfast off' }}, {{ hotelForm.dinner_reminder ? 'Dinner on' : 'Dinner off' }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -419,11 +453,17 @@ const steps = [
 
 const hotelFormSchema = HotelSchema;
 
+const normalizeTime = (time?: string | null, fallback = '') => {
+  if (!time) return fallback
+  const parts = time.split(':')
+  if (parts.length < 2) return fallback
+  return `${parts[0]}:${parts[1]}`
+}
 
 const hotelForm = ref({
   name: '', description: '', address: '', city: '', state: '', country: '', pincode: '',
-  phone: '', email: '', check_in_time: '14:00', time_zone: 'UTC', google_review_link: '',
-  google_map_link: '', breakfast_time: '', lunch_time: '', dinner_time: ''
+  phone: '', email: '', check_in_time: '14:00', check_out_time: '', time_zone: 'UTC', google_review_link: '',
+  google_map_link: '', breakfast_time: '', lunch_time: '', dinner_time: '', breakfast_reminder: true, dinner_reminder: false
 })
 
 const errors = ref<Record<string, string>>({})
@@ -483,19 +523,21 @@ const confirmAndSave = async () => {
 
   isSaving.value = true
   try {
-    const { mutate: updateHotelProfile } = usePatchHotel()
+    const { mutateAsync: updateHotelProfile } = usePatchHotel()
     if (!hotelId.value) throw new Error("Hotel ID is missing");
     
     // Convert time format from hh:mm to hh:mm:ss for API
     const dataToSend = {
       ...result.data,
       check_in_time: result.data.check_in_time ? `${result.data.check_in_time}:00` : result.data.check_in_time,
+      check_out_time: result.data.check_out_time ? `${result.data.check_out_time}:00` : result.data.check_out_time,
       breakfast_time: result.data.breakfast_time ? `${result.data.breakfast_time}:00` : result.data.breakfast_time,
       lunch_time: result.data.lunch_time ? `${result.data.lunch_time}:00` : result.data.lunch_time,
       dinner_time: result.data.dinner_time ? `${result.data.dinner_time}:00` : result.data.dinner_time,
     }
     
     await updateHotelProfile({ id: hotelId.value, ...dataToSend })
+    await refetchHotel()
     toast.add({ severity: 'success', summary: 'Success', detail: 'Hotel profile saved!', life: 3000 })
 
     showConfirmation.value = false
@@ -521,22 +563,20 @@ watch(hotel, (data) => {
     isLoading.value = false
     // Only populate form on initial load, not on refetch (preserves user edits)
     if (!formInitialized.value) {
-      let checkInTime = data.check_in_time || '14:00'
-      if (checkInTime?.includes(':')) {
-        const parts = checkInTime.split(':')
-        checkInTime = `${parts[0]}:${parts[1]}`
-      }
       hotelForm.value = {
         name: data.name || '', description: data.description || '',
         address: data.address || '', city: data.city || '',
         state: data.state || '', country: data.country || '',
         pincode: data.pincode || '', phone: data.phone || '',
-        email: data.email || '', check_in_time: checkInTime,
+        email: data.email || '', check_in_time: normalizeTime(data.check_in_time, '14:00'),
+        check_out_time: normalizeTime(data.check_out_time),
         time_zone: data.time_zone || 'UTC', google_review_link: data.google_review_link || '',
         google_map_link: data.google_map_link || '', 
-        breakfast_time: data.breakfast_time ? data.breakfast_time.substring(0, 5) : '',
-        lunch_time: data.lunch_time ? data.lunch_time.substring(0, 5) : '',
-        dinner_time: data.dinner_time ? data.dinner_time.substring(0, 5) : ''
+        breakfast_time: normalizeTime(data.breakfast_time),
+        lunch_time: normalizeTime(data.lunch_time),
+        dinner_time: normalizeTime(data.dinner_time),
+        breakfast_reminder: data.breakfast_reminder ?? true,
+        dinner_reminder: data.dinner_reminder ?? false
       }
       formInitialized.value = true
     }

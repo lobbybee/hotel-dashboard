@@ -13,6 +13,19 @@ export interface HotelDocument {
     uploaded_at?: string; // ISO datetime
 }
 
+export interface HotelAdmin {
+    id: number;
+    username: string;
+    email: string;
+    user_type: string;
+    phone_number?: string;
+    hotel: string;
+    created_by?: number;
+    is_active_hotel_user?: boolean;
+    is_verified?: boolean;
+    department?: string;
+}
+
 export interface Hotel {
     id: string;
     name: string;
@@ -32,6 +45,7 @@ export interface Hotel {
     qr_code_url?: string;
     unique_qr_code?: string;
     check_in_time?: string;
+    check_out_time?: string;
     breakfast_time?: string;
     lunch_time?: string;
     dinner_time?: string;
@@ -46,7 +60,7 @@ export interface Hotel {
     registration_date?: string; // ISO datetime
     verified_at?: string; // ISO datetime
     updated_at?: string; // ISO datetime
-    admin?: string;
+    admin?: HotelAdmin;
     documents?: HotelDocument[];
 }
 
