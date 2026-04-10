@@ -415,9 +415,6 @@
               <InputNumber
                 inputId="checkout-final-amount"
                 :modelValue="customCheckoutFinalAmount"
-                mode="currency"
-                currency="LKR"
-                locale="en-LK"
                 :min="0"
                 class="w-full"
                 inputClass="w-full"
