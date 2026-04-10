@@ -405,9 +405,26 @@
             <i class="pi pi-file-text"></i>
             Billing Summary
           </h4>
-          <div class="space-y-2 text-sm">
+          <div class="space-y-3 text-sm">
             <p><strong>Selected Rooms:</strong> {{ selectedCheckoutStayIds.length }}</p>
-            <p><strong>Selected Total:</strong> Rs {{ selectedCheckoutTotal.toFixed(2) }}</p>
+            <p><strong>Calculated Total:</strong> Rs {{ selectedCheckoutTotal.toFixed(2) }}</p>
+            <div class="space-y-2">
+              <label for="checkout-final-amount" class="block text-sm font-medium text-gray-700">
+                Final Amount
+              </label>
+              <InputNumber
+                inputId="checkout-final-amount"
+                :modelValue="customCheckoutFinalAmount"
+                mode="currency"
+                currency="LKR"
+                locale="en-LK"
+                :min="0"
+                class="w-full"
+                inputClass="w-full"
+                @update:modelValue="handleCheckoutFinalAmountInput"
+              />
+              <p class="text-xs text-gray-500">This value will be used in the printed summary.</p>
+            </div>
           </div>
         </div>
 
@@ -502,6 +519,7 @@ import Rating from 'primevue/rating';
 import Textarea from 'primevue/textarea';
 import Checkbox from 'primevue/checkbox';
 import Calendar from 'primevue/calendar';
+import InputNumber from 'primevue/inputnumber';
 import { useToast } from 'primevue/usetoast';
 
 import { useListCheckedInUsers, useCheckoutUser, useExtendGuestStay } from '~/composables/checkin-manager';
@@ -725,6 +743,22 @@ const selectedCheckoutTotal = computed(() => {
   }, 0);
 });
 
+const customCheckoutFinalAmount = ref<number | null>(null);
+const hasManualCheckoutFinalAmount = ref(false);
+const checkoutFinalAmount = computed(() => {
+  if (hasManualCheckoutFinalAmount.value && customCheckoutFinalAmount.value !== null) {
+    return Number(customCheckoutFinalAmount.value);
+  }
+
+  return selectedCheckoutTotal.value;
+});
+
+watch(selectedCheckoutTotal, (newTotal) => {
+  if (!hasManualCheckoutFinalAmount.value) {
+    customCheckoutFinalAmount.value = newTotal;
+  }
+}, { immediate: true });
+
 const handleCheckout = (stay: any) => {
   selectedStayForCheckout.value = stay;
   const guestGroup = groupedCheckedInUsers.value.find(
@@ -757,9 +791,16 @@ const handleCheckout = (stay: any) => {
     internal_note: '',
     flag_user: false
   };
+  hasManualCheckoutFinalAmount.value = false;
+  customCheckoutFinalAmount.value = selectedCheckoutTotal.value;
   isEditingCheckoutDateInCheckoutModal.value = false;
   editedCheckoutDateInCheckoutModal.value = null;
   isCheckoutDialogVisible.value = true;
+};
+
+const handleCheckoutFinalAmountInput = (value: number | null) => {
+  customCheckoutFinalAmount.value = value;
+  hasManualCheckoutFinalAmount.value = value !== null;
 };
 
 const handleViewGuest = (stay: any) => {
@@ -967,13 +1008,13 @@ const printCheckoutSummary = () => {
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Total:', pageWidth - 60, yPosition);
-    pdf.text(`Rs ${selectedCheckoutTotal.value.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
+    pdf.text(`Rs ${checkoutFinalAmount.value.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
 
     // Payment Status
     yPosition += 15;
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'italic');
-    pdf.text(`Payment Status: PENDING (Rs ${selectedCheckoutTotal.value.toFixed(2)})`, 20, yPosition);
+    pdf.text(`Payment Status: PENDING (Rs ${checkoutFinalAmount.value.toFixed(2)})`, 20, yPosition);
 
     // Footer
     yPosition = pageHeight - 30;
