@@ -279,10 +279,15 @@
           <span v-if="errors.dinner_time" class="text-red-500 text-sm mt-1 block">{{ errors.dinner_time }}</span>
         </div>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <label class="flex items-center justify-between rounded-xl border border-gray-300 px-4 py-3">
             <span class="text-sm font-medium text-gray-700">Breakfast Reminder</span>
             <input v-model="hotelForm.breakfast_reminder" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+          </label>
+
+          <label class="flex items-center justify-between rounded-xl border border-gray-300 px-4 py-3">
+            <span class="text-sm font-medium text-gray-700">Lunch Reminder</span>
+            <input v-model="hotelForm.lunch_reminder" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
           </label>
 
           <label class="flex items-center justify-between rounded-xl border border-gray-300 px-4 py-3">
@@ -463,7 +468,7 @@ const normalizeTime = (time?: string | null, fallback = '') => {
 const hotelForm = ref({
   name: '', description: '', address: '', city: '', state: '', country: '', pincode: '',
   phone: '', email: '', check_in_time: '14:00', check_out_time: '', time_zone: 'UTC', google_review_link: '',
-  google_map_link: '', breakfast_time: '', lunch_time: '', dinner_time: '', breakfast_reminder: true, dinner_reminder: false
+  google_map_link: '', breakfast_time: '', lunch_time: '', dinner_time: '', breakfast_reminder: true, lunch_reminder: true, dinner_reminder: false
 })
 
 const errors = ref<Record<string, string>>({})
@@ -576,6 +581,7 @@ watch(hotel, (data) => {
         lunch_time: normalizeTime(data.lunch_time),
         dinner_time: normalizeTime(data.dinner_time),
         breakfast_reminder: data.breakfast_reminder ?? true,
+        lunch_reminder: data.lunch_reminder ?? true,
         dinner_reminder: data.dinner_reminder ?? false
       }
       formInitialized.value = true
