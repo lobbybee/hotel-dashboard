@@ -19,6 +19,7 @@ export const HotelSchema = z.object({
     lunch_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Invalid time format (HH:MM or HH:MM:SS)').optional().or(z.literal('')),
     dinner_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Invalid time format (HH:MM or HH:MM:SS)').optional().or(z.literal('')),
     breakfast_reminder: z.boolean().optional(),
+    lunch_reminder: z.boolean().optional(),
     dinner_reminder: z.boolean().optional(),
 });
 

@@ -124,6 +124,7 @@ const hotelForm = ref({
   lunch_time: '',
   dinner_time: '',
   breakfast_reminder: true,
+  lunch_reminder: true,
   dinner_reminder: true
 });
 
@@ -162,6 +163,7 @@ watch(hotel, (newHotelData) => {
       lunch_time: newHotelData.lunch_time || '',
       dinner_time: newHotelData.dinner_time || '',
       breakfast_reminder: newHotelData.breakfast_reminder ?? true,
+      lunch_reminder: newHotelData.lunch_reminder ?? true,
       dinner_reminder: newHotelData.dinner_reminder ?? true
     };
   }

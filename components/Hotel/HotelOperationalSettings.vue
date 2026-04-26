@@ -94,6 +94,19 @@
         </div>
       </div>
 
+      <!-- Lunch Reminder Toggle -->
+      <div>
+        <label for="lunch_reminder" class="block text-sm font-medium text-gray-700 mb-2">Lunch Reminder</label>
+        <div class="flex items-center">
+          <ToggleSwitch
+            id="lunch_reminder"
+            v-model="hotelForm.lunch_reminder"
+            @update:model-value="onLunchReminderChange"
+          />
+          <span class="ml-3 text-sm text-gray-600">Enable lunch reminders</span>
+        </div>
+      </div>
+
       <!-- Dinner Reminder Toggle -->
       <div>
         <label for="dinner_reminder" class="block text-sm font-medium text-gray-700 mb-2">Dinner Reminder</label>
@@ -262,6 +275,15 @@ const onBreakfastReminderChange = (value: boolean) => {
   const updatedForm = {
     ...props.hotelForm,
     breakfast_reminder: value
+  };
+  emit('update:hotelForm', updatedForm);
+};
+
+// Handle lunch reminder change
+const onLunchReminderChange = (value: boolean) => {
+  const updatedForm = {
+    ...props.hotelForm,
+    lunch_reminder: value
   };
   emit('update:hotelForm', updatedForm);
 };
