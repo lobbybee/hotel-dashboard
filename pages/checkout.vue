@@ -109,6 +109,19 @@
           </p>
         </div>
 
+        <div v-if="guestCard.accompanying_guests && guestCard.accompanying_guests.length > 0" class="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+          <div class="flex items-center gap-2 text-sm font-medium text-purple-800 mb-2">
+            <i class="pi pi-users"></i>
+            <span>Accompanying Guests ({{ guestCard.accompanying_guests.length }})</span>
+          </div>
+          <div class="space-y-1">
+            <div v-for="ag in guestCard.accompanying_guests" :key="ag.id" class="flex items-center justify-between text-xs">
+              <span class="text-gray-800 font-medium">{{ ag.full_name }}</span>
+              <span v-if="ag.document_number" class="text-gray-500">{{ ag.document_number }}</span>
+            </div>
+          </div>
+        </div>
+
         <Button
           v-if="guestCard.checkoutStay"
           label="Check Out"
@@ -212,6 +225,44 @@
           </div>
           <div v-else>
             <p class="text-sm text-gray-500">No identity documents uploaded.</p>
+          </div>
+        </div>
+
+        <!-- Accompanying Guests -->
+        <div v-if="selectedStayForGuestInfo.accompanying_guests && selectedStayForGuestInfo.accompanying_guests.length > 0" class="border-b pb-4">
+          <h4 class="font-semibold text-lg mb-3 flex items-center gap-2">
+            <i class="pi pi-users text-purple-600"></i>
+            Accompanying Guests ({{ selectedStayForGuestInfo.accompanying_guests.length }})
+          </h4>
+          <div class="space-y-3">
+            <div
+              v-for="agGuest in selectedStayForGuestInfo.accompanying_guests"
+              :key="agGuest.id"
+              class="p-3 rounded-lg bg-gray-50 border border-gray-200"
+            >
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <i class="pi pi-user text-gray-400"></i>
+                    <p class="font-semibold text-gray-900">{{ agGuest.full_name }}</p>
+                  </div>
+                  <div class="flex items-center gap-3 text-sm">
+                    <span v-if="agGuest.document_number" class="text-gray-500">
+                      <i class="pi pi-id-card mr-1"></i>{{ agGuest.document_number }}
+                    </span>
+                    <a
+                      v-if="agGuest.document_file_url"
+                      :href="agGuest.document_file_url"
+                      target="_blank"
+                      class="text-blue-500 hover:underline flex items-center gap-1"
+                    >
+                      <i class="pi pi-eye"></i>
+                      View ID
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -590,6 +641,12 @@ type CheckedInGuestGroup = {
   active_stay_ids?: number[];
   pending_stay_ids?: number[];
   completed_stay_ids?: number[];
+  accompanying_guests?: Array<{
+    id: number;
+    full_name: string;
+    document_number?: string;
+    document_file_url?: string;
+  }>;
   flag_summary?: {
     is_flagged?: boolean;
     police_flagged?: boolean;
@@ -610,6 +667,7 @@ type StayWithGuestContext = GroupedStay & {
   active_stay_ids?: number[];
   pending_stay_ids?: number[];
   completed_stay_ids?: number[];
+  accompanying_guests?: CheckedInGuestGroup['accompanying_guests'];
   flag_summary?: CheckedInGuestGroup['flag_summary'];
 };
 
@@ -630,6 +688,7 @@ const checkoutGuestCards = computed(() => {
         active_stay_ids: group.active_stay_ids,
         pending_stay_ids: group.pending_stay_ids,
         completed_stay_ids: group.completed_stay_ids,
+        accompanying_guests: group.accompanying_guests,
         flag_summary: group.flag_summary
       }));
     const activeStays = mappedStays.filter((stay) => stay.isCheckedIn === true);
@@ -641,7 +700,8 @@ const checkoutGuestCards = computed(() => {
       activeStays,
       visibleStays,
       primaryStay: visibleStays[0] || activeStays[0] || null,
-      checkoutStay: activeStays[0] || null
+      checkoutStay: activeStays[0] || null,
+      accompanying_guests: group.accompanying_guests
     };
   });
 
@@ -772,6 +832,7 @@ const handleCheckout = (stay: any) => {
         active_stay_ids: guestGroup.active_stay_ids,
         pending_stay_ids: guestGroup.pending_stay_ids,
         completed_stay_ids: guestGroup.completed_stay_ids,
+        accompanying_guests: guestGroup.accompanying_guests,
         flag_summary: guestGroup.flag_summary
       }))
       .filter((guestStay) => guestStay.isCheckedIn === true)
