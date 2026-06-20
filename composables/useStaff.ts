@@ -1,4 +1,4 @@
-import { computed } from 'vue';
+import { computed, toValue, type MaybeRefOrGetter } from 'vue';
 import { useAPI } from './useAPI';
 import { useAPIHelper } from './useAPIHelper';
 import type { User } from '~/types/user';
@@ -21,6 +21,36 @@ export interface StaffUpdateData {
   is_active_hotel_user?: boolean;
   department?: string[];
 }
+
+export interface RecentActivity {
+  id: number;
+  actor: string | null;
+  actor_name: string | null;
+  action: string;
+  message: string;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+// Recent activity feed (GET /recent-activity/). Optional params serves both the
+// home widget (fixed page_size) and the full page (route-driven filters).
+export const useFetchRecentActivity = (params?: MaybeRefOrGetter<Record<string, any>>) => {
+  const { API } = useAPI();
+  const { getPaginatedResults } = useAPIHelper();
+
+  const keyParams = computed(() => toValue(params) ?? {});
+
+  const { data, isLoading, error, refetch } = useQuery({
+    key: computed(() => ['recent-activity', keyParams.value]),
+    query: async () => {
+      const response = await API('/recent-activity/', { params: keyParams.value });
+      return getPaginatedResults<RecentActivity>(response);
+    },
+    placeholderData: (prev) => prev,
+  });
+
+  return { activities: data, isLoading, error, refetch };
+};
 
 // Fetch all staff members
 export const useFetchStaff = () => {

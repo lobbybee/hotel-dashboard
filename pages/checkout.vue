@@ -450,28 +450,87 @@
           <p v-else class="text-sm text-gray-500">No active stays available for this guest.</p>
         </div>
 
-        <!-- Billing Information -->
+        <!-- Invoice (live preview, editable) -->
         <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
           <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
             <i class="pi pi-file-text"></i>
-            Billing Summary
+            Invoice
           </h4>
-          <div class="space-y-3 text-sm">
-            <p><strong>Selected Rooms:</strong> {{ selectedCheckoutStayIds.length }}</p>
-            <p><strong>Calculated Total:</strong> Rs {{ selectedCheckoutTotal.toFixed(2) }}</p>
-            <div class="space-y-2">
-              <label for="checkout-final-amount" class="block text-sm font-medium text-gray-700">
-                Final Amount
-              </label>
-              <InputNumber
-                inputId="checkout-final-amount"
-                :modelValue="customCheckoutFinalAmount"
-                :min="0"
-                class="w-full"
-                inputClass="w-full"
-                @update:modelValue="handleCheckoutFinalAmountInput"
-              />
-              <p class="text-xs text-gray-500">This value will be used in the printed summary.</p>
+
+          <div v-if="isPreviewLoading" class="py-6 text-center">
+            <ProgressSpinner style="width: 32px; height: 32px" strokeWidth="6" />
+          </div>
+
+          <div v-else-if="previewError" class="text-sm text-red-600 flex items-center gap-2">
+            <i class="pi pi-exclamation-triangle"></i>
+            {{ previewError }}
+          </div>
+
+          <div v-else-if="invoicePreview" class="space-y-3 text-sm">
+            <p v-if="invoicePreview.has_existing_invoice" class="text-xs text-amber-600 flex items-start gap-1">
+              <i class="pi pi-info-circle mt-0.5"></i>
+              <span>
+                This booking is already invoiced. Edits are ignored — the existing invoice will be printed.
+                <NuxtLink to="/billing" class="font-medium underline hover:text-amber-700">Open Invoices page to edit</NuxtLink>.
+              </span>
+            </p>
+
+            <!-- Line items with editable per-category rate -->
+            <div v-for="li in invoicePreview.line_items" :key="li.stay_id" class="flex items-center gap-3 justify-between">
+              <div class="min-w-0">
+                <p class="font-medium text-gray-900 truncate">{{ li.room_type }} - {{ li.room_number }}</p>
+                <p class="text-xs text-gray-500">
+                  {{ li.nights }} night(s) · base {{ money(li.base_price) }}
+                  <span v-if="Number(li.base_price) !== Number(lineRate(li))" class="text-amber-600">(overridden)</span>
+                </p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs text-gray-500">Rate</span>
+                <InputNumber
+                  :modelValue="lineRate(li)"
+                  :min="0"
+                  :disabled="invoicePreview.has_existing_invoice"
+                  mode="decimal"
+                  :minFractionDigits="2"
+                  class="w-28"
+                  inputClass="w-28"
+                  @update:modelValue="(v) => setLineRate(li.category_id, v)"
+                />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Discount (Rs)</label>
+                <InputNumber
+                  v-model="invoiceDiscount"
+                  :min="0"
+                  :disabled="invoicePreview.has_existing_invoice"
+                  class="w-full"
+                  inputClass="w-full"
+                  @update:modelValue="scheduleInvoicePreview"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">GST % override</label>
+                <InputNumber
+                  v-model="invoiceGstRate"
+                  :min="0"
+                  :max="100"
+                  :disabled="invoicePreview.has_existing_invoice"
+                  placeholder="Per-slab"
+                  class="w-full"
+                  inputClass="w-full"
+                  @update:modelValue="scheduleInvoicePreview"
+                />
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-gray-200 space-y-1">
+              <div class="flex justify-between"><span class="text-gray-600">Subtotal</span><span>{{ money(invoicePreview.subtotal) }}</span></div>
+              <div class="flex justify-between"><span class="text-gray-600">Discount</span><span>- {{ money(invoicePreview.discount_amount) }}</span></div>
+              <div class="flex justify-between"><span class="text-gray-600">GST</span><span>{{ money(invoicePreview.gst_amount) }}</span></div>
+              <div class="flex justify-between font-semibold text-gray-900 text-base"><span>Total</span><span>{{ money(invoicePreview.total_amount) }}</span></div>
             </div>
           </div>
         </div>
@@ -540,10 +599,12 @@
       <template #footer>
         <Button label="Cancel" text @click="isCheckoutDialogVisible = false" />
         <Button
-          label="Print Summary"
+          label="Generate & Print Invoice"
           icon="pi pi-print"
           severity="secondary"
-          @click="printCheckoutSummary"
+          :loading="isFinalizingInvoice"
+          :disabled="isPreviewLoading || !checkoutBookingId"
+          @click="finalizeAndPrintInvoice"
           class="p-button-outlined"
         />
         <Button label="Confirm Check-out" severity="danger" @click="handleConfirmCheckout" :loading="isCheckingOut" />
@@ -554,7 +615,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
-import jsPDF from 'jspdf';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import Badge from 'primevue/badge';
@@ -572,6 +632,8 @@ import { useToast } from 'primevue/usetoast';
 
 import { useListCheckedInUsers, useCheckoutUser, useExtendGuestStay } from '~/composables/checkin-manager';
 import { useAPIHelper } from '~/composables/useAPIHelper';
+import { useInvoiceActions, type Invoice } from '~/composables/useInvoices';
+import { generateInvoicePdf } from '~/utils/invoicePdf';
 import { formatDateOnlyInHotelTz, formatDateTimeCompactInHotelTz } from '~/utils/dateFormat';
 
 // Import shared types
@@ -794,27 +856,68 @@ const selectedCheckoutStays = computed(() => {
   return checkoutStayOptions.value.filter((stay) => selectedIds.has(Number(stay.id)));
 });
 
-const selectedCheckoutTotal = computed(() => {
-  return selectedCheckoutStays.value.reduce((sum, stay) => {
-    return sum + Number(stay.billing?.current_bill || 0);
-  }, 0);
+// --- INVOICE PREVIEW / GENERATE ---
+const { previewInvoice, generateInvoice, retrieveInvoice, findInvoiceByBooking } = useInvoiceActions();
+const invoicePreview = ref<Invoice | null>(null);
+const isPreviewLoading = ref(false);
+const previewError = ref<string | null>(null);
+const isFinalizingInvoice = ref(false);
+// override inputs
+const invoiceDiscount = ref<number | null>(null);
+const invoiceGstRate = ref<number | null>(null);
+const invoiceRoomRates = ref<Record<string, number>>({}); // category_id -> nightly rate override
+const previewDebounce = ref<ReturnType<typeof setTimeout> | null>(null);
+
+const money = (x: number | string | null | undefined) => `Rs ${(Number(x) || 0).toFixed(2)}`;
+
+const checkoutBookingId = computed(() => {
+  const id = selectedStayForCheckout.value?.booking ?? selectedCheckoutStays.value[0]?.booking;
+  return Number(id) || null;
 });
 
-const customCheckoutFinalAmount = ref<number | null>(null);
-const hasManualCheckoutFinalAmount = ref(false);
-const checkoutFinalAmount = computed(() => {
-  if (hasManualCheckoutFinalAmount.value && customCheckoutFinalAmount.value !== null) {
-    return Number(customCheckoutFinalAmount.value);
-  }
+const buildInvoiceBody = () => {
+  const body: any = { booking_id: checkoutBookingId.value };
+  const rates: Record<string, string> = {};
+  Object.entries(invoiceRoomRates.value).forEach(([cat, val]) => {
+    if (val !== null && val !== undefined) rates[cat] = String(val);
+  });
+  if (Object.keys(rates).length) body.room_rates = rates;
+  if (invoiceDiscount.value) body.discount_amount = String(invoiceDiscount.value);
+  if (invoiceGstRate.value !== null && invoiceGstRate.value !== undefined) body.gst_rate = invoiceGstRate.value;
+  return body;
+};
 
-  return selectedCheckoutTotal.value;
-});
-
-watch(selectedCheckoutTotal, (newTotal) => {
-  if (!hasManualCheckoutFinalAmount.value) {
-    customCheckoutFinalAmount.value = newTotal;
+const loadInvoicePreview = async () => {
+  if (!checkoutBookingId.value) {
+    invoicePreview.value = null;
+    previewError.value = 'No booking is linked to this stay, so an invoice cannot be generated.';
+    return;
   }
-}, { immediate: true });
+  isPreviewLoading.value = true;
+  previewError.value = null;
+  try {
+    invoicePreview.value = await previewInvoice(buildInvoiceBody());
+  } catch (err) {
+    previewError.value = getErrorMessage(err);
+    invoicePreview.value = null;
+  } finally {
+    isPreviewLoading.value = false;
+  }
+};
+
+const scheduleInvoicePreview = () => {
+  if (previewDebounce.value) clearTimeout(previewDebounce.value);
+  previewDebounce.value = setTimeout(loadInvoicePreview, 350);
+};
+
+// editable per-category rate: defaults to the previewed rate until overridden
+const lineRate = (li: Invoice['line_items'][number]) =>
+  invoiceRoomRates.value[li.category_id] ?? Number(li.rate);
+const setLineRate = (categoryId: number, value: number | null) => {
+  if (value === null) delete invoiceRoomRates.value[categoryId];
+  else invoiceRoomRates.value[categoryId] = value;
+  scheduleInvoicePreview();
+};
 
 const handleCheckout = (stay: any) => {
   selectedStayForCheckout.value = stay;
@@ -849,16 +952,16 @@ const handleCheckout = (stay: any) => {
     internal_note: '',
     flag_user: false
   };
-  hasManualCheckoutFinalAmount.value = false;
-  customCheckoutFinalAmount.value = selectedCheckoutTotal.value;
   isEditingCheckoutDateInCheckoutModal.value = false;
   editedCheckoutDateInCheckoutModal.value = null;
+  // reset invoice overrides and load a fresh preview
+  invoiceDiscount.value = null;
+  invoiceGstRate.value = null;
+  invoiceRoomRates.value = {};
+  invoicePreview.value = null;
+  previewError.value = null;
   isCheckoutDialogVisible.value = true;
-};
-
-const handleCheckoutFinalAmountInput = (value: number | null) => {
-  customCheckoutFinalAmount.value = value;
-  hasManualCheckoutFinalAmount.value = value !== null;
+  loadInvoicePreview();
 };
 
 const handleViewGuest = (stay: any) => {
@@ -958,150 +1061,59 @@ const saveCheckoutDateFromCheckoutModal = async () => {
   }
 };
 
-const printCheckoutSummary = () => {
+// Finalize the bill: persist the invoice (once per booking) then download its PDF.
+const finalizeAndPrintInvoice = async () => {
   if (!selectedStayForCheckout.value) return;
-  if (selectedCheckoutStayIds.value.length === 0) {
+  if (!checkoutBookingId.value) {
     toast.add({
       severity: 'warn',
-      summary: 'No Rooms Selected',
-      detail: 'Select at least one room to print checkout summary.',
+      summary: 'No Booking',
+      detail: 'No booking is linked to this stay, so an invoice cannot be generated.',
       life: 4000
     });
     return;
   }
 
+  isFinalizingInvoice.value = true;
   try {
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    let yPosition = 20;
+    let invoice: Invoice;
+    if (invoicePreview.value?.has_existing_invoice) {
+      // already invoiced — fetch the saved one instead of regenerating
+      const existing = await findInvoiceByBooking(checkoutBookingId.value);
+      if (!existing?.id) throw new Error('Existing invoice could not be found.');
+      invoice = await retrieveInvoice(existing.id);
+    } else {
+      try {
+        invoice = await generateInvoice(buildInvoiceBody());
+      } catch (err: any) {
+        if (err?.status === 400) {
+          const existing = await findInvoiceByBooking(checkoutBookingId.value);
+          if (!existing?.id) throw err;
+          invoice = await retrieveInvoice(existing.id);
+        } else {
+          throw err;
+        }
+      }
+    }
 
-    // Title
-    pdf.setFontSize(20);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('CHECK-OUT SUMMARY', pageWidth / 2, yPosition, { align: 'center' });
-
-    // Date
-    yPosition += 15;
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Date: ${formatDateOnlyInHotelTz(new Date(), 'en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })}`, pageWidth / 2, yPosition, { align: 'center' });
-
-    // Guest Information
-    yPosition += 20;
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Guest Information', 20, yPosition);
-
-    yPosition += 10;
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(`Name: ${selectedStayForCheckout.value.guest.full_name}`, 20, yPosition);
-
-    yPosition += 7;
-    pdf.text(`WhatsApp: ${selectedStayForCheckout.value.guest.whatsapp_number || 'N/A'}`, 20, yPosition);
-
-    yPosition += 7;
-    pdf.text(`Email: ${selectedStayForCheckout.value.guest.email || 'Not provided'}`, 20, yPosition);
-
-    // Stay Information
-    yPosition += 15;
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Stay Details', 20, yPosition);
-
-    yPosition += 10;
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'normal');
-    const primaryPrintedStay = selectedCheckoutStays.value[0] || selectedStayForCheckout.value;
-    pdf.text(`Primary Room: ${primaryPrintedStay.room_details.room_number}`, 20, yPosition);
-
-    yPosition += 7;
-    pdf.text(`Room Category: ${primaryPrintedStay.room_details.category}`, 20, yPosition);
-
-    yPosition += 7;
-    pdf.text(`Check-in Date: ${formatDate(primaryPrintedStay.check_in_date)}`, 20, yPosition);
-
-    yPosition += 7;
-    pdf.text(`Check-out Date: ${formatDate(primaryPrintedStay.check_out_date)}`, 20, yPosition);
-
-    yPosition += 7;
-    pdf.text(`Duration: ${getDaysStayed(primaryPrintedStay)} night(s)`, 20, yPosition);
-
-    // Billing Information
-    yPosition += 15;
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Bill Details', 20, yPosition);
-
-    yPosition += 12;
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'normal');
-
-    // Bill items
-    selectedCheckoutStays.value.forEach((stayItem) => {
-      if (yPosition > pageHeight - 50) return;
-      pdf.text(
-        `${stayItem.room_details?.category || 'Room'} - ${stayItem.room_details?.room_number || 'N/A'}`,
-        20,
-        yPosition
-      );
-      yPosition += 7;
-    });
-
-    yPosition += 3;
-
-    // Draw line before total
-    pdf.setLineWidth(0.5);
-    pdf.line(20, yPosition, pageWidth - 20, yPosition);
-
-    yPosition += 10;
-
-    // Total on the right
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Total:', pageWidth - 60, yPosition);
-    pdf.text(`Rs ${checkoutFinalAmount.value.toFixed(2)}`, pageWidth - 20, yPosition, { align: 'right' });
-
-    // Payment Status
-    yPosition += 15;
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'italic');
-    pdf.text(`Payment Status: PENDING (Rs ${checkoutFinalAmount.value.toFixed(2)})`, 20, yPosition);
-
-    // Footer
-    yPosition = pageHeight - 30;
-    pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text('Thank you for your stay!', pageWidth / 2, yPosition, { align: 'center' });
-
-    yPosition += 7;
-    pdf.text('Please settle the payment at the front desk', pageWidth / 2, yPosition, { align: 'center' });
-
-    // Save the PDF
-    const fileName = `checkout-summary-guest-${selectedStayForCheckout.value.guest.id}-${new Date().toISOString().split('T')[0]}.pdf`;
-    pdf.save(fileName);
+    const pdf = generateInvoicePdf(invoice);
+    pdf.save(`${invoice.invoice_number || 'invoice'}-${selectedStayForCheckout.value.guest.id}.pdf`);
 
     toast.add({
       severity: 'success',
-      summary: 'Print Success',
-      detail: 'Checkout summary has been generated and downloaded.',
+      summary: 'Invoice Generated',
+      detail: 'Invoice has been saved and downloaded.',
       life: 3000
     });
-
-  } catch (error) {
-    console.error('Error generating PDF:', error);
+  } catch (err) {
     toast.add({
       severity: 'error',
-      summary: 'Print Failed',
-      detail: 'Failed to generate checkout summary. Please try again.',
-      life: 3000
+      summary: 'Invoice Failed',
+      detail: getErrorMessage(err),
+      life: 5000
     });
+  } finally {
+    isFinalizingInvoice.value = false;
   }
 };
 

@@ -678,6 +678,7 @@ const pageSubtitle = computed(() => {
     '/manager/menu-builder': 'Menu Builder',
     '/hotel-profile': 'Hotel Profile',
     '/paymentQR': 'Payment QR Codes',
+    '/billing': 'Invoice Management',
     '/reports': 'Reports',
   };
   return titleMap[route.path] || 'Dashboard';
@@ -715,6 +716,7 @@ const navigation = computed(() => {
   if (role === 'hotel_admin') {
     return [
       { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
+      { name: 'Recent Activity', href: '/activity', icon: 'prime:history' },
       { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
       { name: 'Guest Management', href: '/checkout', icon: 'prime:sign-out' },
       { name: 'Hotel Profile', href: '/hotel-profile', icon: 'prime:building' },
@@ -723,29 +725,34 @@ const navigation = computed(() => {
       // { name: 'Departments', href: '/departments', icon: 'prime:briefcase' },
       { name: 'Message Templates', href: '/message_templates', icon: 'prime:comment' },
       { name: 'Payment QR Codes', href: '/paymentQR', icon: 'prime:qrcode' },
-      { name: 'Billing', href: '/payments', icon: 'prime:credit-card' },
+      { name: 'Subscriptions', href: '/payments', icon: 'prime:credit-card' },
+      { name: 'Invoices', href: '/billing', icon: 'prime:receipt' },
       { name: 'Reports', href: '/reports', icon: 'prime:file-pdf' },
       // { name: 'Chat', href: '/chat', icon: 'prime:comments' }
     ];
   } else if (role === 'manager') {
     return [
       { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
+      { name: 'Recent Activity', href: '/activity', icon: 'prime:history' },
       { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
       { name: 'Guest Management', href: '/checkout', icon: 'prime:sign-out' },
       { name: 'Staff Management', href: '/staff', icon: 'prime:users' },
       { name: 'Room Management', href: '/rooms', icon: 'prime:home' },
       // { name: 'Departments', href: '/departments', icon: 'prime:briefcase' },
       { name: 'Payment QR Codes', href: '/paymentQR', icon: 'prime:qrcode' },
+      { name: 'Invoices', href: '/billing', icon: 'prime:receipt' },
       { name: 'Reports', href: '/reports', icon: 'prime:file-pdf' },
       { name: 'Chat', href: '/chat', icon: 'prime:comments' }
     ];
   } else if (role === 'receptionist') {
     return [
       { name: 'Dashboard', href: '/', icon: 'prime:chart-line' },
+      { name: 'Recent Activity', href: '/activity', icon: 'prime:history' },
       { name: 'Check-in', href: '/checkin', icon: 'prime:sign-in' },
       { name: 'Room Management', href: '/rooms', icon: 'prime:home' },
       { name: 'Payment QR Codes', href: '/paymentQR', icon: 'prime:qrcode' },
       { name: 'Guest Management', href: '/checkout', icon: 'prime:sign-out' },
+      { name: 'Invoices', href: '/billing', icon: 'prime:receipt' },
       { name: 'Reports', href: '/reports', icon: 'prime:file-pdf' },
       { name: 'Chat', href: '/chat', icon: 'prime:comments' },
     ];

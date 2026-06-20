@@ -69,6 +69,20 @@
           <p class="text-gray-600">No statistics available at the moment.</p>
         </div>
       </div>
+
+      <!-- Recent Activity -->
+      <div v-if="recentActivity?.results?.length" class="mt-8 bg-white rounded-lg border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
+          <NuxtLink to="/activity" class="text-sm font-medium text-blue-600 hover:text-blue-700">
+            View all <i class="pi pi-arrow-right text-xs ml-0.5"></i>
+          </NuxtLink>
+        </div>
+        <div class="relative">
+          <span class="absolute left-4 top-0 bottom-0 w-px bg-gray-200" aria-hidden="true"></span>
+          <ActivityItem v-for="item in recentActivity.results" :key="item.id" :activity="item" compact />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -76,10 +90,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useFetchOverviewStats } from '~/composables/useStats';
+import { useFetchRecentActivity } from '~/composables/useStaff';
 import DashboardQRCode from '~/components/DashboardQRCode.vue';
+import ActivityItem from '~/components/ActivityItem.vue';
 import { formatDateInHotelTz } from '~/utils/dateFormat';
 
 const { stats, isLoading, error } = useFetchOverviewStats();
+const { activities: recentActivity } = useFetchRecentActivity(() => ({ page_size: 5 }));
 
 const now = ref(new Date());
 setInterval(() => (now.value = new Date()), 60_000);
