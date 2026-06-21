@@ -633,6 +633,9 @@ import { useToast } from 'primevue/usetoast';
 import { useListCheckedInUsers, useCheckoutUser, useExtendGuestStay } from '~/composables/checkin-manager';
 import { useAPIHelper } from '~/composables/useAPIHelper';
 import { useInvoiceActions, type Invoice } from '~/composables/useInvoices';
+import { useFetchHotel } from '~/composables/useHotel';
+import { useAuthStore } from '~/stores/auth';
+import { storeToRefs } from 'pinia';
 import { generateInvoicePdf } from '~/utils/invoicePdf';
 import { formatDateOnlyInHotelTz, formatDateTimeCompactInHotelTz } from '~/utils/dateFormat';
 
@@ -640,6 +643,8 @@ import { formatDateOnlyInHotelTz, formatDateTimeCompactInHotelTz } from '~/utils
 import type { Guest } from '~/types/guest';
 
 const { getErrorMessage } = useAPIHelper();
+const { hotelId } = storeToRefs(useAuthStore());
+const { data: hotelData } = useFetchHotel(hotelId);
 
 
 const toast = useToast();
@@ -1096,7 +1101,7 @@ const finalizeAndPrintInvoice = async () => {
       }
     }
 
-    const pdf = generateInvoicePdf(invoice);
+    const pdf = await generateInvoicePdf(invoice, hotelData.value?.logo_url);
     pdf.save(`${invoice.invoice_number || 'invoice'}-${selectedStayForCheckout.value.guest.id}.pdf`);
 
     toast.add({

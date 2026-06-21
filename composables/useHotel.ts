@@ -1,7 +1,7 @@
 import { computed } from 'vue';
 import { useAPI } from './useAPI';
 import { useAPIHelper } from './useAPIHelper';
-import type { Hotel, HotelCreate, HotelUpdate, HotelDocument } from '~/types/hotel';
+import type { Hotel, HotelCreate, HotelUpdate, HotelDocument, GstSlab } from '~/types/hotel';
 import type { RoomCategory, Room, RoomCreate, RoomUpdate, WifiCredential } from '~/types/room';
 import type { PaginatedResult } from '~/types/common';
 import type { Department, DepartmentCreate, DepartmentUpdate } from '~/types/department';
@@ -109,6 +109,44 @@ export const useUpdateHotelProfile = () => {
         method: 'PUT',
         body: profileData,
       });
+    },
+  });
+};
+
+// GST slabs
+
+export const usePatchGstSlabs = () => {
+  const { API } = useAPI();
+  const queryCache = useQueryCache();
+  return useMutation({
+    mutation: async (gst_slabs: GstSlab[]) => {
+      return await API('/gst/', {
+        method: 'PATCH',
+        body: { gst_slabs },
+      });
+    },
+    onSettled: async () => {
+      await queryCache.invalidateQueries({ key: ['hotel'], exact: false });
+    },
+  });
+};
+
+// Hotel logo (rides the profile-update path)
+
+export const usePatchHotelLogo = () => {
+  const { API } = useAPI();
+  const queryCache = useQueryCache();
+  return useMutation({
+    mutation: async (logo: File | null) => {
+      const formData = new FormData();
+      formData.append('logo', logo ?? ''); // empty string clears it
+      return await API('/profile/update/', {
+        method: 'PATCH',
+        body: formData,
+      });
+    },
+    onSettled: async () => {
+      await queryCache.invalidateQueries({ key: ['hotel'], exact: false });
     },
   });
 };

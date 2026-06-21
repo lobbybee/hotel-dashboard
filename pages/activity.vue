@@ -9,10 +9,10 @@
 
       <!-- Filters -->
       <div class="bg-white rounded-lg border border-gray-200 p-4 mb-6 flex flex-wrap items-center gap-3">
-        <span class="p-input-icon-left flex-1 min-w-[200px]">
-          <i class="pi pi-search" />
+        <IconField iconPosition="left" class="flex-1 min-w-[200px]">
+          <InputIcon class="pi pi-search" />
           <InputText v-model="searchQuery" placeholder="Search activity" class="w-full" />
-        </span>
+        </IconField>
         <MultiSelect
           v-model="selectedActions"
           :options="actionOptions"
@@ -20,21 +20,21 @@
           option-value="value"
           placeholder="All actions"
           display="chip"
-          class="min-w-[200px]"
+          class="w-full sm:w-auto min-w-[200px]"
           @change="applyActions"
         />
         <input
           type="date"
           v-model="dateFrom"
           aria-label="From date"
-          class="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700"
+          class="w-full sm:w-44 h-[42px] border border-gray-300 rounded-md px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
           @change="applyDates"
         />
         <input
           type="date"
           v-model="dateTo"
           aria-label="To date"
-          class="border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700"
+          class="w-full sm:w-44 h-[42px] border border-gray-300 rounded-md px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
           @change="applyDates"
         />
       </div>
@@ -98,8 +98,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount } from 'vue';
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import InputText from 'primevue/inputtext';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
 import MultiSelect from 'primevue/multiselect';
 import Paginator from 'primevue/paginator';
 import ProgressSpinner from 'primevue/progressspinner';
@@ -114,10 +116,13 @@ const router = useRouter();
 const actionOptions = ACTION_OPTIONS;
 
 // --- filter state (route-driven) ---
+const asLocalDate = (d: Date) => d.toLocaleDateString('en-CA'); // YYYY-MM-DD, local
+const today = asLocalDate(new Date());
+const weekAgo = asLocalDate(new Date(Date.now() - 7 * 86_400_000));
 const searchQuery = ref((route.query.search as string) || '');
 const selectedActions = ref<string[]>(((route.query.action as string) || '').split(',').filter(Boolean));
-const dateFrom = ref((route.query.date_from as string) || '');
-const dateTo = ref((route.query.date_to as string) || '');
+const dateFrom = ref((route.query.date_from as string) || weekAgo);
+const dateTo = ref((route.query.date_to as string) || today);
 
 const pageSize = computed(() => Number(route.query.page_size) || 10);
 const currentPage = computed(() => Number(route.query.page) || 1);
@@ -181,6 +186,13 @@ const applyDates = () =>
 const onPageChange = (event: any) => {
   updateRouteQuery({ page: event.page + 1, page_size: event.rows || pageSize.value });
 };
+
+// seed the route with the default 7-day range on first load so the feed filters to it
+onMounted(() => {
+  if (!route.query.date_from && !route.query.date_to) {
+    updateRouteQuery({ date_from: dateFrom.value, date_to: dateTo.value });
+  }
+});
 
 onBeforeUnmount(() => {
   if (searchDebounce.value) clearTimeout(searchDebounce.value);

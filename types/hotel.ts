@@ -13,6 +13,12 @@ export interface HotelDocument {
     uploaded_at?: string; // ISO datetime
 }
 
+export interface GstSlab {
+    id?: number;
+    max_rate: number | null; // nightly-rate ceiling; null = open-ended top tier (max one)
+    gst_value: number; // percent 0–100
+}
+
 export interface HotelAdmin {
     id: number;
     username: string;
@@ -62,6 +68,8 @@ export interface Hotel {
     updated_at?: string; // ISO datetime
     admin?: HotelAdmin;
     documents?: HotelDocument[];
+    gst_slabs?: GstSlab[];
+    logo_url?: string | null;
 }
 
 export interface HotelCreate extends Omit<Hotel, 'id' | 'documents' | 'created_at' | 'updated_at'> {

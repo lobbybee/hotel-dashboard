@@ -126,6 +126,15 @@ export const useInvoiceActions = () => {
     return getData<{ locked_count: number }>(response);
   };
 
+  // One-shot: pull every invoice for the active filters (report=true returns the full,
+  // unpaginated set). Kept out of useFetchInvoices so it can't disturb the list query.
+  const generateReport = async (filters: Record<string, any>) => {
+    const response = await API('/invoices/', { params: { ...filters, report: true } });
+    // report=true returns { success, data: [...] }; tolerate data / results / bare array
+    const r = response as any;
+    return (r?.data ?? r?.results ?? r ?? []) as Invoice[];
+  };
+
   // Find the (single) invoice for a booking — used to fetch an already-generated invoice.
   const findInvoiceByBooking = async (bookingId: number | string) => {
     const response = await API('/invoices/', { params: { booking: bookingId } });
@@ -133,5 +142,5 @@ export const useInvoiceActions = () => {
     return results[0] || null;
   };
 
-  return { previewInvoice, generateInvoice, retrieveInvoice, updateInvoice, lockAllInvoices, findInvoiceByBooking };
+  return { previewInvoice, generateInvoice, retrieveInvoice, updateInvoice, lockAllInvoices, generateReport, findInvoiceByBooking };
 };

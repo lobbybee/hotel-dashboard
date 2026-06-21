@@ -8,15 +8,15 @@
 
     <!-- Filters -->
     <div class="mb-6 bg-white rounded-lg border border-gray-200 p-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:flex-wrap">
-        <div>
+      <div class="flex flex-wrap items-end gap-4">
+        <div class="w-full sm:w-64">
           <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
-          <span class="p-input-icon-left">
-            <i class="pi pi-search" />
-            <InputText v-model="searchQuery" placeholder="Invoice number..." class="w-full sm:w-64" />
-          </span>
+          <IconField iconPosition="left">
+            <InputIcon class="pi pi-search" />
+            <InputText v-model="searchQuery" placeholder="Invoice number..." class="w-full" />
+          </IconField>
         </div>
-        <div>
+        <div class="w-full sm:w-40">
           <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
           <Dropdown
             v-model="lockedFilter"
@@ -24,20 +24,23 @@
             optionLabel="label"
             optionValue="value"
             placeholder="All"
-            class="w-full sm:w-40"
+            class="w-full"
             @change="onLockedChange"
           />
         </div>
-        <div>
+        <div class="w-full sm:w-44">
           <label class="block text-xs font-medium text-gray-500 mb-1">From</label>
-          <input v-model="dateFrom" type="date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm" @change="onDateChange" />
+          <input v-model="dateFrom" type="date" class="w-full h-[42px] px-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500" @change="onDateChange" />
         </div>
-        <div>
+        <div class="w-full sm:w-44">
           <label class="block text-xs font-medium text-gray-500 mb-1">To</label>
-          <input v-model="dateTo" type="date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm" @change="onDateChange" />
+          <input v-model="dateTo" type="date" class="w-full h-[42px] px-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500" @change="onDateChange" />
         </div>
       </div>
-      <Button label="Lock all invoices" icon="pi pi-lock" severity="warning" @click="isLockDialogVisible = true" />
+      <div class="flex flex-col gap-2 sm:flex-row sm:justify-end shrink-0">
+        <Button label="Generate report" icon="pi pi-file-pdf" severity="secondary" outlined :loading="isReporting" @click="handleGenerateReport" />
+        <Button label="Lock all invoices" icon="pi pi-lock" severity="warning" @click="isLockDialogVisible = true" />
+      </div>
     </div>
 
     <!-- Loading -->
@@ -209,6 +212,8 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import Button from 'primevue/button';
 import Tag from 'primevue/tag';
 import InputText from 'primevue/inputtext';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
 import Dropdown from 'primevue/dropdown';
 import Dialog from 'primevue/dialog';
 import Paginator from 'primevue/paginator';
@@ -217,15 +222,23 @@ import { useToast } from 'primevue/usetoast';
 
 import InputNumber from 'primevue/inputnumber';
 import { useFetchInvoices, useInvoiceActions, type Invoice } from '~/composables/useInvoices';
+import { useFetchHotel } from '~/composables/useHotel';
+import { useAuthStore } from '~/stores/auth';
+import { storeToRefs } from 'pinia';
 import { useAPIHelper } from '~/composables/useAPIHelper';
 import { formatDateTimeCompactInHotelTz } from '~/utils/dateFormat';
 import { generateInvoicePdf } from '~/utils/invoicePdf';
+import { generateInvoiceReportPdf } from '~/utils/invoiceReportPdf';
 
 const toast = useToast();
 const route = useRoute();
 const router = useRouter();
 const { getErrorMessage } = useAPIHelper();
-const { previewInvoice, retrieveInvoice, updateInvoice, lockAllInvoices } = useInvoiceActions();
+const { previewInvoice, retrieveInvoice, updateInvoice, lockAllInvoices, generateReport } = useInvoiceActions();
+
+// Hotel record (cached query, shared with the layout) — for the invoice logo
+const { hotelId } = storeToRefs(useAuthStore());
+const { data: hotelData } = useFetchHotel(hotelId);
 
 const money = (x: number | string | null | undefined) => `Rs ${(Number(x) || 0).toFixed(2)}`;
 
@@ -285,6 +298,34 @@ onMounted(() => {
     updateRouteQuery({ date_from: dateFrom.value, date_to: dateTo.value });
   }
 });
+
+// --- Generate report (all invoices for the active filters, unpaginated) ---
+const isReporting = ref(false);
+const handleGenerateReport = async () => {
+  isReporting.value = true;
+  try {
+    const filters: Record<string, any> = {};
+    ['q', 'is_locked', 'date_from', 'date_to'].forEach((k) => {
+      if (route.query[k]) filters[k] = route.query[k];
+    });
+    const rows = await generateReport(filters);
+    if (!rows.length) {
+      toast.add({ severity: 'info', summary: 'No invoices', detail: 'No invoices in this period.', life: 4000 });
+      return;
+    }
+    const pdf = await generateInvoiceReportPdf(rows, {
+      hotelName: hotelData.value?.name,
+      logoUrl: hotelData.value?.logo_url,
+      dateFrom: dateFrom.value,
+      dateTo: dateTo.value
+    });
+    pdf.save(`invoices-${dateFrom.value}-to-${dateTo.value}.pdf`);
+  } catch (err) {
+    toast.add({ severity: 'error', summary: 'Report failed', detail: getErrorMessage(err), life: 4000 });
+  } finally {
+    isReporting.value = false;
+  }
+};
 
 // --- Lock all ---
 const isLockDialogVisible = ref(false);
@@ -432,10 +473,10 @@ const saveInvoice = async () => {
   }
 };
 
-const printInvoice = () => {
+const printInvoice = async () => {
   const inv = displayInvoice.value;
   if (!inv) return;
-  const pdf = generateInvoicePdf(inv);
+  const pdf = await generateInvoicePdf(inv, hotelData.value?.logo_url);
   pdf.save(`${inv.invoice_number || selectedInvoice.value?.invoice_number || 'invoice'}.pdf`);
 };
 

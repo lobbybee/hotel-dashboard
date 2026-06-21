@@ -19,13 +19,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <HotelQRCode :hotel="hotel" @verify-profile="verifyProfile" />
         <HotelStatusCard :hotel="hotel" />
-        <!-- Third card space - can be used for future features -->
-        <!-- <div class="bg-white rounded-lg border border-gray-200 p-6 flex items-center justify-center">
-          <div class="text-center text-gray-400">
-            <i class="pi pi-plus text-2xl mb-2 block"></i>
-            <p class="text-sm">Future Feature</p>
-          </div>
-        </div> -->
+        <HotelLogo v-if="isAdmin" :hotel="hotel" />
       </div>
 
       <!-- Main Content Grid -->
@@ -41,6 +35,11 @@
           v-model:hotel-form="hotelForm"
           :errors="errors"
         />
+      </div>
+
+      <!-- GST Slabs - Full Width (hotel admin + manager only) -->
+      <div v-if="canEditGst" class="mb-8">
+        <HotelGstSlabs :hotel="hotel" />
       </div>
 
       <!-- Documents Section - Full Width -->
@@ -88,9 +87,14 @@ import HotelBasicInfo from '~/components/Hotel/HotelBasicInfo.vue';
 import HotelOperationalSettings from '~/components/Hotel/HotelOperationalSettings.vue';
 import HotelDocuments from '~/components/Hotel/HotelDocuments.vue';
 import HotelQRCode from '~/components/Hotel/HotelQRCode.vue';
+import HotelGstSlabs from '~/components/Hotel/HotelGstSlabs.vue';
+import HotelLogo from '~/components/Hotel/HotelLogo.vue';
 
 const authStore = useAuthStore();
-const { hotelId } = storeToRefs(authStore);
+const { hotelId, userRole } = storeToRefs(authStore);
+
+const isAdmin = computed(() => userRole.value === 'hotel_admin');
+const canEditGst = computed(() => ['hotel_admin', 'manager'].includes(userRole.value ?? ''));
 
 // Initialize toast service
 const toast = useToast();

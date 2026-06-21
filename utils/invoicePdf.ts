@@ -5,11 +5,36 @@ import type { Invoice } from '~/composables/useInvoices';
 // Coerce string|number money (preview = number, saved invoice = string) to a Rs string. Never NaN.
 const money = (x: number | string | null | undefined): string => `Rs ${(Number(x) || 0).toFixed(2)}`;
 
+// Fetch a remote logo as a data URL + natural dimensions. Returns null on any failure (CORS, 404)
+// so the PDF still renders without it.
+export const loadLogo = async (url: string): Promise<{ dataUrl: string; w: number; h: number } | null> => {
+  try {
+    // S3 sends no CORS headers, so fetch through our same-origin proxy (server/api/logo.get.ts).
+    const blob = await (await fetch(`/api/logo?url=${encodeURIComponent(url)}`)).blob();
+    const dataUrl = await new Promise<string>((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(fr.result as string);
+      fr.onerror = rej;
+      fr.readAsDataURL(blob);
+    });
+    const dims = await new Promise<{ w: number; h: number } | null>((res) => {
+      const img = new Image();
+      img.onload = () => res({ w: img.naturalWidth, h: img.naturalHeight });
+      img.onerror = () => res(null);
+      img.src = dataUrl;
+    });
+    return dims && dims.w ? { dataUrl, ...dims } : null;
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Render an invoice (preview or saved) to a jsPDF document. Caller decides .save() / filename.
  * Shared by the checkout dialog and the billing detail dialog.
+ * Pass logoUrl (from the hotel record) to print the logo above the header.
  */
-export const generateInvoicePdf = (data: Invoice): jsPDF => {
+export const generateInvoicePdf = async (data: Invoice, logoUrl?: string | null): Promise<jsPDF> => {
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -17,6 +42,18 @@ export const generateInvoicePdf = (data: Invoice): jsPDF => {
 
   const hotel = data.booking_details?.hotel || {};
   const guest = data.booking_details?.guest;
+
+  // Logo (centered, capped at 22mm tall / 50mm wide, aspect preserved)
+  if (logoUrl) {
+    const logo = await loadLogo(logoUrl);
+    if (logo) {
+      const maxH = 22, maxW = 50;
+      const scale = Math.min(maxW / logo.w, maxH / logo.h);
+      const w = logo.w * scale, h = logo.h * scale;
+      pdf.addImage(logo.dataUrl, (pageWidth - w) / 2, y, w, h);
+      y += h + 6;
+    }
+  }
 
   // Title
   pdf.setFontSize(20);
