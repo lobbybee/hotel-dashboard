@@ -221,7 +221,7 @@ import ProgressSpinner from 'primevue/progressspinner';
 import { useToast } from 'primevue/usetoast';
 
 import InputNumber from 'primevue/inputnumber';
-import { useFetchInvoices, useInvoiceActions, type Invoice } from '~/composables/useInvoices';
+import { useFetchInvoices, useInvoiceActions, uniformGstRate, type Invoice } from '~/composables/useInvoices';
 import { useFetchHotel } from '~/composables/useHotel';
 import { useAuthStore } from '~/stores/auth';
 import { storeToRefs } from 'pinia';
@@ -420,6 +420,7 @@ const openInvoice = async (id?: number) => {
     if (!inv.is_locked) {
       // seed overrides from stored values so the first preview reproduces the saved invoice
       editDiscount.value = Number(inv.discount_amount) || 0;
+      editGst.value = uniformGstRate(inv.line_items);
       (inv.line_items || []).forEach((li: any) => {
         editRoomRates.value[li.category_id] = Number(li.rate) || 0;
       });

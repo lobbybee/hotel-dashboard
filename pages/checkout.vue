@@ -632,7 +632,7 @@ import { useToast } from 'primevue/usetoast';
 
 import { useListCheckedInUsers, useCheckoutUser, useExtendGuestStay } from '~/composables/checkin-manager';
 import { useAPIHelper } from '~/composables/useAPIHelper';
-import { useInvoiceActions, type Invoice } from '~/composables/useInvoices';
+import { useInvoiceActions, uniformGstRate, type Invoice } from '~/composables/useInvoices';
 import { useFetchHotel } from '~/composables/useHotel';
 import { useAuthStore } from '~/stores/auth';
 import { storeToRefs } from 'pinia';
@@ -901,7 +901,20 @@ const loadInvoicePreview = async () => {
   isPreviewLoading.value = true;
   previewError.value = null;
   try {
-    invoicePreview.value = await previewInvoice(buildInvoiceBody());
+    const result = await previewInvoice(buildInvoiceBody());
+    if (result?.has_existing_invoice && result.previous_data) {
+      // Show the saved invoice (what will actually print), not the recomputed preview.
+      const prev = result.previous_data;
+      invoicePreview.value = { ...prev, has_existing_invoice: true };
+      invoiceDiscount.value = Number(prev.discount_amount) || null;
+      invoiceGstRate.value = uniformGstRate(prev.line_items);
+      invoiceRoomRates.value = {};
+      (prev.line_items || []).forEach((li) => {
+        invoiceRoomRates.value[li.category_id] = Number(li.rate) || 0;
+      });
+    } else {
+      invoicePreview.value = result;
+    }
   } catch (err) {
     previewError.value = getErrorMessage(err);
     invoicePreview.value = null;

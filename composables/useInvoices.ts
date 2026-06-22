@@ -48,6 +48,7 @@ export interface Invoice {
   invoice_number?: string;
   booking: number;
   has_existing_invoice?: boolean;
+  previous_data?: Invoice;
   booking_details?: InvoiceBookingDetails;
   line_items: InvoiceLineItem[];
   gst_slabs?: any[];
@@ -61,6 +62,12 @@ export interface Invoice {
   created_at?: string;
   updated_at?: string;
 }
+
+// Single override rate if every line shares one; else null (per-slab auto).
+export const uniformGstRate = (lineItems: InvoiceLineItem[] = []) => {
+  const rates = new Set(lineItems.map((li) => Number(li.gst_rate)));
+  return rates.size === 1 ? [...rates][0] : null;
+};
 
 export interface InvoicePreviewBody {
   booking_id: number;
