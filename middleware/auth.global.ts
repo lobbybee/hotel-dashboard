@@ -10,7 +10,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   if (!process.client) return
 
   // Skip middleware for login route
-  if (to.path === '/login') return
+  if (to.path === '/login'||to.path==='/reset') return
 
   // Skip if coming from login to prevent loops
   if (from.path === '/login' && to.path === '/login') return
