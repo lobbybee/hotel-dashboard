@@ -93,16 +93,24 @@
 
       <!-- Accompanying Guests -->
       <div v-if="stay.accompanying_guests?.length" class="border-b pb-4">
-        <h4 class="font-semibold text-lg mb-2">Accompanying Guests ({{ stay.accompanying_guests.length }})</h4>
-        <div v-for="guest in stay.accompanying_guests" :key="guest.id" class="mb-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-semibold text-lg">Accompanying Guests ({{ stay.accompanying_guests.length }})</h4>
+          <div class="flex items-center gap-2">
+            <Checkbox inputId="editAccompanying" v-model="editAccompanyingMode" binary />
+            <label for="editAccompanying" class="text-sm cursor-pointer">Edit Guest Info</label>
+          </div>
+        </div>
+        <div v-for="(guest, index) in stay.accompanying_guests" :key="guest.id" class="mb-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
           <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div>
               <label class="block text-xs font-medium text-gray-500 mb-1">Name</label>
-              <p><strong>{{ guest.full_name || 'Not provided' }}</strong></p>
+              <InputText v-if="editAccompanyingMode" v-model="accompanyingEdits[index].full_name" class="w-full text-sm" />
+              <p v-else><strong>{{ guest.full_name || 'Not provided' }}</strong></p>
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-500 mb-1">Document Number</label>
-              <p><strong>{{ guest.document_number || 'Not provided' }}</strong></p>
+              <InputText v-if="editAccompanyingMode" v-model="accompanyingEdits[index].document_number" class="w-full text-sm" />
+              <p v-else><strong>{{ guest.document_number || 'Not provided' }}</strong></p>
             </div>
           </div>
           <a v-if="guest.document_file_url" :href="guest.document_file_url" target="_blank" class="text-sm text-blue-500 hover:underline flex items-center gap-1 mt-2">
@@ -277,6 +285,10 @@ const guestEdits = ref({
   dinner_reminder: false
 });
 
+// Accompanying guest editing
+const editAccompanyingMode = ref<boolean>(false);
+const accompanyingEdits = ref<any[]>([]);
+
 // Language options
 const languageOptions = [
   { name: 'English', code: 'en' },
@@ -416,6 +428,22 @@ const confirmAndCheckin = () => {
 
   verifyData.guest_updates = guestUpdates;
 
+  if (editAccompanyingMode.value) {
+    const accompanyingUpdates = accompanyingEdits.value
+      .map((edit, index) => {
+        const original = props.stay?.accompanying_guests?.[index] || {};
+        const changes: any = { id: edit.id };
+        if (edit.full_name !== (original.full_name || '')) changes.full_name = edit.full_name;
+        if (edit.document_number !== (original.document_number || '')) changes.document_number = edit.document_number;
+        return changes;
+      })
+      .filter(changes => Object.keys(changes).length > 1);
+
+    if (accompanyingUpdates.length > 0) {
+      verifyData.accompanying_guest_updates = accompanyingUpdates;
+    }
+  }
+
   console.log('Emitting confirmed with unified data:', verifyData);
   emit('confirmed', verifyData);
 };
@@ -460,8 +488,16 @@ watch(() => props.visible, async (newValue) => {
       };
     }
 
+    // Initialize accompanying guest edits
+    accompanyingEdits.value = (props.stay?.accompanying_guests || []).map((g: any) => ({
+      id: g.id,
+      full_name: g.full_name || '',
+      document_number: g.document_number || ''
+    }));
+
     // Reset edit mode
     editGuestMode.value = false;
+    editAccompanyingMode.value = false;
 
     await refetchRooms();
   }
