@@ -91,6 +91,28 @@
         </div>
       </div>
 
+      <!-- Accompanying Guests -->
+      <div v-if="stay.accompanying_guests?.length" class="border-b pb-4">
+        <h4 class="font-semibold text-lg mb-2">Accompanying Guests ({{ stay.accompanying_guests.length }})</h4>
+        <div v-for="guest in stay.accompanying_guests" :key="guest.id" class="mb-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
+          <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Name</label>
+              <p><strong>{{ guest.full_name || 'Not provided' }}</strong></p>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-500 mb-1">Document Number</label>
+              <p><strong>{{ guest.document_number || 'Not provided' }}</strong></p>
+            </div>
+          </div>
+          <a v-if="guest.document_file_url" :href="guest.document_file_url" target="_blank" class="text-sm text-blue-500 hover:underline flex items-center gap-1 mt-2">
+            <i class="pi pi-eye"></i>
+            View Document
+          </a>
+          <p v-else class="text-sm text-gray-500 mt-2">No document uploaded.</p>
+        </div>
+      </div>
+
       <!-- Booking Details -->
       <div class="border-b pb-4">
         <h4 class="font-semibold text-lg mb-2">Booking Details</h4>
