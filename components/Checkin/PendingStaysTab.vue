@@ -59,6 +59,12 @@
             </div>
 
             <div class="flex items-center gap-2 text-sm">
+              <i class="pi pi-users text-gray-400"></i>
+              <span class="text-gray-600">Guests:</span>
+              <strong class="text-gray-900">{{ 1 + (stay.accompanying_guests?.length || 0) }}</strong>
+            </div>
+
+            <div class="flex items-center gap-2 text-sm">
               <i
                 class="pi"
                 :class="stay.identity_verified ? 'pi-check-circle text-green-500' : 'pi-exclamation-triangle text-amber-500'"
