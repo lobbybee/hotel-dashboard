@@ -200,6 +200,23 @@
             </div>
 
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Billing Cycle</label>
+                <SelectButton
+                    v-model="billingCycle"
+                    :options="billingCycleOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    :allowEmpty="false"
+                    class="w-full"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                    {{ billingCycle === '12h'
+                        ? 'Billed per 12 hours at the full room rate — a 24h stay is 2 units.'
+                        : 'Billed per 24 hours at the full room rate.' }}
+                </p>
+            </div>
+
+            <div>
                 <label for="register_number" class="block text-sm font-medium text-gray-700 mb-1">Register Number</label>
                 <InputText id="register_number" v-model="registerNumber" class="w-full" />
             </div>
@@ -246,8 +263,10 @@ import MultiSelect from 'primevue/multiselect';
 import Badge from 'primevue/badge';
 import Calendar from 'primevue/calendar';
 import Checkbox from 'primevue/checkbox';
+import SelectButton from 'primevue/selectbutton';
 import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
+import type { BillingCycle } from '~/types/guest';
 import { useFetchRooms, useFetchRoomCategories, useFetchHotelRoomFloors } from '~/composables/useHotel';
 import { formatDateTimeCompactInHotelTz } from '~/utils/dateFormat';
 
@@ -270,6 +289,14 @@ const selectedCategory = ref<number | null>(null);
 const selectedFloor = ref<number | null>(null);
 const selectedRoomIds = ref<number[]>([]);
 const checkOutDate = ref<Date | null>(null);
+
+// Billing cycle is decided at confirmation: WhatsApp check-in creates the stay
+// with no room, so this is the first point a rate exists.
+const billingCycle = ref<BillingCycle>('24h');
+const billingCycleOptions = [
+  { label: '24 Hours', value: '24h' },
+  { label: '12 Hours', value: '12h' }
+];
 
 // Guest editing mode
 const editGuestMode = ref<boolean>(false);
@@ -383,6 +410,7 @@ const confirmAndCheckin = () => {
 
   const verifyData: any = {
     register_number: registerNumber.value,
+    billing_cycle: billingCycle.value,
     breakfast_reminder: guestEdits.value.breakfast_reminder,
     lunch_reminder: guestEdits.value.lunch_reminder,
     dinner_reminder: guestEdits.value.dinner_reminder
@@ -472,6 +500,9 @@ watch(() => props.visible, async (newValue) => {
 
     // Initialize register number
     registerNumber.value = props.stay?.register_number || '';
+
+    // Seed from the stay so reopening the dialog shows its current cycle
+    billingCycle.value = props.stay?.billing_cycle || '24h';
 
     // Initialize guest edits with current guest data
     if (props.stay?.guest) {

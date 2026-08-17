@@ -34,12 +34,18 @@ export interface CheckinOfflineData {
     check_in_date: string; // ISO datetime
     check_out_date: string; // ISO datetime
     guest_names?: string[];
+    billing_cycle?: BillingCycle;
 }
+
+// Length of one billable unit. Each unit bills at the full room rate, so a 24h
+// stay on a 12h cycle is 2 units.
+export type BillingCycle = '24h' | '12h';
 
 export interface VerifyCheckinData {
     register_number?: string;
     room_ids?: number[]; // For assigning multiple rooms during verification
     check_out_date?: string; // ISO datetime string for stays without room assignments
+    billing_cycle?: BillingCycle; // omit to keep the stay's current cycle
     breakfast_reminder?: boolean;
     lunch_reminder?: boolean;
     dinner_reminder?: boolean;

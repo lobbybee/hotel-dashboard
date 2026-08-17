@@ -188,6 +188,20 @@
               :minDate="new Date()"
             />
           </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Billing Cycle</label>
+            <SelectButton
+              v-model="stayForm.billing_cycle"
+              :options="billingCycleOptions"
+              optionLabel="label"
+              optionValue="value"
+              :allowEmpty="false"
+              class="w-full"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              {{ billingCycleHint }}
+            </p>
+          </div>
         </div>
 
         <div v-if="selectedRoomsDisplay.length > 0" class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -477,7 +491,8 @@ import {
 } from "~/composables/useHotel";
 import FlagWarningAccordion from './FlagWarningAccordion.vue';
 import Badge from 'primevue/badge';
-import type { CreateGuestData, AccompanyingGuestData } from '~/types/guest';
+import SelectButton from 'primevue/selectbutton';
+import type { CreateGuestData, AccompanyingGuestData, BillingCycle } from '~/types/guest';
 
 // Import validation schemas
 import { GuestSchema, CheckinOfflineSchema, ManualWalkinGuestSchema, PrimaryGuestSchema } from '~/utils/schemas/guest';
@@ -576,8 +591,20 @@ const checkinDates = ref({
 // Room selection form
 const stayForm = ref({
   rooms: [] as any[],
-  check_out_date: checkinDates.value.check_out
+  check_out_date: checkinDates.value.check_out,
+  billing_cycle: '24h' as BillingCycle
 });
+
+// Each unit bills at the full room rate, so a 12h cycle charges twice per day.
+const billingCycleOptions = [
+  { label: '24 Hours', value: '24h' },
+  { label: '12 Hours', value: '12h' }
+];
+const billingCycleHint = computed(() =>
+  stayForm.value.billing_cycle === '12h'
+    ? 'Billed per 12 hours at the full room rate — a 24h stay is 2 units.'
+    : 'Billed per 24 hours at the full room rate.'
+);
 
 // Room data
 const selectedRoomCategory = ref(null);
@@ -910,6 +937,7 @@ const completeCheckin = async () => {
       room_ids: stayForm.value.rooms,
       check_in_date: checkinDates.value.check_in.toISOString(),
       check_out_date: stayForm.value.check_out_date?.toISOString() || checkinDates.value.check_out.toISOString(),
+      billing_cycle: stayForm.value.billing_cycle,
       guest_names: guestData.value.accompanying_guests?.map(g => g.full_name).filter(Boolean)
     };
 
@@ -980,7 +1008,8 @@ const resetForm = () => {
   };
   stayForm.value = {
     rooms: [],
-    check_out_date: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    check_out_date: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    billing_cycle: '24h'
   };
   checkinDates.value = {
     check_in: new Date(),

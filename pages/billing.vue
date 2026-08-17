@@ -150,7 +150,7 @@
           <thead class="text-gray-500">
             <tr>
               <th class="text-left font-medium py-2">Room</th>
-              <th class="text-right font-medium py-2 w-20">Nights</th>
+              <th class="text-right font-medium py-2 w-24">Units</th>
               <th class="text-right font-medium py-2 w-36">Rate</th>
               <th class="text-right font-medium py-2">Amount</th>
             </tr>
@@ -158,7 +158,7 @@
           <tbody>
             <tr v-for="li in displayInvoice.line_items" :key="li.stay_id" class="border-t border-gray-100">
               <td class="py-2 text-gray-800">{{ li.room_type }} - {{ li.room_number }}</td>
-              <td class="py-2 text-right text-gray-700">{{ li.nights }}</td>
+              <td class="py-2 text-right text-gray-700">{{ unitLabel(li) }}</td>
               <td class="py-2 text-right">
                 <span v-if="isLocked">{{ money(li.rate) }}</span>
                 <InputNumber
@@ -221,7 +221,7 @@ import ProgressSpinner from 'primevue/progressspinner';
 import { useToast } from 'primevue/usetoast';
 
 import InputNumber from 'primevue/inputnumber';
-import { useFetchInvoices, useInvoiceActions, uniformGstRate, type Invoice } from '~/composables/useInvoices';
+import { useFetchInvoices, useInvoiceActions, uniformGstRate, unitLabel, type Invoice } from '~/composables/useInvoices';
 import { useFetchHotel } from '~/composables/useHotel';
 import { useAuthStore } from '~/stores/auth';
 import { storeToRefs } from 'pinia';

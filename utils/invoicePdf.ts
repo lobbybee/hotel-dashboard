@@ -88,7 +88,7 @@ export const generateInvoicePdf = async (data: Invoice, logoUrl?: string | null)
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(10);
   pdf.text('Room', 20, y);
-  pdf.text('Nights', 105, y, { align: 'right' });
+  pdf.text('Units', 105, y, { align: 'right' });
   pdf.text('Rate', 140, y, { align: 'right' });
   pdf.text('Amount', pageWidth - 20, y, { align: 'right' });
   y += 2;
@@ -101,7 +101,7 @@ export const generateInvoicePdf = async (data: Invoice, logoUrl?: string | null)
     if (y > pageHeight - 60) { pdf.addPage(); y = 20; }
     const label = `${li.room_type || 'Room'} - ${li.room_number || 'N/A'}`;
     pdf.text(label, 20, y);
-    pdf.text(String(li.nights), 105, y, { align: 'right' });
+    pdf.text(li.billing_cycle === '12h' ? `${li.nights} x 12h` : String(li.nights), 105, y, { align: 'right' });
     pdf.text(money(li.rate), 140, y, { align: 'right' });
     pdf.text(money(li.amount), pageWidth - 20, y, { align: 'right' });
     y += 6;

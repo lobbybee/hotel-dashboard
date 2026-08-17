@@ -441,8 +441,9 @@
                 <p class="text-gray-600 mt-1">
                   {{ formatDate(stayOption.check_in_date) }} to {{ formatDate(stayOption.check_out_date) }}
                 </p>
-                <p class="text-gray-700 mt-1">
-                  Current Bill: Rs {{ Number(stayOption.billing?.current_bill || 0).toFixed(2) }}
+                <p class="text-gray-700 mt-1 flex items-center gap-2">
+                  <span>Current Bill: Rs {{ Number(stayOption.billing?.current_bill || 0).toFixed(2) }}</span>
+                  <Tag v-if="stayOption.billing_cycle === '12h'" value="12h cycle" severity="warning" />
                 </p>
               </label>
             </div>
@@ -480,7 +481,7 @@
               <div class="min-w-0">
                 <p class="font-medium text-gray-900 truncate">{{ li.room_type }} - {{ li.room_number }}</p>
                 <p class="text-xs text-gray-500">
-                  {{ li.nights }} night(s) · base {{ money(li.base_price) }}
+                  {{ unitLabel(li) }} · base {{ money(li.base_price) }}
                   <span v-if="Number(li.base_price) !== Number(lineRate(li))" class="text-amber-600">(overridden)</span>
                 </p>
               </div>
@@ -632,7 +633,7 @@ import { useToast } from 'primevue/usetoast';
 
 import { useListCheckedInUsers, useCheckoutUser, useExtendGuestStay } from '~/composables/checkin-manager';
 import { useAPIHelper } from '~/composables/useAPIHelper';
-import { useInvoiceActions, uniformGstRate, type Invoice } from '~/composables/useInvoices';
+import { useInvoiceActions, uniformGstRate, unitLabel, type Invoice } from '~/composables/useInvoices';
 import { useFetchHotel } from '~/composables/useHotel';
 import { useAuthStore } from '~/stores/auth';
 import { storeToRefs } from 'pinia';

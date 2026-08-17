@@ -52,4 +52,5 @@ export const CheckinOfflineSchema = z.object({
   room_ids: z.array(z.number()).min(1, "At least one room must be selected"),
   check_in_date: z.string(), // validate ISO/Date format if needed
   check_out_date: z.string(),
+  billing_cycle: z.enum(['24h', '12h']).optional(),
 });

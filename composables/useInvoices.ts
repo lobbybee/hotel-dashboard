@@ -12,7 +12,9 @@ export interface InvoiceLineItem {
   category_id: number;
   room_type: string;
   base_price: number | string;
+  /** Count of billable units — 12h units when billing_cycle is '12h', else nights. */
   nights: number;
+  billing_cycle?: '24h' | '12h';
   rate: number | string;
   amount: number | string;
   gst_rate: number;
@@ -68,6 +70,13 @@ export const uniformGstRate = (lineItems: InvoiceLineItem[] = []) => {
   const rates = new Set(lineItems.map((li) => Number(li.gst_rate)));
   return rates.size === 1 ? [...rates][0] : null;
 };
+
+/**
+ * How a line's unit count reads. A 12h-cycle line bills per 12 hours at the full
+ * rate, so calling those "nights" would understate the charge.
+ */
+export const unitLabel = (li: Pick<InvoiceLineItem, 'nights' | 'billing_cycle'>) =>
+  li.billing_cycle === '12h' ? `${li.nights} × 12h` : `${li.nights} night(s)`;
 
 export interface InvoicePreviewBody {
   booking_id: number;
