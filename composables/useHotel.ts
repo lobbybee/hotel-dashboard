@@ -4,6 +4,9 @@ import { useAPIHelper } from './useAPIHelper';
 import type { Hotel, HotelCreate, HotelUpdate, HotelDocument, GstSlab } from '~/types/hotel';
 import type { RoomCategory, Room, RoomCreate, RoomUpdate, WifiCredential } from '~/types/room';
 import type { PaginatedResult } from '~/types/common';
+
+// Backend max_page_size is 100; most hotels load in a single request.
+const ROOMS_PAGE_SIZE = 100;
 import type { Department, DepartmentCreate, DepartmentUpdate } from '~/types/department';
 
 
@@ -297,6 +300,90 @@ export const useFetchRooms = (options?: Ref<{ status?: string; floor?: number; c
 
   });
 };
+
+// Accumulating room list for the floor-grouped infinite scroll on pages/rooms.vue.
+// Not useQuery/useInfiniteQuery: the latter is experimental and omits refetch, and
+// this page has to force a refresh after six different mutations.
+export const useRoomsInfinite = (filters: Ref<{ status?: string; search?: string }>) => {
+  const { API } = useAPI();
+  const { getPaginatedResults } = useAPIHelper();
+
+  const rooms = ref<Room[]>([]);
+  const isLoading = ref(false);
+  const error = ref<any>(null);
+  const hasMore = ref(true);
+  const loadedPages = ref(0);
+  // Bumped on every reset/reload so a response for a filter the user has already
+  // moved on from cannot land in the cleared list.
+  let generation = 0;
+
+  const fetchPage = async (page: number) => {
+    const response = await API('/rooms/', {
+      params: { ...filters.value, page, page_size: ROOMS_PAGE_SIZE },
+    });
+    return getPaginatedResults<Room>(response);
+  };
+
+  const loadMore = async () => {
+    if (isLoading.value || !hasMore.value) return;
+    const gen = generation;
+    isLoading.value = true;
+    try {
+      const { results, next } = await fetchPage(loadedPages.value + 1);
+      if (gen !== generation) return;
+      rooms.value.push(...results);
+      loadedPages.value++;
+      hasMore.value = !!next;
+      error.value = null;
+    } catch (err) {
+      if (gen !== generation) return;
+      error.value = err;
+      hasMore.value = false; // stop the scroll observer from retrying in a loop
+    } finally {
+      if (gen === generation) isLoading.value = false;
+    }
+  };
+
+  const reset = async () => {
+    generation++;
+    rooms.value = [];
+    loadedPages.value = 0;
+    hasMore.value = true;
+    error.value = null;
+    isLoading.value = false; // release the guard held by any in-flight page
+    await loadMore();
+  };
+
+  // Refetch only what is already on screen, so a user who scrolled to floor 8 and
+  // changed a room stays at floor 8 instead of being thrown back to the top.
+  const reload = async () => {
+    const pages = Math.max(loadedPages.value, 1);
+    generation++;
+    const gen = generation;
+    isLoading.value = true;
+    try {
+      const fetched = await Promise.all(
+        Array.from({ length: pages }, (_, i) => fetchPage(i + 1)),
+      );
+      if (gen !== generation) return;
+      rooms.value = fetched.flatMap((p) => p.results);
+      loadedPages.value = pages;
+      hasMore.value = !!fetched[fetched.length - 1]?.next;
+      error.value = null;
+    } catch (err) {
+      if (gen !== generation) return;
+      error.value = err;
+    } finally {
+      if (gen === generation) isLoading.value = false;
+    }
+  };
+
+  watch(filters, reset, { deep: true });
+  onMounted(reset); // client-only: avoids an unauthenticated SSR fetch
+
+  return { rooms, isLoading, error, hasMore, loadMore, reset, reload };
+};
+
 
 export const useFetchRoom = (id: Ref<string | null>) => {
   const { API } = useAPI();

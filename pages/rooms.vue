@@ -2,7 +2,7 @@
     <div class="p-6 bg-gray-50 min-h-screen">
         <div class="max-w-7xl mx-auto space-y-6">
             <!-- Header -->
-            <header class="flex justify-between items-start animate-fade-slide-down">
+            <header id="rooms-top" class="flex justify-between items-start animate-fade-slide-down">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900 mb-2">
                         Room Management
@@ -12,6 +12,7 @@
                     </p>
                 </div>
                 <Button
+                    v-if="activeTab === 0"
                     label="Bulk Add Rooms"
                     icon="pi pi-th-large"
                     @click="openBulkAddDialog"
@@ -20,7 +21,7 @@
 
             <!-- Loading State -->
             <div
-                v-if="isRoomsLoading || isCategoriesLoading"
+                v-if="(isRoomsLoading && !rooms.length) || isCategoriesLoading"
                 class="flex justify-center items-center h-64"
             >
                 <ProgressSpinner />
@@ -28,7 +29,7 @@
 
             <!-- Error State -->
             <div
-                v-else-if="roomsError || categoriesError"
+                v-else-if="(roomsError && !rooms.length) || categoriesError"
                 class="p-4 bg-red-50 border border-red-200 rounded-lg"
             >
                 <div class="flex items-start gap-3">
@@ -54,24 +55,8 @@
 
             <!-- Main Content -->
             <div v-else>
-                <!-- Room Categories -->
-                <RoomCategories
-                    :categories="categories"
-                    :totalCategories="totalCategories"
-                    :updateCategoryStatus="updateCategoryStatus"
-                    :deleteCategoryStatus="deleteCategoryStatus"
-                    @add-category="openAddCategoryForm"
-                    @edit-category="openEditCategoryForm"
-                    @delete-category="openDeleteCategoryConfirmation"
-                    @category-page-change="onCategoryPageChange"
-                />
-
-
-
-                <!-- Floor Plan Section -->
-                <div class="bg-white rounded border border-gray-200">
-                    <!-- Filters and Legend -->
-                    <div class="p-4 space-y-4">
+                <TabView v-model:activeIndex="activeTab">
+                    <TabPanel header="Rooms">
                         <RoomFilters
                             :roomSearch="roomSearch"
                             :roomStatusFilter="roomStatusFilter"
@@ -80,42 +65,57 @@
                             :roomStatuses="roomStatuses"
                             @update:roomSearch="roomSearch = $event"
                             @update:roomStatusFilter="roomStatusFilter = $event"
-                            @update:selectedFloor="selectedFloor = $event"
-                            @add-floor="addFloor"
+                            @jump-to-floor="jumpToFloor"
                         />
 
-                        <RoomLegend />
-                    </div>
+                        <div class="bg-white rounded border border-gray-200 p-4">
+                            <RoomLegend />
 
-                    <!-- Room Grid -->
-                    <div class="px-4 pb-4">
-                        <RoomGrid
-                            :rooms="rooms"
-                            :selectedRooms="selectedRooms"
-                            :totalRooms="totalRooms"
+                            <div class="mt-4">
+                                <RoomGrid
+                                    :rooms="rooms"
+                                    :selectedRooms="selectedRooms"
+                                    :categories="categories"
+                                    :isLoading="isRoomsLoading"
+                                    :hasMore="hasMoreRooms"
+                                    @toggle-room-selection="toggleRoomSelection"
+                                    @edit-room="openEditRoomDialog"
+                                    @load-more="loadMoreRooms"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Selected Rooms Actions -->
+                        <SelectedRoomsActions
+                            v-if="selectedRoomCount > 0"
+                            :selectedRoomCount="selectedRoomCount"
+                            :patchRoomStatus="patchRoomStatus"
+                            :deleteRoomStatus="deleteRoomStatus"
+                            @bulk-status-change="openBulkStatusDialog"
+                            @bulk-delete="openBulkDeleteConfirmation"
+                            @clear-selection="clearSelection"
+                        />
+                    </TabPanel>
+
+                    <TabPanel header="Room Categories">
+                        <RoomCategories
                             :categories="categories"
-                            :currentPage="roomPage"
-                            :rowsPerPage="roomsPerPage"
-                            @toggle-room-selection="toggleRoomSelection"
-                            @edit-room="openEditRoomDialog"
-                            @room-page-change="onRoomPageChange"
+                            :totalCategories="totalCategories"
+                            :updateCategoryStatus="updateCategoryStatus"
+                            :deleteCategoryStatus="deleteCategoryStatus"
+                            @add-category="openAddCategoryForm"
+                            @edit-category="openEditCategoryForm"
+                            @delete-category="openDeleteCategoryConfirmation"
+                            @category-page-change="onCategoryPageChange"
                         />
-                    </div>
-                </div>
+                    </TabPanel>
+
+                    <TabPanel header="WiFi Credentials">
+                        <RoomWifiCredentialManager :categories="categories" />
+                    </TabPanel>
+                </TabView>
             </div>
 
-            <!-- Selected Rooms Actions -->
-            <SelectedRoomsActions
-                v-if="selectedRoomCount > 0"
-                :selectedRoomCount="selectedRoomCount"
-                :patchRoomStatus="patchRoomStatus"
-                :deleteRoomStatus="deleteRoomStatus"
-                @bulk-status-change="openBulkStatusDialog"
-                @bulk-delete="openBulkDeleteConfirmation"
-                @clear-selection="clearSelection"
-            />
-            <!-- WiFi Credentials Management -->
-                     <RoomWifiCredentialManager :categories="categories" />
             <!-- All Dialogs -->
             <RoomDialogs
                 v-model:categoryDialogVisible="categoryDialogVisible"
@@ -163,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from "vue";
+import { ref, reactive, computed, onMounted, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { refDebounced } from "@vueuse/core";
 
@@ -179,6 +179,8 @@ import WifiCredentialManager from "~/components/Room/WifiCredentialManager.vue";
 // Import PrimeVue components
 import Button from "primevue/button";
 import ProgressSpinner from "primevue/progressspinner";
+import TabView from "primevue/tabview";
+import TabPanel from "primevue/tabpanel";
 
 
 const toast = useToast();
@@ -190,9 +192,8 @@ import { RoomCategorySchema, RoomSchema } from '~/utils/schemas/room';
 
 
 // State
-const selectedFloor = ref<number>(1);
-const roomPage = ref(1);
-const roomsPerPage = 10;
+const activeTab = ref(0); // 0 = Rooms, 1 = Categories, 2 = WiFi
+const selectedFloor = ref<number | null>(null); // jump target only, never a filter
 const categoryPage = ref(1);
 const categorySearch = ref("");
 const debouncedCategorySearch = refDebounced(categorySearch, 500);
@@ -202,9 +203,6 @@ const roomStatusFilter = ref("");
 const debouncedRoomSearch = refDebounced(roomSearch, 2000);
 
 const roomFilters = computed(() => ({
-    floor: selectedFloor.value,
-    page: roomPage.value,
-    page_size: roomsPerPage,
     search:
         debouncedRoomSearch.value.length > 1 ? debouncedRoomSearch.value : "",
     status: roomStatusFilter.value,
@@ -223,11 +221,13 @@ const {
     refetch: refetchFloors,
 } = useFetchHotelRoomFloors();
 const {
-    data: roomsData,
+    rooms,
     isLoading: isRoomsLoading,
     error: roomsError,
-    refetch: refetchRooms,
-} = useFetchRooms(roomFilters);
+    hasMore: hasMoreRooms,
+    loadMore: loadMoreRooms,
+    reload: refetchRooms,
+} = useRoomsInfinite(roomFilters);
 const {
     data: categoriesData,
     isLoading: isCategoriesLoading,
@@ -251,18 +251,13 @@ const { mutateAsync: deleteRoomAPI, status: deleteRoomStatus } =
 
 // Computed Data
 const floors = computed(() => floorsData.value || []);
-const rooms = computed(() => (roomsData.value as any)?.results || []);
-const totalRooms = computed(() => roomsData.value?.count || 0);
 const categories = computed(() => (categoriesData.value as any)?.results || []);
 const totalCategories = computed(() => categoriesData.value?.count || 0);
 
-const floorOptions = computed(() => {
-    if (!floors.value.length) return [{ label: "Floor 1", value: 1 }];
-    return floors.value.map((floor) => ({
-        label: `Floor ${floor}`,
-        value: floor,
-    }));
-});
+const floorOptions = computed(() => [
+    { label: "All", value: null },
+    ...floors.value.map((floor) => ({ label: `${floor}`, value: floor })),
+]);
 
 const selectedRoomCount = computed(() => selectedRooms.value.length);
 
@@ -449,7 +444,7 @@ const saveCategory = async () => {
 
 // Bulk add actions
 const openBulkAddDialog = () => {
-    bulkAddForm.floor = selectedFloor.value;
+    bulkAddForm.floor = selectedFloor.value ?? floors.value[0] ?? 1;
     bulkAddForm.categoryId =
         categories.value.length > 0 ? categories.value[0].id : null;
     bulkAddErrors.value = {};
@@ -711,24 +706,40 @@ const deleteSelectedRooms = async () => {
     }
 };
 
-// Floor actions
-const addFloor = () => {
-    const maxFloor = floors.value.length > 0 ? Math.max(...floors.value) : 0;
-    selectedFloor.value = maxFloor + 1;
-};
+// Floor jump: the floor buttons scroll, they never filter. Pull pages until the
+// floor is on screen, then let the browser scroll to it.
+const jumpToFloor = async (floor: number | null) => {
+    selectedFloor.value = floor;
+    if (floor === null) {
+        document.getElementById("rooms-top")?.scrollIntoView({ behavior: "smooth" });
+        return;
+    }
 
-// Pagination
-const onRoomPageChange = (event: any) => {
-    roomPage.value = event.page + 1;
+    // Bail if a pass adds nothing (e.g. loadMore no-ops because a scroll-triggered
+    // page is already in flight) so this can never spin.
+    while (hasMoreRooms.value && !rooms.value.some((r: any) => r.floor === floor)) {
+        const before = rooms.value.length;
+        await loadMoreRooms();
+        if (rooms.value.length === before) break;
+    }
+    await nextTick();
+
+    const target = document.getElementById(`floor-${floor}`);
+    if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+        toast.add({
+            severity: "info",
+            summary: `Floor ${floor}`,
+            detail: "No rooms on this floor match the current filters",
+            life: 3000,
+        });
+    }
 };
 
 const onCategoryPageChange = (event: any) => {
     categoryPage.value = event.page + 1;
 };
-
-watch([debouncedRoomSearch, roomStatusFilter, selectedFloor], () => {
-    roomPage.value = 1;
-});
 
 // Helper functions
 const refetchAll = async () => {

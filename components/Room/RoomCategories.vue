@@ -145,7 +145,7 @@ const emit = defineEmits<{
     'category-page-change': [event: any];
 }>();
 
-const isCollapsed = ref(true);
+const isCollapsed = ref(false);
 
 const getRoomCountByCategory = (category: Category) => {
     return category.room_count || 0;

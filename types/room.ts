@@ -27,12 +27,14 @@ export interface Room {
     created_at?: string;
     updated_at?: string;
     hotel?: string;
-    category: number | string; // ID or name depending on context, usually ID in input, name/obj in output? Spec says "category*: string" often ID in POST.
+    // Reads flatten the FK to {id, name} (see RoomSerializer.to_representation);
+    // writes take the bare id, hence the override on RoomCreate below.
+    category: { id: number; name: string };
     current_guest?: string; // name
 }
 
-export interface RoomCreate extends Omit<Room, 'id' | 'status_display' | 'created_at' | 'updated_at' | 'current_guest'> {
-    // category is required
+export interface RoomCreate extends Omit<Room, 'id' | 'status_display' | 'created_at' | 'updated_at' | 'current_guest' | 'category'> {
+    category: number;
 }
 
 export interface RoomUpdate extends Partial<RoomCreate> {
