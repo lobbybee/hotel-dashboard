@@ -196,7 +196,7 @@
 
             <div v-if="!stay.room">
                 <label for="checkout" class="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
-                <Calendar id="checkout" v-model="checkOutDate" class="w-full" showIcon showTime hourFormat="12" />
+                <CheckinCheckoutDateField id="checkout" v-model="checkOutDate" :checkoutTime="hotelCheckoutTime" />
             </div>
 
             <div>
@@ -268,7 +268,7 @@ import Textarea from 'primevue/textarea';
 import { useToast } from 'primevue/usetoast';
 import type { BillingCycle } from '~/types/guest';
 import { useFetchRooms, useFetchRoomCategories, useFetchHotelRoomFloors } from '~/composables/useHotel';
-import { formatDateTimeCompactInHotelTz } from '~/utils/dateFormat';
+import { CHECKOUT_MINUTE_STEP, defaultCheckoutDate, formatDateTimeCompactInHotelTz, snapToMinuteStep } from '~/utils/dateFormat';
 
 import InputText from 'primevue/inputtext';
 import FlagWarningAccordion from './FlagWarningAccordion.vue';
@@ -289,6 +289,7 @@ const selectedCategory = ref<number | null>(null);
 const selectedFloor = ref<number | null>(null);
 const selectedRoomIds = ref<number[]>([]);
 const checkOutDate = ref<Date | null>(null);
+const hotelCheckoutTime = useHotelCheckoutTime();
 
 // Billing cycle is decided at confirmation: WhatsApp check-in creates the stay
 // with no room, so this is the first point a rate exists.
@@ -492,8 +493,12 @@ watch(() => props.visible, async (newValue) => {
     }
 
     // Initialize check-out date for stays without rooms
-    if (!props.stay?.room && props.stay?.check_out_date) {
-      checkOutDate.value = new Date(props.stay.check_out_date);
+    if (!props.stay?.room) {
+      // Snap to the spinner's step: PrimeVue floors the *display* to stepMinute but
+      // leaves the model alone, so a stored 10:12 would show 10:00 and submit 10:12.
+      checkOutDate.value = props.stay?.check_out_date
+        ? snapToMinuteStep(props.stay.check_out_date, CHECKOUT_MINUTE_STEP)
+        : defaultCheckoutDate(hotelCheckoutTime.value);
     } else {
       checkOutDate.value = null;
     }

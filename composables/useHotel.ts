@@ -4,6 +4,7 @@ import { useAPIHelper } from './useAPIHelper';
 import type { Hotel, HotelCreate, HotelUpdate, HotelDocument, GstSlab } from '~/types/hotel';
 import type { RoomCategory, Room, RoomCreate, RoomUpdate, WifiCredential } from '~/types/room';
 import type { PaginatedResult } from '~/types/common';
+import { DEFAULT_CHECKOUT_TIME } from '~/utils/dateFormat';
 
 // Backend max_page_size is 100; most hotels load in a single request.
 const ROOMS_PAGE_SIZE = 100;
@@ -202,6 +203,16 @@ export const useUpdateHotelDocument = () => {
   });
 };
 
+
+// The hotel's configured checkout time (HH:MM) for defaulting check-out fields.
+// Shares the ['hotel', id] query key, so callers dedupe onto one request.
+export const useHotelCheckoutTime = () => {
+  const { hotelId } = storeToRefs(useAuthStore());
+  const { data: hotel } = useFetchHotel(hotelId);
+  return computed(
+    () => (hotel.value as Hotel | null)?.check_out_time?.slice(0, 5) || DEFAULT_CHECKOUT_TIME,
+  );
+};
 
 // Room Categories
 

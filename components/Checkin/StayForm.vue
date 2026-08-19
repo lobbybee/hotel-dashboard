@@ -61,15 +61,11 @@
                     class="block text-sm font-medium text-gray-700 mb-1"
                     >Check-out Date</label
                 >
-                <Calendar
+                <CheckinCheckoutDateField
                     id="manual_check_out"
                     :modelValue="stayForm.check_out_date"
                     @update:modelValue="updateStay('check_out_date', $event)"
-                    class="w-full"
-                    showIcon
-                    showTime
-                    hourFormat="12"
-                    :minDate="new Date()"
+                    :checkoutTime="hotelCheckoutTime"
                 />
             </div>
 
@@ -167,7 +163,6 @@
 import { ref, computed, onMounted } from "vue";
 import type { PropType } from "vue";
 import Dropdown from "primevue/dropdown";
-import Calendar from "primevue/calendar";
 import MultiSelect from "primevue/multiselect";
 import FileUpload from "primevue/fileupload";
 import Badge from "primevue/badge";
@@ -177,7 +172,10 @@ import {
     useFetchRooms,
     useFetchRoomCategories,
     useFetchHotelRoomFloors,
+    useHotelCheckoutTime,
 } from "~/composables/useHotel";
+
+const hotelCheckoutTime = useHotelCheckoutTime();
 
 
 const props = defineProps({

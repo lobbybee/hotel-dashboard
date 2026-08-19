@@ -106,7 +106,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Check-out Date *</label>
-            <Calendar v-model="checkinDates.check_out" showTime hourFormat="12" dateFormat="dd-mm-yy" class="w-full" />
+            <CheckinCheckoutDateField v-model="checkinDates.check_out" :checkoutTime="hotelCheckoutTime" />
           </div>
         </div>
 
@@ -178,14 +178,10 @@
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Check-out Date</label>
-            <Calendar
+            <CheckinCheckoutDateField
+              id="walkin_check_out"
               v-model="stayForm.check_out_date"
-              class="w-full"
-              showIcon
-              showTime
-              hourFormat="12"
-              dateFormat="dd-mm-yy"
-              :minDate="new Date()"
+              :checkoutTime="hotelCheckoutTime"
             />
           </div>
           <div>
@@ -477,7 +473,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDebounceFn } from "@vueuse/core";
 import { useToast } from 'primevue/usetoast';
@@ -496,6 +492,7 @@ import type { CreateGuestData, AccompanyingGuestData, BillingCycle } from '~/typ
 
 // Import validation schemas
 import { GuestSchema, CheckinOfflineSchema, ManualWalkinGuestSchema, PrimaryGuestSchema } from '~/utils/schemas/guest';
+import { atCheckoutTime, defaultCheckoutDate } from '~/utils/dateFormat';
 
 
 
@@ -583,9 +580,11 @@ const guestData = ref<CreateGuestData>({
 });
 
 // Check-in dates
+const hotelCheckoutTime = useHotelCheckoutTime();
+
 const checkinDates = ref({
   check_in: new Date(),
-  check_out: new Date(Date.now() + 24 * 60 * 60 * 1000) // Tomorrow
+  check_out: defaultCheckoutDate() // tomorrow at the hotel checkout time
 });
 
 // Room selection form
@@ -1008,12 +1007,12 @@ const resetForm = () => {
   };
   stayForm.value = {
     rooms: [],
-    check_out_date: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    check_out_date: defaultCheckoutDate(hotelCheckoutTime.value),
     billing_cycle: '24h'
   };
   checkinDates.value = {
     check_in: new Date(),
-    check_out: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    check_out: defaultCheckoutDate(hotelCheckoutTime.value)
   };
   primaryDocument.value = null;
   primaryDocumentBack.value = null;
@@ -1031,15 +1030,19 @@ const resetForm = () => {
 };
 
 onMounted(() => {
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
   checkinDates.value = {
-    check_in: now,
-    check_out: tomorrow
+    check_in: new Date(),
+    check_out: defaultCheckoutDate(hotelCheckoutTime.value)
   };
 
   refetchRooms();
+});
+
+// The hotel profile resolves after mount, so re-snap the seeded defaults to its
+// checkout time once it arrives. Fires once, before the user can realistically
+// have picked a time of their own.
+watch(hotelCheckoutTime, (time) => {
+  checkinDates.value.check_out = atCheckoutTime(checkinDates.value.check_out, time);
+  stayForm.value.check_out_date = atCheckoutTime(stayForm.value.check_out_date, time);
 });
 </script>
