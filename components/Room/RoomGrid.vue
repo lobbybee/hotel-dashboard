@@ -54,7 +54,14 @@
                 >
                     <!-- pr-6 keeps the number clear of the edit pencil -->
                     <span
-                        class="font-bold text-base sm:text-lg pr-6 truncate max-w-full"
+                        class="font-bold pr-6 max-w-full break-all leading-tight"
+                        :class="
+                            String(room.room_number).length > 10
+                                ? 'text-[10px] sm:text-xs'
+                                : String(room.room_number).length > 6
+                                  ? 'text-xs sm:text-sm'
+                                  : 'text-base sm:text-lg'
+                        "
                         >{{ room.room_number }}</span
                     >
                     <span
